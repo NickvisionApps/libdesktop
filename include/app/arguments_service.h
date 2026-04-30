@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,6 +20,7 @@ namespace desktop::app
 		std::optional<std::string> get_next(std::string_view argument) const;
 
 	private:
+		mutable std::mutex m_mutex;
 		std::vector<std::string> m_arguments;
 	};
 }

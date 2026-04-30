@@ -1,14 +1,14 @@
 #pragma once
 
-#include <cstddef>
-#include <functional>
 #include <concepts>
-#include <vector>
+#include <functional>
+#include <mutex>
+#include <unordered_map>
 #include "event_args.h"
 
 namespace desktop::events
 {
-	using event_id = std::size_t;
+    using event_id = unsigned int;
 
     template<typename T, std::derived_from<event_args> U>
     class event
@@ -21,25 +21,32 @@ namespace desktop::events
 
         event_id add_handler(std::function<void(const T&, const U&)> handler) const
         {
-            event_id id{ m_handlers.size() };
-            m_handlers.push_back(std::move(handler));
+			std::lock_guard lock{ m_mutex };
+            event_id id{ m_next++ };
+            m_handlers.insert({ id, std::move(handler) });
             return id;
 		}
 
         void invoke(const T& sender, const U& args)
         {
-            for (const auto& handler : m_handlers)
+            std::lock_guard lock{ m_mutex };
+            for (const std::pair<const event_id, std::function<void(const T&, const U&)>>& pair : m_handlers)
             {
-                handler(sender, args);
+                if (pair.second)
+                {
+                    pair.second(sender, args);
+                }
+                else
+                {
+					m_handlers.erase(pair.first);
+                }
             }
 		}
 
         void remove_handler(event_id id) const
         {
-			if (id < m_handlers.size())
-			{
-				m_handlers.erase(m_handlers.begin() + id);
-			}
+            std::lock_guard lock{ m_mutex };
+			m_handlers.erase(id);
 		}
 
         event& operator+=(std::function<void(const T&, const U&)> handler) const
@@ -55,6 +62,8 @@ namespace desktop::events
         }
 
     private:
-		mutable std::vector<std::function<void(const T&, const U&)>> m_handlers;
+		mutable std::mutex m_mutex;
+        mutable event_id m_next;
+		mutable std::unordered_map<event_id, std::function<void(const T&, const U&)>> m_handlers;
     };
 }

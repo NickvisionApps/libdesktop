@@ -45,6 +45,7 @@ add_library(${PROJECT_NAME}
     "include/hosting/lifetime_service.h"
     "include/notifications/notification.h"
     "include/notifications/notification_sent_event_args.h"
+    "include/notifications/notification_service.h"
     "include/notifications/notification_severity.h"
     "include/notifications/shell_notification.h"
     "include/services/service.h"
@@ -60,6 +61,7 @@ add_library(${PROJECT_NAME}
     "src/hosting/lifetime_service.cpp"
     "src/notifications/notification.cpp"
     "src/notifications/notification_sent_event_args.cpp"
+    "src/notifications/notification_service.cpp"
     "src/notifications/shell_notification.cpp")
 
 if(WIN32)
