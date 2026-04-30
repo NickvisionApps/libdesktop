@@ -90,7 +90,7 @@ else()
 endif()
 
 if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32 Shell32)
 else()
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)

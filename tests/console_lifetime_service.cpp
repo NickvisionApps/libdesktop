@@ -4,6 +4,7 @@
 #include <string>
 
 using namespace desktop::app;
+using namespace desktop::filesystem;
 using namespace desktop::hosting;
 using namespace desktop::services;
 
@@ -30,10 +31,11 @@ void console_lifetime_service::on_startup_and_run()
 		std::cout << "\nSelect a module to test:" << std::endl;
 		std::cout << "1. App" << std::endl;
 		std::cout << "2. Events" << std::endl;
-		std::cout << "3. Services" << std::endl;
-		std::cout << "4. System" << std::endl;
-		std::cout << "5. All Modules" << std::endl;
-		std::cout << "6. Exit" << std::endl;
+		std::cout << "3. Filesystem" << std::endl;
+		std::cout << "4. Services" << std::endl;
+		std::cout << "5. System" << std::endl;
+		std::cout << "6. All Modules" << std::endl;
+		std::cout << "7. Exit" << std::endl;
 		std::cout << "Option > ";
 		std::string res;
 		std::cin >> res;
@@ -56,18 +58,33 @@ void console_lifetime_service::on_startup_and_run()
 				std::cout << "---Success---" << std::endl;
 				break;
 			case 3:
-				std::cout << "---Services Module---" << std::endl;
+				std::cout << "---Filesystem Module---" << std::endl;
+				std::cout << "Cache      : " << user_directories::get_cache() << std::endl;
+				std::cout << "Config     : " << user_directories::get_config() << std::endl;
+				std::cout << "Desktop    : " << user_directories::get_desktop() << std::endl;
+				std::cout << "Documents  : " << user_directories::get_documents() << std::endl;
+				std::cout << "Downloads  : " << user_directories::get_downloads() << std::endl;
+				std::cout << "Home       : " << user_directories::get_home() << std::endl;
+				std::cout << "Local Data : " << user_directories::get_local_data() << std::endl;
+				std::cout << "Music      : " << user_directories::get_music() << std::endl;
+				std::cout << "Pictures   : " << user_directories::get_pictures() << std::endl;
+				std::cout << "Templates  : " << user_directories::get_templates() << std::endl;
+				std::cout << "Videos     : " << user_directories::get_videos() << std::endl;
 				std::cout << "---Success---" << std::endl;
 				break;
 			case 4:
-				std::cout << "---System Module---" << std::endl;
+				std::cout << "---Services Module---" << std::endl;
 				std::cout << "---Success---" << std::endl;
 				break;
 			case 5:
-				std::cout << "---All Modules---" << std::endl;
+				std::cout << "---System Module---" << std::endl;
 				std::cout << "---Success---" << std::endl;
 				break;
 			case 6:
+				std::cout << "---All Modules---" << std::endl;
+				std::cout << "---Success---" << std::endl;
+				break;
+			case 7:
 				stop();
 				break;
 			default:
