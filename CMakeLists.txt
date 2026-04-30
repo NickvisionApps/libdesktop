@@ -27,6 +27,7 @@ include(GNUInstallDirs)
 add_library(${PROJECT_NAME}
     "include/app.h"
     "include/events.h"
+    "include/filesystem.h"
     "include/hosting.h"
     "include/libdesktop.h"
     "include/services.h"
@@ -37,6 +38,7 @@ add_library(${PROJECT_NAME}
     "include/events/event.h"
     "include/events/event_args.h"
     "include/events/param_event_args.h"
+    "include/filesystem/user_directories.h"
     "include/hosting/host.h"
     "include/hosting/host_options.h"
     "include/hosting/lifetime_service.h"
@@ -54,6 +56,7 @@ add_library(${PROJECT_NAME}
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/filesystem/user_directories_windows.cpp"
         "src/system/process_windows.cpp")
 endif()
 if(UNIX)
@@ -61,10 +64,12 @@ if(UNIX)
         "src/system/process_unix.cpp")
 endif()
 if(APPLE)
-    # Placeholder
+    target_sources(${PROJECT_NAME} PRIVATE
+        "src/filesystem/user_directories_macos.cpp")
 endif()
 if(UNIX AND NOT APPLE)
-    # Placeholder
+    target_sources(${PROJECT_NAME} PRIVATE
+        "src/filesystem/user_directories_linux.cpp")
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
