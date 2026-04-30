@@ -37,7 +37,7 @@ static std::filesystem::path get_xdg_user_dir(const std::string& name)
     {
         return {};
     }
-    const char* path = std::getenv(name.c_str())
+    const char* path = std::getenv(name.c_str());
     if(path && *path != '\0')
     {
         return std::filesystem::path{ path };
@@ -95,12 +95,10 @@ namespace desktop::filesystem
     std::filesystem::path user_directories::get_cache()
     {
         std::filesystem::path res;
-        if(const char* dir = std::getenv("XDG_CACHE_HOME"))
+        const char* dir = std::getenv("XDG_CACHE_HOME");
+        if(dir && *dir != '\0')
         {
-            if(*dir != '\0')
-            {
-                res = std::filesystem::path{ dir };
-            }
+            res = std::filesystem::path{ dir };
         }
         if(res.empty())
         {
@@ -113,12 +111,10 @@ namespace desktop::filesystem
     std::filesystem::path user_directories::get_config()
     {
         std::filesystem::path res;
-        if(const char* dir = std::getenv("XDG_CONFIG_HOME"))
+        const char* dir = std::getenv("XDG_CONFIG_HOME");
+        if(dir && *dir != '\0')
         {
-            if(*dir != '\0')
-            {
-                res = std::filesystem::path{ dir };
-            }
+            res = std::filesystem::path{ dir };
         }
         if(res.empty())
         {
@@ -146,7 +142,7 @@ namespace desktop::filesystem
         {
             res = get_home_path() / "Documents";
         }
-		std::filesystem::create_directories(res);
+        std::filesystem::create_directories(res);
         return res;
     }
 
@@ -157,7 +153,7 @@ namespace desktop::filesystem
         {
             res = get_home_path() / "Downloads";
         }
-		std::filesystem::create_directories(res);
+        std::filesystem::create_directories(res);
         return res;
     }
 
@@ -169,12 +165,10 @@ namespace desktop::filesystem
     std::filesystem::path user_directories::get_local_data()
     {
         std::filesystem::path res;
-        if(const char* dir = std::getenv("XDG_DATA_HOME"))
+        const char* dir = std::getenv("XDG_DATA_HOME");
+        if(dir && *dir != '\0')
         {
-            if(*dir != '\0')
-            {
-                res = std::filesystem::path{ dir };
-            }
+            res = std::filesystem::path{ dir };
         }
         if(res.empty())
         {
