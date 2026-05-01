@@ -206,13 +206,13 @@ namespace desktop::helpers
         }
         std::string result{ str };
         result.erase(std::find_if(result.rbegin(), result.rend(), [](unsigned char ch)
-            {
-                return !std::isspace(ch);
-            }).base(), result.end());
+        {
+            return !std::isspace(ch);
+        }).base(), result.end());
         result.erase(result.begin(), std::find_if(result.begin(), result.end(), [](unsigned char ch)
-            {
-                return !std::isspace(ch);
-            }));
+        {
+            return !std::isspace(ch);
+        }));
         return result;
     }
 
@@ -224,13 +224,13 @@ namespace desktop::helpers
         }
         std::string result{ str };
         result.erase(std::find_if(result.rbegin(), result.rend(), [delimiter](char ch)
-            {
-                return ch != delimiter;
-            }).base(), result.end());
+        {
+            return ch != delimiter;
+        }).base(), result.end());
         result.erase(result.begin(), std::find_if(result.begin(), result.end(), [delimiter](char ch)
-            {
-                return ch != delimiter;
-            }));
+        {
+            return ch != delimiter;
+        }));
         return result;
     }
 
