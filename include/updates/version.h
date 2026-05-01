@@ -9,6 +9,7 @@ namespace desktop::updates
 	{
 	public:
 		version();
+		~version() = default;
 		version(int major, int minor, int patch);
 		version(int major, int minor, int patch, const std::string& preview);
 		version(const std::string& version);
@@ -27,6 +28,7 @@ namespace desktop::updates
 		bool operator!=(const version& other) const;
 		version& operator=(const version&) = default;
 		version& operator=(version&&) = default;
+		operator bool() const;
 
 	private:
 		void build_str();

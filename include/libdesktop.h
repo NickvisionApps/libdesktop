@@ -3,6 +3,7 @@
 #include "app.h"
 #include "events.h"
 #include "filesystem.h"
+#include "helpers.h"
 #include "hosting.h"
 #include "notifications.h"
 #include "services.h"

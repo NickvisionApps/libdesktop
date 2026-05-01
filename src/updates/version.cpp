@@ -159,4 +159,9 @@ namespace desktop::updates
 			m_str += "-" + m_preview;
 		}
 	}
+
+	version::operator bool() const
+	{
+		return !empty();
+	}
 }

@@ -28,12 +28,14 @@ add_library(${PROJECT_NAME}
     "include/app.h"
     "include/events.h"
     "include/filesystem.h"
+    "include/helpers.h"
     "include/hosting.h"
     "include/libdesktop.h"
     "include/notifications.h"
     "include/services.h"
     "include/system.h"
     "include/updates.h"
+    "include/app/app_info.h"
     "include/app/arguments_service.h"
     "include/app/logger.h"
     "include/app/log_type.h"
@@ -41,6 +43,7 @@ add_library(${PROJECT_NAME}
     "include/events/event_args.h"
     "include/events/param_event_args.h"
     "include/filesystem/user_directories.h"
+    "include/helpers/string_manip.h"
     "include/hosting/host.h"
     "include/hosting/host_options.h"
     "include/hosting/lifetime_service.h"
@@ -55,9 +58,14 @@ add_library(${PROJECT_NAME}
     "include/services/service_scope.h"
     "include/system/process.h"
     "include/system/process_status.h"
+    "include/updates/release.h"
+    "include/updates/release_asset.h"
+    "include/updates/release_provider.h"
     "include/updates/version.h"
+    "src/app/app_info.cpp"
     "src/app/arguments_service.cpp"
     "src/app/logger.cpp"
+    "src/helpers/string_manip.cpp"
     "src/hosting/host.cpp"
     "src/hosting/host_options.cpp"
     "src/hosting/lifetime_service.cpp"
@@ -65,6 +73,8 @@ add_library(${PROJECT_NAME}
     "src/notifications/notification_sent_event_args.cpp"
     "src/notifications/notification_service.cpp"
     "src/notifications/shell_notification.cpp"
+    "src/updates/release.cpp"
+    "src/updates/release_asset.cpp"
     "src/updates/version.cpp")
 
 if(WIN32)
@@ -105,7 +115,8 @@ endif()
 find_package(CURL REQUIRED)
 find_package(Intl REQUIRED)
 find_package(maddy CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy)
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json)
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32 Shell32)
 else()
