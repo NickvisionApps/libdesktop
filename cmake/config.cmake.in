@@ -1,4 +1,16 @@
 @PACKAGE_INIT@
 
+if(DEFINED ENV{VCPKG_ROOT})
+    file(TO_CMAKE_PATH $ENV{VCPKG_ROOT} VCPKG_ROOT)
+    if(EXISTS "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+        include("${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+    endif()
+endif()
+
+include(CMakeFindDependencyMacro)
+find_dependency(CURL REQUIRED)
+find_dependency(Intl REQUIRED)
+find_dependency(maddy CONFIG REQUIRED)
+
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
 check_required_components(@PROJECT_NAME@)

@@ -1,0 +1,9 @@
+{
+  "name": "libdesktop",
+  "version": "2025.5.0",
+  "dependencies": [
+    "curl",
+    "gettext-libintl",
+    "maddy"
+  ]
+}
