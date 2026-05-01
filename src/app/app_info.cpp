@@ -3,6 +3,9 @@
 #include <sstream>
 #include <string_view>
 #include <maddy/parser.h>
+#include "helpers/string_manip.h"
+
+using namespace desktop::helpers;
 
 namespace desktop::app
 {
@@ -43,7 +46,17 @@ namespace desktop::app
 		}
 		else
 		{
-
+			std::stringstream ss;
+			for (const std::string& line : string_manip::split(string_manip::trim(m_changelog), '\n'))
+			{
+				if (line.empty())
+				{
+					continue;
+				}
+				ss << string_manip::trim(line) << std::endl;
+			}
+			maddy::Parser parser;
+			m_changelog_html = parser.Parse(ss);
 		}
 	}
 
