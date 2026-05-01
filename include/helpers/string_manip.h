@@ -14,7 +14,7 @@ namespace desktop::helpers::string_manip
 
 	std::vector<std::byte> base64_decode(const std::string& input);
 	std::string base64_encode(const std::vector<std::byte>& input);
-	std::string filename_normalize(const std::string& filename);
+	std::string filename_normalize(const std::string& filename, bool force_windows);
 	std::string join(const std::vector<std::string>& strings, const std::string& delimiter);
 	std::string lower(const std::string& str);
 	std::string quote(const std::string& str);
