@@ -33,7 +33,7 @@ add_library(${PROJECT_NAME}
     "include/notifications.h"
     "include/services.h"
     "include/system.h"
-    "include/update.h"
+    "include/updates.h"
     "include/app/arguments_service.h"
     "include/app/logger.h"
     "include/app/log_type.h"
@@ -55,7 +55,7 @@ add_library(${PROJECT_NAME}
     "include/services/service_scope.h"
     "include/system/process.h"
     "include/system/process_status.h"
-    "include/update/version.h"
+    "include/updates/version.h"
     "src/app/arguments_service.cpp"
     "src/app/logger.cpp"
     "src/hosting/host.cpp"
@@ -65,7 +65,7 @@ add_library(${PROJECT_NAME}
     "src/notifications/notification_sent_event_args.cpp"
     "src/notifications/notification_service.cpp"
     "src/notifications/shell_notification.cpp"
-    "src/update/version.cpp")
+    "src/updates/version.cpp")
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
@@ -132,7 +132,9 @@ if (BUILD_TESTING)
     add_executable(${PROJECT_NAME}_tests
         "tests/console_lifetime_service.cpp"
         "tests/console_lifetime_service.h"
-        "tests/main.cpp")
+        "tests/main.cpp"
+        "tests/suite.cpp"
+        "tests/suite.h")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME})
 endif()

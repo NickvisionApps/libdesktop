@@ -3,7 +3,7 @@
 #include <compare>
 #include <string>
 
-namespace desktop::update
+namespace desktop::updates
 {
 	class version
 	{

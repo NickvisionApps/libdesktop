@@ -1,7 +1,7 @@
-﻿#include "update/version.h"
+﻿#include "updates/version.h"
 #include <stdexcept>
 
-namespace desktop::update
+namespace desktop::updates
 {
 	version::version()
 		: m_major{ 0 },
