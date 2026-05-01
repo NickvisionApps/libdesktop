@@ -7,3 +7,4 @@
 #include "notifications.h"
 #include "services.h"
 #include "system.h"
+#include "update.h"
