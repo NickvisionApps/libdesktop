@@ -11,6 +11,11 @@ namespace desktop::services
 	class service_provider : public service
 	{
 	public:
+		service_provider() = default;
+		~service_provider() override = default;
+		service_provider(const service_provider&) = delete;
+		service_provider(service_provider&&) = delete;
+
 		template<typename TService>
 			requires is_service<TService>
 		std::shared_ptr<TService> get_service() const
@@ -34,6 +39,9 @@ namespace desktop::services
 			}
 			return svc;
 		}
+
+		service_provider& operator=(const service_provider&) = delete;
+		service_provider& operator=(service_provider&&) = delete;
 
 	protected:
 		virtual std::any get_service_impl(std::type_index type) const = 0;

@@ -11,8 +11,13 @@ namespace desktop::notifications
 	{
 	public:
 		notification_service() = default;
+		~notification_service() override = default;
+		notification_service(const notification_service&) = delete;
+		notification_service(notification_service&&) = delete;
 		const events::event<notification_service, notification_sent_event_args>& get_notification_sent_event() const;
 		void send(const std::shared_ptr<notification>& notification);
+		notification_service& operator=(const notification_service&) = delete;
+		notification_service& operator=(notification_service&&) = delete;
 
 	private:
 		mutable std::mutex m_mutex;

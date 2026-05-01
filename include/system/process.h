@@ -15,6 +15,7 @@ namespace desktop::system
     {
     public:
         process(const std::filesystem::path& path, const std::vector<std::string>& arguments = {});
+        ~process();
         process(const process&) = delete;
         process(process&&) noexcept = default;
         const events::event<process, events::param_event_args<int>>& exited_event() const;

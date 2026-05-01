@@ -20,10 +20,9 @@ namespace desktop::services
 	{
 	public:
 		service_collection() = default;
+		~service_collection() override = default;
 		service_collection(const service_collection&) = delete;
 		service_collection(service_collection&&) = delete;
-		service_collection& operator=(const service_collection&) = delete;
-		service_collection& operator=(service_collection&&) = delete;
 
 		template<typename TService, typename TFirst, typename... TRest>
 			requires is_service<TService> && std::constructible_from<TService, TFirst, TRest...>
@@ -120,10 +119,15 @@ namespace desktop::services
 			m_services.erase(typeid(TService));
 		}
 
+		service_collection& operator=(const service_collection&) = delete;
+		service_collection& operator=(service_collection&&) = delete;
+
 	private:
 		class service_entry
 		{
 		public:
+			service_entry() = delete;
+			~service_entry() = default;
 			service_entry(service_scope scope, std::function<std::any()> factory, std::optional<std::any> instance = std::nullopt)
 				: scope{ scope },
 				factory{ std::move(factory) },
@@ -131,6 +135,9 @@ namespace desktop::services
 			{
 
 			}
+
+			service_entry(const service_entry&) = default;
+			service_entry(service_entry&&) noexcept = default;
 
 			std::any get_any_instance() const
 			{
@@ -148,6 +155,9 @@ namespace desktop::services
 				}
 				return factory();
 			}
+
+			service_entry& operator=(const service_entry&) = default;
+			service_entry& operator=(service_entry&&) noexcept = default;
 
 		private:
 			service_scope scope;

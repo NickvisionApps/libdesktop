@@ -12,8 +12,13 @@ namespace desktop::notifications
 	{
 	public:
 		notification_sent_event_args(std::shared_ptr<notification> notification);
+		~notification_sent_event_args() override = default;
+		notification_sent_event_args(const notification_sent_event_args&) = default;
+		notification_sent_event_args(notification_sent_event_args&&) noexcept = default;
 		std::shared_ptr<notification> get_notification() const;
 		const std::chrono::system_clock::time_point& get_timestamp() const;
+		notification_sent_event_args& operator=(const notification_sent_event_args&) = default;
+		notification_sent_event_args& operator=(notification_sent_event_args&&) noexcept = default;
 
 	private:
 		std::shared_ptr<notification> m_notification;

@@ -8,6 +8,7 @@ namespace desktop::events
     {
     public:
         param_event_args(const T& value) : m_value{ value } {}
+        ~param_event_args() override = default;
         param_event_args(const param_event_args& other) = default;
         param_event_args(param_event_args&& other) noexcept = default;
         const T& value() const { return m_value; }

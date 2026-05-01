@@ -7,7 +7,12 @@ namespace desktop::services
 	class service
 	{
 	public:
+		service() = default;
 		virtual ~service() = default;
+		service(const service&) = delete;
+		service(service&&) = delete;
+		service& operator=(const service&) = delete;
+		service& operator=(service&&) = delete;
 	};
 
 	template<typename T>

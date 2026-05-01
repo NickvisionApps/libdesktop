@@ -14,10 +14,12 @@ namespace desktop::events
     class event
     {
     public:
-        event()
-        {
-
-        }
+        event() = default;
+        ~event() = default;
+        event(const event&) = delete;
+        event(event&&) = delete;
+        event& operator=(const event&) = delete;
+        event& operator=(event&&) = delete;
 
         event_id add_handler(std::function<void(const T&, const U&)> handler) const
         {

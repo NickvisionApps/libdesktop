@@ -158,6 +158,10 @@ namespace desktop::system
     public:
         impl(process& process);
         ~impl();
+        impl(const impl&) = delete;
+        impl(impl&&) = delete;
+        impl& operator=(const impl&) = delete;
+        impl& operator=(impl&&) = delete;
         int get_exit_code() const;
         const std::string& get_standard_error() const;
         const std::string& get_standard_output() const;
@@ -498,6 +502,8 @@ namespace desktop::system
     {
 
     }
+
+    process::~process() = default;
 
     const events::event<process, events::param_event_args<int>>& process::exited_event() const
     {
