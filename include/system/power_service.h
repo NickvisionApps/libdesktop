@@ -12,11 +12,11 @@ namespace desktop::system
 	{
 	public:
 		power_service();
-		~power_service() override = default;
+		~power_service() override;
 		power_service(const power_service&) = delete;
 		power_service(power_service&&) = delete;
 		bool is_suspended() const;
-		bool allow_suspend() const;
+		bool allow_suspend();
 		bool prevent_suspend();
 		power_service& operator=(const power_service&) = delete;
 		power_service& operator=(power_service&&) = delete;

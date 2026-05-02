@@ -86,6 +86,7 @@ add_library(${PROJECT_NAME}
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_windows.cpp"
+        "src/system/power_service_windows.cpp"
         "src/system/process_windows.cpp")
 endif()
 if(UNIX)
@@ -94,11 +95,13 @@ if(UNIX)
 endif()
 if(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
-        "src/filesystem/user_directories_macos.cpp")
+        "src/filesystem/user_directories_macos.cpp"
+        "src/system/power_service_macos.cpp")
 endif()
 if(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
-        "src/filesystem/user_directories_linux.cpp")
+        "src/filesystem/user_directories_linux.cpp"
+        "src/system/power_service_linux.cpp")
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)

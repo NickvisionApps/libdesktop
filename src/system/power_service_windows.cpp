@@ -1,0 +1,52 @@
+#include "system/power_service.h"
+#include <windows.h>
+
+namespace desktop::system
+{
+	power_service::power_service()
+		: m_suspended{ false }
+	{
+
+	}
+
+	power_service::~power_service()
+	{
+		allow_suspend();
+	}
+
+	bool power_service::is_suspended() const
+	{
+		std::lock_guard<std::mutex> lock{ m_mutex };
+		return m_suspended;
+	}
+
+	bool power_service::allow_suspend()
+	{
+		std::lock_guard<std::mutex> lock{ m_mutex };
+		if(!m_suspended)
+		{
+			return true;
+		}
+		if(SetThreadExecutionState(ES_CONTINUOUS) == NULL)
+		{
+			return false;
+		}
+		m_suspended = false;
+		return true;
+	}
+
+	bool power_service::prevent_suspend()
+	{
+		std::lock_guard<std::mutex> lock{ m_mutex };
+		if(m_suspended)
+		{
+			return true;
+		}
+		if(SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED) == NULL)
+		{
+			return false;
+		}
+		m_suspended = true;
+		return true;
+	}
+}
