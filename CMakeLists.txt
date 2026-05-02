@@ -32,6 +32,7 @@ add_library(${PROJECT_NAME}
     "include/hosting.h"
     "include/libdesktop.h"
     "include/notifications.h"
+    "include/secrets.h"
     "include/services.h"
     "include/system.h"
     "include/updates.h"
@@ -53,10 +54,12 @@ add_library(${PROJECT_NAME}
     "include/notifications/notification_service.h"
     "include/notifications/notification_severity.h"
     "include/notifications/shell_notification.h"
+    "include/secrets/secret.h"
     "include/services/service.h"
     "include/services/service_collection.h"
     "include/services/service_provider.h"
     "include/services/service_scope.h"
+    "include/system/power_service.h"
     "include/system/process.h"
     "include/system/process_status.h"
     "include/updates/release.h"
@@ -75,6 +78,7 @@ add_library(${PROJECT_NAME}
     "src/notifications/notification_sent_event_args.cpp"
     "src/notifications/notification_service.cpp"
     "src/notifications/shell_notification.cpp"
+    "src/secrets/secret.cpp"
     "src/updates/release.cpp"
     "src/updates/release_asset.cpp"
     "src/updates/version.cpp")
@@ -92,7 +96,7 @@ if(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_macos.cpp")
 endif()
-if(UNIX AND NOT APPLE)
+if(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_linux.cpp")
 endif()
@@ -125,6 +129,23 @@ else()
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
     target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
+endif()
+if(LINUX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
+    pkg_check_modules(gio REQUIRED IMPORTED_TARGET gio-2.0)
+    pkg_check_modules(gmodule REQUIRED IMPORTED_TARGET gmodule-2.0)
+    pkg_check_modules(gobject REQUIRED IMPORTED_TARGET gobject-2.0)
+    pkg_check_modules(gthread REQUIRED IMPORTED_TARGET gthread-2.0)
+    pkg_check_modules(libsecret REQUIRED IMPORTED_TARGET libsecret-1)
+    target_link_libraries(${PROJECT_NAME} PUBLIC PkgConfig::glib PkgConfig::gio PkgConfig::gmodule PkgConfig::gobject PkgConfig::gthread PkgConfig::libsecret)
+endif()
+if(APPLE)
+    find_library(CF_LIBRARY CoreFoundation)
+    find_library(CS_LIBRARY CoreServices)
+    find_library(IOKIT_LIBRARY IOKit)
+    find_library(SECURITY_LIBRARY Security)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${CF_LIBRARY} ${CS_LIBRARY} ${IOKIT_LIBRARY} ${SECURITY_LIBRARY})
 endif()
 
 configure_file("${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}.pc.in" "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}.pc" @ONLY)

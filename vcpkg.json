@@ -4,6 +4,18 @@
   "dependencies": [
     "curl",
     "gettext-libintl",
-    "maddy"
+    "maddy",
+    {
+      "name": "pkgconf",
+      "platform": "linux"
+    },
+    {
+      "name": "glib",
+      "platform": "linux"
+    },
+    {
+      "name": "libsecret",
+      "platform": "linux"
+    }
   ]
 }
