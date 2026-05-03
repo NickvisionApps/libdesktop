@@ -2,22 +2,25 @@
 #include <libdesktop.h>
 
 using namespace desktop::app;
+using namespace desktop::filesystem;
+using namespace desktop::secrets;
 using namespace desktop::updates;
 
 class DatabaseService_Test : public ::testing::Test
 {
 protected:
 	std::shared_ptr<app_info> m_info;
+	std::shared_ptr<secret_service> m_secret_svc;
 	database_service m_svc;
 
 	DatabaseService_Test()
 		: m_info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") }
-		, m_svc{ m_info, nullptr }
+		, m_secret_svc{ std::make_shared<secret_service>() }
+		, m_svc{ m_info, m_secret_svc }
 	{
-		m_info->set_portable(true);
 		try
 		{
-			std::filesystem::remove("app.db");
+			std::filesystem::remove(user_directories::get_config() / m_info->get_name() / "app.db");
 		}
 		catch (...) { }
 	}
@@ -255,7 +258,7 @@ TEST_F(DatabaseService_Test, DatabaseService_clearTable)
 	m_svc.ensure_table_exists("clearTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("clearTable",
 	{ 
-		{ "name", std::string{ "Alice" } }
+		{ "name", "Alice" }
 	});
 	EXPECT_TRUE(m_svc.clear_table("clearTable"));
 	EXPECT_EQ(m_svc.count_in_table("clearTable"), 0);
@@ -267,10 +270,10 @@ TEST_F(DatabaseService_Test, DatabaseService_containsInTable)
 	m_svc.ensure_table_exists("containsInTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("containsInTable",
 	{ 
-		{ "name", std::string{ "Bob" } } 
+		{ "name", "Bob" }
 	});
-	EXPECT_TRUE(m_svc.contains_in_table("containsInTable", "name", std::string{ "Bob" }));
-	EXPECT_FALSE(m_svc.contains_in_table("containsInTable", "name", std::string{ "Charlie" }));
+	EXPECT_TRUE(m_svc.contains_in_table("containsInTable", "name", "Bob"));
+	EXPECT_FALSE(m_svc.contains_in_table("containsInTable", "name", "Charlie"));
 	m_svc.drop_table("containsInTable");
 }
 
@@ -280,11 +283,11 @@ TEST_F(DatabaseService_Test, DatabaseService_countInTable)
 	EXPECT_EQ(m_svc.count_in_table("countInTable"), 0);
 	m_svc.insert_into_table("countInTable",
 	{ 
-		{ "name", std::string{ "Alice" } } 
+		{ "name", "Alice" } 
 	});
 	m_svc.insert_into_table("countInTable",
 	{ 
-		{ "name", std::string{ "Bob" } } 
+		{ "name", "Bob" } 
 	});
 	EXPECT_EQ(m_svc.count_in_table("countInTable"), 2);
 	m_svc.drop_table("countInTable");
@@ -295,9 +298,9 @@ TEST_F(DatabaseService_Test, DatabaseService_deleteFromTable)
 	m_svc.ensure_table_exists("deleteFromTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("deleteFromTable",
 	{ 
-		{ "name", std::string{ "Alice" } } 
+		{ "name", "Alice" } 
 	});
-	EXPECT_TRUE(m_svc.delete_from_table("deleteFromTable", "name", std::string{ "Alice" }));
+	EXPECT_TRUE(m_svc.delete_from_table("deleteFromTable", "name", "Alice"));
 	EXPECT_EQ(m_svc.count_in_table("deleteFromTable"), 0);
 	m_svc.drop_table("deleteFromTable");
 }
@@ -322,7 +325,7 @@ TEST_F(DatabaseService_Test, DatabaseService_executeNonQuery)
 	m_svc.ensure_table_exists("executeNonQuery", "id INTEGER PRIMARY KEY, val TEXT");
 	int affected{ m_svc.execute_non_query("INSERT INTO executeNonQuery (val) VALUES ($val);",
 	{ 
-		{ "val", std::string{ "hello" } } 
+		{ "val", "hello" } 
 	}) };
 	EXPECT_EQ(affected, 1);
 	m_svc.drop_table("executeNonQuery");
@@ -333,7 +336,7 @@ TEST_F(DatabaseService_Test, DatabaseService_insertIntoTable)
 	m_svc.ensure_table_exists("insertIntoTable", "id INTEGER PRIMARY KEY, name TEXT");
 	EXPECT_TRUE(m_svc.insert_into_table("insertIntoTable",
 	{ 
-		{ "name", std::string{ "Alice" } } 
+		{ "name", "Alice" } 
 	}));
 	EXPECT_EQ(m_svc.count_in_table("insertIntoTable"), 1);
 	m_svc.drop_table("insertIntoTable");
@@ -341,7 +344,7 @@ TEST_F(DatabaseService_Test, DatabaseService_insertIntoTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_isEncrypted)
 {
-	EXPECT_FALSE(m_svc.is_encrypted());
+	EXPECT_TRUE(m_svc.is_encrypted());
 }
 
 TEST_F(DatabaseService_Test, DatabaseService_replaceIntoTable)
@@ -349,11 +352,11 @@ TEST_F(DatabaseService_Test, DatabaseService_replaceIntoTable)
 	m_svc.ensure_table_exists("replaceIntoTable", "id INTEGER PRIMARY KEY, name TEXT UNIQUE");
 	m_svc.insert_into_table("replaceIntoTable",
 	{ 
-		{ "name", std::string{ "Alice" } } 
+		{ "name", "Alice" } 
 	});
 	EXPECT_TRUE(m_svc.replace_into_table("replaceIntoTable",
 	{ 
-		{ "name", std::string{ "Alice" } }
+		{ "name", "Alice" }
 	}));
 	EXPECT_EQ(m_svc.count_in_table("replaceIntoTable"), 1);
 	m_svc.drop_table("replaceIntoTable");
@@ -364,11 +367,11 @@ TEST_F(DatabaseService_Test, DatabaseService_selectAllFromTable)
 	m_svc.ensure_table_exists("selectAllFromTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("selectAllFromTable",
 	{ 
-		{ "name", std::string{ "Alice" } } 
+		{ "name", "Alice" } 
 	});
 	m_svc.insert_into_table("selectAllFromTable",
 	{ 
-		{ "name", std::string{ "Bob" } } 
+		{ "name", "Bob" } 
 	});
 	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_all_from_table("selectAllFromTable") };
 	EXPECT_EQ(rows.size(), 2u);
@@ -380,13 +383,13 @@ TEST_F(DatabaseService_Test, DatabaseService_selectFromTable)
 	m_svc.ensure_table_exists("selectFromTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("selectFromTable",
 	{ 
-		{ "name", std::string{ "Alice" } } 
+		{ "name", "Alice" } 
 	});
 	m_svc.insert_into_table("selectFromTable",
 	{ 
-		{ "name", std::string{ "Bob" } } 
+		{ "name", "Bob" } 
 	});
-	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("selectFromTable", "name", std::string{ "Alice" }) };
+	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("selectFromTable", "name", "Alice") };
 	ASSERT_EQ(rows.size(), 1u);
 	EXPECT_EQ(rows[0].at("name"), "Alice");
 	m_svc.drop_table("selectFromTable");
@@ -405,13 +408,13 @@ TEST_F(DatabaseService_Test, DatabaseService_updateInTable)
 	m_svc.ensure_table_exists("updateInTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("updateInTable",
 	{ 
-		{ "name", std::string{ "Alice" } } 
+		{ "name", "Alice" } 
 	});
-	EXPECT_TRUE(m_svc.update_in_table("updateInTable", "name", std::string{ "Alice" },
+	EXPECT_TRUE(m_svc.update_in_table("updateInTable", "name", "Alice",
 	{ 
-		{ "name", std::string{ "Alicia" } } }
+		{ "name", "Alicia" } }
 	));
-	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("updateInTable", "name", std::string{ "Alicia" }) };
+	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("updateInTable", "name", "Alicia") };
 	ASSERT_EQ(rows.size(), 1u);
 	EXPECT_EQ(rows[0].at("name"), "Alicia");
 	m_svc.drop_table("updateInTable");

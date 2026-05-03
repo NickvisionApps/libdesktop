@@ -12,7 +12,8 @@ namespace desktop::app
 	app_info::app_info(const std::string& id, const std::string& name, const std::string english_short_name)
 		: m_id{ id },
 		m_name{ name },
-		m_english_short_name{ english_short_name }
+		m_english_short_name{ english_short_name },
+		m_portable{ false }
 	{
 
 	}
