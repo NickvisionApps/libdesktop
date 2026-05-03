@@ -15,7 +15,7 @@ namespace desktop::secrets
 
 	}
 
-	password_generator::password_generator(const password_generator& other) noexcept
+	password_generator::password_generator(const password_generator& other) 
 		: m_content_flags{ other.m_content_flags },
 		m_random_engine{ m_random_device() }
 	{
@@ -83,7 +83,7 @@ namespace desktop::secrets
 		return password;
 	}
 
-	password_generator& password_generator::operator=(const password_generator& other) noexcept
+	password_generator& password_generator::operator=(const password_generator& other)
 	{
 		if(this != &other)
 		{

@@ -5,6 +5,8 @@ using namespace desktop::app;
 using namespace desktop::events;
 using namespace desktop::filesystem;
 using namespace desktop::notifications;
+using namespace desktop::secrets;
+using namespace desktop::system;
 
 void suite::app(const std::shared_ptr<logger>& logger)
 {
@@ -58,9 +60,86 @@ void suite::filesystem(const std::shared_ptr<logger>& logger)
 	logger->info("Videos     : " + user_directories::get_videos().string(), __FILE__, __LINE__);
 }
 
-void suite::system(const std::shared_ptr<logger>& logger)
+void suite::secrets(const std::shared_ptr<logger>& logger, const std::shared_ptr<secret_service>& secret_service)
+{
+	std::cout << "---Secrets Module---" << std::endl;
+	const std::string name{ "libdesktop_test" };
+	std::optional<secret> s{ secret_service->create(name) };
+	if (!s)
+	{
+		throw std::runtime_error("Failed to create secret: " + name);
+	}
+	logger->info("Creating secret '" + name + "' with value: " + s->value(), __FILE__, __LINE__);
+	std::optional<secret> fetched{ secret_service->get(name) };
+	if (!fetched)
+	{
+		throw std::runtime_error("Failed to get secret: " + name);
+	}
+	if (fetched->value() != s->value())
+	{
+		throw std::runtime_error("Secret value mismatch after get.");
+	}
+	logger->info("Getting secret '" + name + "' with value: " + fetched->value(), __FILE__, __LINE__);
+	secret updated{ name, "new_value" };
+	if (!secret_service->update(updated))
+	{
+		throw std::runtime_error("Failed to update secret: " + name);
+	}
+	std::optional<secret> refetched{ secret_service->get(name) };
+	if (!refetched || refetched->value() != "new_value")
+	{
+		throw std::runtime_error("Secret value mismatch after update.");
+	}
+	logger->info("Updating secret '" + name + "' with value: " + refetched->value(), __FILE__, __LINE__);
+	if (!secret_service->remove(name))
+	{
+		throw std::runtime_error("Failed to remove secret: " + name);
+	}
+	std::optional<secret> removed{ secret_service->get(name) };
+	if (removed)
+	{
+		throw std::runtime_error("Secret still exists after removal.");
+	}
+	logger->info("Removing secret '" + name + "'.", __FILE__, __LINE__);
+}
+
+void suite::system(const std::shared_ptr<logger>& logger, const std::shared_ptr<power_service>& power_service)
 {
 	std::cout << "---System Module---" << std::endl;
+#ifdef _WIN32
+	process proc{ "cmd", { "/c", "echo Hello, World!" } };
+#else
+	process proc{ "/bin/echo", { "Hello, World!" } };
+#endif
+	if (!proc.start())
+	{
+		throw std::runtime_error("Failed to start process.");
+	}
+	int exit_code{ proc.wait_for_exit() };
+	if (exit_code != 0)
+	{
+		throw std::runtime_error("Process exited with non-zero code: " + std::to_string(exit_code));
+	}
+	logger->info("Process '" + proc.get_path().string() + "' exited with code " + std::to_string(exit_code) + " and output: " + proc.get_standard_output(), __FILE__, __LINE__);
+	logger->info("Is suspended: " + std::string(power_service->is_suspended() ? "true" : "false"), __FILE__, __LINE__);
+	if (!power_service->prevent_suspend())
+	{
+		throw std::runtime_error("Failed to prevent suspend.");
+	}
+	if (!power_service->is_suspended())
+	{
+		throw std::runtime_error("Power service reports not suspended after prevent_suspend().");
+	}
+	logger->info("Suspend prevented. Is suspended: true", __FILE__, __LINE__);
+	if (!power_service->allow_suspend())
+	{
+		throw std::runtime_error("Failed to allow suspend.");
+	}
+	if (power_service->is_suspended())
+	{
+		throw std::runtime_error("Power service reports suspended after allow_suspend().");
+	}
+	logger->info("Suspend allowed. Is suspended: false", __FILE__, __LINE__);
 }
 
 void suite::updates(const std::shared_ptr<logger>& logger)

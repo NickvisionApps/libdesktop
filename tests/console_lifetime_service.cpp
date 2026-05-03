@@ -7,14 +7,18 @@
 using namespace desktop::app;
 using namespace desktop::hosting;
 using namespace desktop::notifications;
+using namespace desktop::secrets;
 using namespace desktop::services;
+using namespace desktop::system;
 
-console_lifetime_service::console_lifetime_service(std::shared_ptr<logger> logger, std::shared_ptr<arguments_service> argument_service, std::shared_ptr<notification_service> notification_service)
+console_lifetime_service::console_lifetime_service(std::shared_ptr<logger> logger, std::shared_ptr<arguments_service> argument_service, std::shared_ptr<notification_service> notification_service, std::shared_ptr<secret_service> secret_service, std::shared_ptr<power_service> power_service)
 	: lifetime_service{ logger, false },
 	m_running{ false },
 	m_logger{ logger },
 	m_arguments_service{ argument_service },
-	m_notification_service{ notification_service }
+	m_notification_service{ notification_service },
+	m_secret_service{ secret_service },
+	m_power_service{ power_service }
 {
 
 }
@@ -34,10 +38,11 @@ void console_lifetime_service::on_startup_and_run()
 		std::cout << "1. App" << std::endl;
 		std::cout << "2. Events" << std::endl;
 		std::cout << "3. Filesystem" << std::endl;
-		std::cout << "4. System" << std::endl;
-		std::cout << "5. Updates" << std::endl;
-		std::cout << "6. All Modules" << std::endl;
-		std::cout << "7. Exit" << std::endl;
+		std::cout << "4. Secrets" << std::endl;
+		std::cout << "5. System" << std::endl;
+		std::cout << "6. Updates" << std::endl;
+		std::cout << "7. All Modules" << std::endl;
+		std::cout << "8. Exit" << std::endl;
 		std::cout << "Option > ";
 		std::string res;
 		std::cin >> res;
@@ -56,19 +61,23 @@ void console_lifetime_service::on_startup_and_run()
 				suite::filesystem(m_logger);
 				break;
 			case 4:
-				suite::system(m_logger);
+				suite::secrets(m_logger, m_secret_service);
 				break;
 			case 5:
-				suite::updates(m_logger);
+				suite::system(m_logger, m_power_service);
 				break;
 			case 6:
-				suite::app(m_logger);
-				suite::events(m_logger, m_notification_service);
-				suite::filesystem(m_logger);
-				suite::system(m_logger);
 				suite::updates(m_logger);
 				break;
 			case 7:
+				suite::app(m_logger);
+				suite::events(m_logger, m_notification_service);
+				suite::filesystem(m_logger);
+				suite::secrets(m_logger, m_secret_service);
+				suite::system(m_logger, m_power_service);
+				suite::updates(m_logger);
+				break;
+			case 8:
 				stop();
 				break;
 			default:
