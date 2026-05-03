@@ -8,50 +8,50 @@ using namespace desktop::filesystem;
 using namespace desktop::secrets;
 using namespace desktop::system;
 
-static void bind_value(sqlite3_stmt* stmt, int index, const std::variant<int64_t, double, std::string, std::nullptr_t>& value)
-{
-	std::visit([&](auto&& v)
-	{
-		using T = std::decay_t<decltype(v)>;
-		if constexpr (std::is_same_v<T, int64_t>)
-		{
-			sqlite3_bind_int64(stmt, index, v);
-		}
-		else if constexpr (std::is_same_v<T, double>)
-		{
-			sqlite3_bind_double(stmt, index, v);
-		}
-		else if constexpr (std::is_same_v<T, std::string>)
-		{
-			sqlite3_bind_text(stmt, index, v.c_str(), -1, SQLITE_TRANSIENT);
-		}
-		else if constexpr (std::is_same_v<T, std::nullptr_t>)
-		{
-			sqlite3_bind_null(stmt, index);
-		}
-	}, value);
-}
-
-static std::vector<std::unordered_map<std::string, std::string>> fetch_rows(sqlite3_stmt* stmt)
-{
-	std::vector<std::unordered_map<std::string, std::string>> rows;
-	int col_count{ sqlite3_column_count(stmt) };
-	while (sqlite3_step(stmt) == SQLITE_ROW)
-	{
-		std::unordered_map<std::string, std::string> row;
-		for (int i = 0; i < col_count; ++i)
-		{
-			std::string col_name{ sqlite3_column_name(stmt, i) };
-			const unsigned char* text{ sqlite3_column_text(stmt, i) };
-			row[col_name] = text ? reinterpret_cast<const char*>(text) : "";
-		}
-		rows.push_back(std::move(row));
-	}
-	return rows;
-}
-
 namespace desktop::app
 {
+	static void bind_value(sqlite3_stmt* stmt, int index, const database_value& value)
+	{
+		std::visit([&](auto&& v)
+		{
+			using T = std::decay_t<decltype(v)>;
+			if constexpr (std::is_same_v<T, int64_t>)
+			{
+				sqlite3_bind_int64(stmt, index, v);
+			}
+			else if constexpr (std::is_same_v<T, double>)
+			{
+				sqlite3_bind_double(stmt, index, v);
+			}
+			else if constexpr (std::is_same_v<T, std::string>)
+			{
+				sqlite3_bind_text(stmt, index, v.c_str(), -1, SQLITE_TRANSIENT);
+			}
+			else if constexpr (std::is_same_v<T, std::nullptr_t>)
+			{
+				sqlite3_bind_null(stmt, index);
+			}
+		}, value.value());
+	}
+
+	static std::vector<std::unordered_map<std::string, std::string>> fetch_rows(sqlite3_stmt* stmt)
+	{
+		std::vector<std::unordered_map<std::string, std::string>> rows;
+		int col_count{ sqlite3_column_count(stmt) };
+		while (sqlite3_step(stmt) == SQLITE_ROW)
+		{
+			std::unordered_map<std::string, std::string> row;
+			for (int i = 0; i < col_count; ++i)
+			{
+				std::string col_name{ sqlite3_column_name(stmt, i) };
+				const unsigned char* text{ sqlite3_column_text(stmt, i) };
+				row[col_name] = text ? reinterpret_cast<const char*>(text) : "";
+			}
+			rows.push_back(std::move(row));
+		}
+		return rows;
+	}
+
 	database_service::database_service(std::shared_ptr<app_info> info, std::shared_ptr<secrets::secret_service> secret_service)
 		: m_info{ info }
 		, m_secret_service{ secret_service }
@@ -136,7 +136,7 @@ namespace desktop::app
 		return count;
 	}
 
-	bool database_service::contains_in_table(const std::string& table_name, const std::string& column_name, const std::variant<int64_t, double, std::string, std::nullptr_t>& matching_value)
+	bool database_service::contains_in_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value)
 	{
 		ensure_database();
 		if (!m_db)
@@ -159,7 +159,7 @@ namespace desktop::app
 		return result;
 	}
 
-	bool database_service::delete_from_table(const std::string& table_name, const std::string& column_name, const std::variant<int64_t, double, std::string, std::nullptr_t>& matching_value)
+	bool database_service::delete_from_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value)
 	{
 		ensure_database();
 		if (!m_db)
@@ -200,7 +200,7 @@ namespace desktop::app
 		return sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
 	}
 
-	int database_service::execute_non_query(const std::string& sql, const std::unordered_map<std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& parameters)
+	int database_service::execute_non_query(const std::string& sql, const std::unordered_map<std::string, database_value>& parameters)
 	{
 		ensure_database();
 		if (!m_db)
@@ -212,7 +212,7 @@ namespace desktop::app
 		{
 			return -1;
 		}
-		for (const std::pair<const std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& pair : parameters)
+		for (const std::pair<const std::string, database_value>& pair : parameters)
 		{
 			const int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
 			if (idx > 0)
@@ -229,7 +229,7 @@ namespace desktop::app
 		return sqlite3_changes(m_db);
 	}
 
-	bool database_service::insert_into_table(const std::string& table_name, const std::unordered_map<std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& data)
+	bool database_service::insert_into_table(const std::string& table_name, const std::unordered_map<std::string, database_value>& data)
 	{
 		ensure_database();
 		if (!m_db || data.empty())
@@ -238,7 +238,7 @@ namespace desktop::app
 		}
 		std::vector<std::string> keys;
 		keys.reserve(data.size());
-		for (const std::pair<const std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& pair : data)
+		for (const std::pair<const std::string, database_value>& pair : data)
 		{
 			keys.push_back(pair.first);
 		}
@@ -269,7 +269,7 @@ namespace desktop::app
 		return result;
 	}
 
-	bool database_service::replace_into_table(const std::string& table_name, const std::unordered_map<std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& data)
+	bool database_service::replace_into_table(const std::string& table_name, const std::unordered_map<std::string, database_value>& data)
 	{
 		ensure_database();
 		if (!m_db || data.empty())
@@ -278,7 +278,7 @@ namespace desktop::app
 		}
 		std::vector<std::string> keys;
 		keys.reserve(data.size());
-		for (const std::pair<const std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& pair : data)
+		for (const std::pair<const std::string, database_value>& pair : data)
 		{
 			keys.push_back(pair.first);
 		}
@@ -309,7 +309,7 @@ namespace desktop::app
 		return result;
 	}
 
-	std::vector<std::unordered_map<std::string, std::string>> database_service::select_from_table(const std::string& table_name, const std::string& column_name, const std::variant<int64_t, double, std::string, std::nullptr_t>& matching_value)
+	std::vector<std::unordered_map<std::string, std::string>> database_service::select_from_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value)
 	{
 		ensure_database();
 		if (!m_db)
@@ -368,7 +368,7 @@ namespace desktop::app
 		return result;
 	}
 
-	bool database_service::update_in_table(const std::string& table_name, const std::string& column_name, const std::variant<int64_t, double, std::string, std::nullptr_t>& matching_value, const std::unordered_map<std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& new_data)
+	bool database_service::update_in_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value, const std::unordered_map<std::string, database_value>& new_data)
 	{
 		ensure_database();
 		if (!m_db || new_data.empty())
@@ -377,7 +377,7 @@ namespace desktop::app
 		}
 		std::vector<std::string> keys;
 		keys.reserve(new_data.size());
-		for (const std::pair<const std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>& pair : new_data)
+		for (const std::pair<const std::string, database_value>& pair : new_data)
 		{
 			keys.push_back(pair.first);
 		}

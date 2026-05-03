@@ -21,15 +21,6 @@ protected:
 		}
 		catch (...) { }
 	}
-
-	void TearDown() override
-	{
-		try
-		{
-			std::filesystem::remove("app.db");
-		}
-		catch (...) {}
-	}
 };
 
 TEST(App_Test, AppInfo_addArtist)
