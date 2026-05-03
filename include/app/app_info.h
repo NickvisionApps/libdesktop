@@ -2,17 +2,18 @@
 
 #include <string>
 #include <unordered_map>
+#include "services/service.h"
 #include "updates/version.h"
 
 namespace desktop::app
 {
-	class app_info
+	class app_info : public services::service
 	{
 	public:
 		app_info(const std::string& id, const std::string& name, const std::string english_short_name);
-		~app_info() = default;
-		app_info(const app_info&) = default;
-		app_info(app_info&&) = default;
+		~app_info() override = default;
+		app_info(const app_info&) = delete;
+		app_info(app_info&&) = delete;
 		const std::unordered_map<std::string, std::string>& get_artists() const;
 		void add_artist(const std::string& name, const std::string& url);
 		const std::string& get_changelog() const;
@@ -43,8 +44,8 @@ namespace desktop::app
 		void set_translation_credits(const std::string& translation_credits);
 		const updates::version& get_version() const;
 		void set_version(const updates::version& version);
-		app_info& operator=(const app_info&) = default;
-		app_info& operator=(app_info&&) = default;
+		app_info& operator=(const app_info&) = delete;
+		app_info& operator=(app_info&&) = delete;
 
 	private:
 		std::unordered_map<std::string, std::string> m_artists;

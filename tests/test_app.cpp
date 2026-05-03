@@ -4,6 +4,34 @@
 using namespace desktop::app;
 using namespace desktop::updates;
 
+class DatabaseService_Test : public ::testing::Test
+{
+protected:
+	std::shared_ptr<app_info> m_info;
+	database_service m_svc;
+
+	DatabaseService_Test()
+		: m_info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") }
+		, m_svc{ m_info, nullptr }
+	{
+		m_info->set_portable(true);
+		try
+		{
+			std::filesystem::remove("app.db");
+		}
+		catch (...) { }
+	}
+
+	void TearDown() override
+	{
+		try
+		{
+			std::filesystem::remove("app.db");
+		}
+		catch (...) {}
+	}
+};
+
 TEST(App_Test, AppInfo_addArtist)
 {
 	app_info info{ "com.example.app", "My App", "myapp" };
@@ -217,4 +245,183 @@ TEST(App_Test, Logger_withFilePath)
 {
 	logger log{ "test_app.log" };
 	EXPECT_NO_THROW(log.info("This is a logged-to-file message.", __FILE__, __LINE__));
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_beginCommitTransaction)
+{
+	EXPECT_TRUE(m_svc.begin_transaction());
+	EXPECT_TRUE(m_svc.commit_transaction());
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_beginRollbackTransaction)
+{
+	EXPECT_TRUE(m_svc.begin_transaction());
+	EXPECT_TRUE(m_svc.rollback_transaction());
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_clearTable)
+{
+	m_svc.ensure_table_exists("clearTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.insert_into_table("clearTable",
+	{ 
+		{ "name", std::string{ "Alice" } }
+	});
+	EXPECT_TRUE(m_svc.clear_table("clearTable"));
+	EXPECT_EQ(m_svc.count_in_table("clearTable"), 0);
+	m_svc.drop_table("clearTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_containsInTable)
+{
+	m_svc.ensure_table_exists("containsInTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.insert_into_table("containsInTable",
+	{ 
+		{ "name", std::string{ "Bob" } } 
+	});
+	EXPECT_TRUE(m_svc.contains_in_table("containsInTable", "name", std::string{ "Bob" }));
+	EXPECT_FALSE(m_svc.contains_in_table("containsInTable", "name", std::string{ "Charlie" }));
+	m_svc.drop_table("containsInTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_countInTable)
+{
+	m_svc.ensure_table_exists("countInTable", "id INTEGER PRIMARY KEY, name TEXT");
+	EXPECT_EQ(m_svc.count_in_table("countInTable"), 0);
+	m_svc.insert_into_table("countInTable",
+	{ 
+		{ "name", std::string{ "Alice" } } 
+	});
+	m_svc.insert_into_table("countInTable",
+	{ 
+		{ "name", std::string{ "Bob" } } 
+	});
+	EXPECT_EQ(m_svc.count_in_table("countInTable"), 2);
+	m_svc.drop_table("countInTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_deleteFromTable)
+{
+	m_svc.ensure_table_exists("deleteFromTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.insert_into_table("deleteFromTable",
+	{ 
+		{ "name", std::string{ "Alice" } } 
+	});
+	EXPECT_TRUE(m_svc.delete_from_table("deleteFromTable", "name", std::string{ "Alice" }));
+	EXPECT_EQ(m_svc.count_in_table("deleteFromTable"), 0);
+	m_svc.drop_table("deleteFromTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_dropTable)
+{
+	m_svc.ensure_table_exists("dropTable", "id INTEGER PRIMARY KEY");
+	EXPECT_TRUE(m_svc.table_exists("dropTable"));
+	EXPECT_TRUE(m_svc.drop_table("dropTable"));
+	EXPECT_FALSE(m_svc.table_exists("dropTable"));
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_ensureTableExists)
+{
+	EXPECT_TRUE(m_svc.ensure_table_exists("ensureTableExists", "id INTEGER PRIMARY KEY, val TEXT"));
+	EXPECT_TRUE(m_svc.table_exists("ensureTableExists"));
+	m_svc.drop_table("ensureTableExists");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_executeNonQuery)
+{
+	m_svc.ensure_table_exists("executeNonQuery", "id INTEGER PRIMARY KEY, val TEXT");
+	int affected{ m_svc.execute_non_query("INSERT INTO executeNonQuery (val) VALUES ($val);",
+	{ 
+		{ "val", std::string{ "hello" } } 
+	}) };
+	EXPECT_EQ(affected, 1);
+	m_svc.drop_table("executeNonQuery");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_insertIntoTable)
+{
+	m_svc.ensure_table_exists("insertIntoTable", "id INTEGER PRIMARY KEY, name TEXT");
+	EXPECT_TRUE(m_svc.insert_into_table("insertIntoTable",
+	{ 
+		{ "name", std::string{ "Alice" } } 
+	}));
+	EXPECT_EQ(m_svc.count_in_table("insertIntoTable"), 1);
+	m_svc.drop_table("insertIntoTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_isEncrypted)
+{
+	EXPECT_FALSE(m_svc.is_encrypted());
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_replaceIntoTable)
+{
+	m_svc.ensure_table_exists("replaceIntoTable", "id INTEGER PRIMARY KEY, name TEXT UNIQUE");
+	m_svc.insert_into_table("replaceIntoTable",
+	{ 
+		{ "name", std::string{ "Alice" } } 
+	});
+	EXPECT_TRUE(m_svc.replace_into_table("replaceIntoTable",
+	{ 
+		{ "name", std::string{ "Alice" } }
+	}));
+	EXPECT_EQ(m_svc.count_in_table("replaceIntoTable"), 1);
+	m_svc.drop_table("replaceIntoTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_selectAllFromTable)
+{
+	m_svc.ensure_table_exists("selectAllFromTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.insert_into_table("selectAllFromTable",
+	{ 
+		{ "name", std::string{ "Alice" } } 
+	});
+	m_svc.insert_into_table("selectAllFromTable",
+	{ 
+		{ "name", std::string{ "Bob" } } 
+	});
+	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_all_from_table("selectAllFromTable") };
+	EXPECT_EQ(rows.size(), 2u);
+	m_svc.drop_table("selectAllFromTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_selectFromTable)
+{
+	m_svc.ensure_table_exists("selectFromTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.insert_into_table("selectFromTable",
+	{ 
+		{ "name", std::string{ "Alice" } } 
+	});
+	m_svc.insert_into_table("selectFromTable",
+	{ 
+		{ "name", std::string{ "Bob" } } 
+	});
+	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("selectFromTable", "name", std::string{ "Alice" }) };
+	ASSERT_EQ(rows.size(), 1u);
+	EXPECT_EQ(rows[0].at("name"), "Alice");
+	m_svc.drop_table("selectFromTable");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_tableExists)
+{
+	EXPECT_FALSE(m_svc.table_exists("tableExists"));
+	m_svc.ensure_table_exists("tableExists", "id INTEGER PRIMARY KEY");
+	EXPECT_TRUE(m_svc.table_exists("tableExists"));
+	m_svc.drop_table("tableExists");
+}
+
+TEST_F(DatabaseService_Test, DatabaseService_updateInTable)
+{
+	m_svc.ensure_table_exists("updateInTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.insert_into_table("updateInTable",
+	{ 
+		{ "name", std::string{ "Alice" } } 
+	});
+	EXPECT_TRUE(m_svc.update_in_table("updateInTable", "name", std::string{ "Alice" },
+	{ 
+		{ "name", std::string{ "Alicia" } } }
+	));
+	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("updateInTable", "name", std::string{ "Alicia" }) };
+	ASSERT_EQ(rows.size(), 1u);
+	EXPECT_EQ(rows[0].at("name"), "Alicia");
+	m_svc.drop_table("updateInTable");
 }
