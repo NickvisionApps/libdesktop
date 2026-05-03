@@ -1,0 +1,59 @@
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [ "review_requested", "ready_for_review" ]
+  workflow_dispatch:
+name: Windows
+permissions:
+  id-token: write
+  contents: read
+env:
+  GITHUB_ACTIONS: true
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+jobs:
+  build:
+    name: "Build on Windows"
+    strategy:
+      matrix:
+        variant:
+          - arch: x64
+            runner: windows-latest
+            triplet: x64-windows
+          - arch: arm64
+            runner: windows-11-arm
+            triplet: arm64-windows
+    runs-on: ${{ matrix.variant.runner }}
+    steps:
+      - name: "Checkout"  
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: "Setup Environment"
+        run: mkdir build
+      - name: "Vcpkg"
+        uses: johnwason/vcpkg-action@v7
+        id: vcpkg
+        with:
+          pkgs: curl gettext-libintl gtest maddy
+          triplet: ${{ matrix.variant.triplet }}
+          revision: 522253caf47268c1724f486a035e927a42a90092
+          token: ${{ github.token }}
+          cache-key: ${{ matrix.variant.triplet }}
+      - name: "Build"
+        working-directory: ${{github.workspace}}/build
+        run: |
+          cmake -G "Visual Studio 18 2026" .. -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
+          cmake --build . --config Release
+      - name: "Install"
+        working-directory: ${{github.workspace}}/build
+        run: cmake --install .
+      - name: "Test"
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{github.workspace}}/install
+          name: Windows-${{ matrix.variant.arch }}-Release
