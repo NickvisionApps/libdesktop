@@ -51,13 +51,13 @@ namespace desktop::events
 			m_handlers.erase(id);
 		}
 
-        event& operator+=(std::function<void(const T&, const U&)> handler) const
+        const event& operator+=(std::function<void(const T&, const U&)> handler) const
         {
             add_handler(handler);
             return *this;
 		}
 
-        event& operator-=(event_id id) const
+        const event& operator-=(event_id id) const
         {
             remove_handler(id);
             return *this;

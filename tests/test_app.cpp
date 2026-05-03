@@ -47,6 +47,13 @@ TEST(App_Test, AppInfo_getChangelog)
 	EXPECT_EQ(info.get_changelog(), "Initial release");
 }
 
+TEST(App_Test, AppInfo_getChangelogHtml)
+{
+	app_info info{ "com.example.app", "My App", "myapp" };
+	info.set_changelog("Initial release");
+	EXPECT_FALSE(info.get_changelog_html().empty());
+}
+
 TEST(App_Test, AppInfo_getDescription)
 {
 	app_info info{ "com.example.app", "My App", "myapp" };

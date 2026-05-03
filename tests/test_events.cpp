@@ -35,6 +35,29 @@ TEST(Events_Test, Event_invokePassesSender)
 	EXPECT_EQ(received, &sender);
 }
 
+TEST(Events_Test, Event_operatorMinusEquals)
+{
+	event<test_sender, event_args> e;
+	const event<test_sender, event_args>& ce{ e };
+	test_sender sender;
+	int count{ 0 };
+	event_id id{ e.add_handler([&count](const test_sender&, const event_args&) { count++; }) };
+	ce -= id;
+	e.invoke(sender, event_args{});
+	EXPECT_EQ(count, 0);
+}
+
+TEST(Events_Test, Event_operatorPlusEquals)
+{
+	event<test_sender, event_args> e;
+	const event<test_sender, event_args>& ce{ e };
+	test_sender sender;
+	int count{ 0 };
+	ce += [&count](const test_sender&, const event_args&) { count++; };
+	e.invoke(sender, event_args{});
+	EXPECT_EQ(count, 1);
+}
+
 TEST(Events_Test, Event_removeHandler)
 {
 	event<test_sender, event_args> e;

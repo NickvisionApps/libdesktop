@@ -149,6 +149,32 @@ TEST_F(System_Test, Process_getStandardError)
 	EXPECT_TRUE(proc.get_standard_error().empty());
 }
 
+TEST_F(System_Test, Process_input)
+{
+#ifdef _WIN32
+	process proc{ "powershell", { "-NoProfile", "-Command", "Write-Host ([Console]::In.ReadLine())" } };
+#else
+	process proc{ "sh", { "-c", "read line; echo \"$line\"" } };
+#endif
+	ASSERT_TRUE(proc.start());
+	EXPECT_TRUE(proc.input("hello\n"));
+	proc.wait_for_exit();
+	EXPECT_NE(proc.get_standard_output().find("hello"), std::string::npos);
+}
+
+TEST_F(System_Test, Process_inputLine)
+{
+#ifdef _WIN32
+	process proc{ "powershell", { "-NoProfile", "-Command", "Write-Host ([Console]::In.ReadLine())" } };
+#else
+	process proc{ "sh", { "-c", "read line; echo \"$line\"" } };
+#endif
+	ASSERT_TRUE(proc.start());
+	EXPECT_TRUE(proc.input_line("hello"));
+	proc.wait_for_exit();
+	EXPECT_NE(proc.get_standard_output().find("hello"), std::string::npos);
+}
+
 TEST_F(System_Test, Process_getStatusCompleted)
 {
 #ifdef _WIN32
@@ -181,7 +207,7 @@ TEST_F(System_Test, Process_exitedEvent)
 TEST_F(System_Test, Process_kill)
 {
 #ifdef _WIN32
-	process proc{ "cmd", { "/c", "timeout /t 60" } };
+	process proc{ "ping", { "127.0.0.1", "-n", "100" } };
 #else
 	process proc{ "/bin/sleep", { "60" } };
 #endif
@@ -192,7 +218,7 @@ TEST_F(System_Test, Process_kill)
 TEST_F(System_Test, Process_pauseResume)
 {
 #ifdef _WIN32
-	process proc{ "cmd", { "/c", "timeout /t 60" } };
+	process proc{ "ping", { "127.0.0.1", "-n", "100" } };
 #else
 	process proc{ "/bin/sleep", { "60" } };
 #endif
