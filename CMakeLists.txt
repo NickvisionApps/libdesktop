@@ -186,6 +186,7 @@ if (BUILD_TESTING)
         "tests/test_hosting.cpp"
         "tests/test_notifications.cpp"
         "tests/test_secrets.cpp"
+        "tests/test_services.cpp"
         "tests/test_system.cpp"
         "tests/test_updates.cpp")
 
