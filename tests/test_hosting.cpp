@@ -30,6 +30,11 @@ protected:
 	void on_stop_requested() override {}
 };
 
+TEST_F(Hosting_Test, Host_servicesContainsDatabaseService)
+{
+	EXPECT_TRUE(m_host.services()->contains<database_service>());
+}
+
 TEST_F(Hosting_Test, Host_servicesContainsNotificationService)
 {
 	EXPECT_TRUE(m_host.services()->contains<notification_service>());
@@ -55,6 +60,26 @@ TEST_F(Hosting_Test, HostOptions_defaultLogPath)
 	int argc{ 0 };
 	host_options opts{ argc, nullptr };
 	EXPECT_TRUE(opts.get_log_path().empty());
+}
+
+TEST_F(Hosting_Test, Host_servicesContainsAppInfo)
+{
+	int argc{ 0 };
+	std::shared_ptr<app_info> info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") };
+	host_options opts{ argc, nullptr };
+	opts.set_app_info(info);
+	host h{ opts };
+	EXPECT_TRUE(h.services()->contains<app_info>());
+}
+
+TEST_F(Hosting_Test, HostOptions_getSetAppInfo)
+{
+	int argc{ 0 };
+	std::shared_ptr<app_info> info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") };
+	host_options opts{ argc, nullptr };
+	EXPECT_EQ(opts.get_app_info(), nullptr);
+	opts.set_app_info(info);
+	EXPECT_EQ(opts.get_app_info(), info);
 }
 
 TEST_F(Hosting_Test, HostOptions_getArgc)

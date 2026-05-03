@@ -56,6 +56,18 @@ namespace desktop::services
 
 		template<typename TService>
 			requires is_service<TService>
+		void add_service(service_scope scope, std::shared_ptr<TService> instance)
+		{
+			std::lock_guard lock{ m_mutex };
+			if(m_services.contains(typeid(TService)))
+			{
+				return;
+			}
+			m_services.emplace(typeid(TService), service_entry{ scope, nullptr, std::make_any<std::shared_ptr<TService>>(std::move(instance)) });
+		}
+
+		template<typename TService>
+			requires is_service<TService>
 		void add_service(service_scope scope, std::function<std::shared_ptr<TService>()> factory)
 		{
 			std::lock_guard lock{ m_mutex };

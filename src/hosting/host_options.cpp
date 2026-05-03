@@ -19,6 +19,16 @@ namespace desktop::hosting
 		return m_argv;
 	}
 
+	const std::shared_ptr<app::app_info>& host_options::get_app_info() const
+	{
+		return m_app_info;
+	}
+
+	void host_options::set_app_info(const std::shared_ptr<app::app_info>& app_info)
+	{
+		m_app_info = app_info;
+	}
+
 	const std::filesystem::path& host_options::get_log_path() const
 	{
 		return m_log_path;
