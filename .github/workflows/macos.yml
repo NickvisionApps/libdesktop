@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 name: macOS
 permissions:
-  id-token: write
   contents: read
 env:
   GITHUB_ACTIONS: true
@@ -47,7 +46,7 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: |
           cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
-          cmake --build .
+          cmake --build . --parallel
       - name: "Install"
         working-directory: ${{github.workspace}}/build
         run: cmake --install .
