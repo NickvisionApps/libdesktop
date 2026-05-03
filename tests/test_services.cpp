@@ -8,6 +8,25 @@ using namespace desktop::secrets;
 using namespace desktop::services;
 using namespace desktop::system;
 
+class test_base_service : public service {};
+
+class test_derived_service : public test_base_service {};
+
+class test_value_service : public service
+{
+public:
+	test_value_service(std::string value)
+		: m_value{ std::move(value) }
+	{
+
+	}
+
+	const std::string& get_value() const { return m_value; }
+
+private:
+	std::string m_value;
+};
+
 class Services_Test : public ::testing::Test
 {
 protected:
@@ -19,8 +38,38 @@ protected:
 TEST_F(Services_Test, ServiceCollection_addService)
 {
 	std::shared_ptr<service_collection> sc{ std::make_shared<service_collection>() };
-	sc->add_service<notification_service, notification_service>(service_scope::singleton, std::function<std::shared_ptr<notification_service>()>([]() { return std::make_shared<notification_service>(); }));
+	sc->add_service<notification_service>(service_scope::singleton, std::function<std::shared_ptr<notification_service>()>([]() { return std::make_shared<notification_service>(); }));
 	EXPECT_TRUE(sc->contains<notification_service>());
+}
+
+TEST_F(Services_Test, ServiceCollection_addServiceAutoResolve)
+{
+	std::shared_ptr<service_collection> sc{ std::make_shared<service_collection>() };
+	sc->add_service<notification_service>(service_scope::singleton);
+	EXPECT_TRUE(sc->contains<notification_service>());
+}
+
+TEST_F(Services_Test, ServiceCollection_addServiceAutoResolveInterfaceImpl)
+{
+	std::shared_ptr<service_collection> sc{ std::make_shared<service_collection>() };
+	sc->add_service<test_base_service, test_derived_service>(service_scope::singleton);
+	EXPECT_TRUE(sc->contains<test_base_service>());
+}
+
+TEST_F(Services_Test, ServiceCollection_addServiceSingleTypeFactory)
+{
+	std::shared_ptr<service_collection> sc{ std::make_shared<service_collection>() };
+	sc->add_service<notification_service>(service_scope::singleton, std::function<std::shared_ptr<notification_service>()>([]() { return std::make_shared<notification_service>(); }));
+	EXPECT_TRUE(sc->contains<notification_service>());
+}
+
+TEST_F(Services_Test, ServiceCollection_addServiceWithArgs)
+{
+	std::shared_ptr<service_collection> sc{ std::make_shared<service_collection>() };
+	sc->add_service<test_value_service>(service_scope::singleton, std::string("hello"));
+	std::shared_ptr<test_value_service> svc{ sc->get_service<test_value_service>() };
+	ASSERT_NE(svc, nullptr);
+	EXPECT_EQ(svc->get_value(), "hello");
 }
 
 TEST_F(Services_Test, ServiceCollection_getRequiredService)
@@ -51,3 +100,4 @@ TEST_F(Services_Test, ServiceCollection_removeService)
 	m_host.services()->remove_service<notification_service>();
 	EXPECT_FALSE(m_host.services()->contains<notification_service>());
 }
+

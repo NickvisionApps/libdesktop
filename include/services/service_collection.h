@@ -70,7 +70,7 @@ namespace desktop::services
 		}
 
 		template<typename TInterface, typename TImpl>
-			requires is_service<TInterface> && std::derived_from<TImpl, TInterface>
+			requires is_service<TInterface> && std::derived_from<TImpl, TInterface> && !std::same_as<TInterface, TImpl>
 		void add_service(service_scope scope, std::function<std::shared_ptr<TImpl>()> factory)
 		{
 			std::lock_guard lock{ m_mutex };

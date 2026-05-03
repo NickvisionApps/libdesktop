@@ -67,7 +67,6 @@ add_library(${PROJECT_NAME}
     "include/system/process_status.h"
     "include/updates/release.h"
     "include/updates/release_asset.h"
-    "include/updates/release_provider.h"
     "include/updates/version.h"
     "src/app/app_info.cpp"
     "src/app/arguments_service.cpp"
