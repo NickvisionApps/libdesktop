@@ -173,12 +173,23 @@ install(FILES "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake" "${CMAKE_B
 export(EXPORT "${PROJECT_NAME}Targets" FILE "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}Targets.cmake" NAMESPACE ${PROJECT_NAME}::)
 
 if (BUILD_TESTING)
-    add_executable(${PROJECT_NAME}_tests
-        "tests/console_lifetime_service.cpp"
-        "tests/console_lifetime_service.h"
-        "tests/main.cpp"
-        "tests/suite.cpp"
-        "tests/suite.h")
+    enable_testing()
+    find_package(GTest CONFIG REQUIRED)
+    include(GoogleTest)
 
-    target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME})
+    add_executable(${PROJECT_NAME}_tests
+        "tests/main.cpp"
+        "tests/test_app.cpp"
+        "tests/test_events.cpp"
+        "tests/test_filesystem.cpp"
+        "tests/test_helpers.cpp"
+        "tests/test_hosting.cpp"
+        "tests/test_notifications.cpp"
+        "tests/test_secrets.cpp"
+        "tests/test_system.cpp"
+        "tests/test_updates.cpp")
+
+    target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)
+
+    gtest_discover_tests(${PROJECT_NAME}_tests)
 endif()
