@@ -16,13 +16,27 @@ if(POLICY CMP0141)
 endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-project("libdesktop" LANGUAGES CXX VERSION 2025.5.0 DESCRIPTION "A cross-platform desktop library.")
+project("libdesktop" LANGUAGES C CXX VERSION 2025.5.0 DESCRIPTION "A cross-platform desktop library.")
 
 option(BUILD_SHARED_LIBS "Build libdesktop as a shared library" OFF)
 option(BUILD_TESTING "Build tests" ON)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+
+add_library(sqlcipher STATIC "third-party/sqlcipher/sqlite3.c")
+target_compile_definitions(sqlcipher PUBLIC
+    SQLITE_HAS_CODEC
+    SQLITE_TEMP_STORE=3
+    SQLITE_EXTRA_INIT=sqlcipher_extra_init
+    SQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown
+    SQLITE_THREADSAFE=1)
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(sqlcipher PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(sqlcipher PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third-party/sqlcipher>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>")
 
 add_library(${PROJECT_NAME}
     "include/app.h"
@@ -129,6 +143,7 @@ set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY COMPATIBLE_INTERFACE_STRING 
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
@@ -137,7 +152,7 @@ find_package(CURL REQUIRED)
 find_package(Intl REQUIRED)
 find_package(maddy CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json)
+target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json sqlcipher)
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32 Shell32)
 else()
@@ -166,12 +181,13 @@ endif()
 configure_file("${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}.pc.in" "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}.pc" @ONLY)
 configure_package_config_file("${CMAKE_SOURCE_DIR}/cmake/config.cmake.in" "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake" INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 write_basic_package_version_file("${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake" VERSION "${PROJECT_VERSION}" COMPATIBILITY AnyNewerVersion)
-install(TARGETS ${PROJECT_NAME} EXPORT "${PROJECT_NAME}Targets"
+install(TARGETS ${PROJECT_NAME} sqlcipher EXPORT "${PROJECT_NAME}Targets"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
+install(FILES "third-party/sqlcipher/sqlite3.h" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
 install(FILES "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 install(EXPORT "${PROJECT_NAME}Targets" FILE "${PROJECT_NAME}Targets.cmake" NAMESPACE ${PROJECT_NAME}:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 install(FILES "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake" "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
