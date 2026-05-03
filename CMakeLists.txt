@@ -54,7 +54,10 @@ add_library(${PROJECT_NAME}
     "include/notifications/notification_service.h"
     "include/notifications/notification_severity.h"
     "include/notifications/shell_notification.h"
+    "include/secrets/password_content.h"
+    "include/secrets/password_generator.h"
     "include/secrets/secret.h"
+    "include/secrets/secret_service.h"
     "include/services/service.h"
     "include/services/service_collection.h"
     "include/services/service_provider.h"
@@ -78,6 +81,7 @@ add_library(${PROJECT_NAME}
     "src/notifications/notification_sent_event_args.cpp"
     "src/notifications/notification_service.cpp"
     "src/notifications/shell_notification.cpp"
+    "src/secrets/password_generator.cpp"
     "src/secrets/secret.cpp"
     "src/updates/release.cpp"
     "src/updates/release_asset.cpp"
@@ -86,6 +90,7 @@ add_library(${PROJECT_NAME}
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_windows.cpp"
+        "src/secrets/secret_service_windows.cpp"
         "src/system/power_service_windows.cpp"
         "src/system/process_windows.cpp")
 endif()
@@ -96,11 +101,13 @@ endif()
 if(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_macos.cpp"
+        "src/secrets/secret_service_macos.cpp"
         "src/system/power_service_macos.cpp")
 endif()
 if(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_linux.cpp"
+        "src/secrets/secret_service_linux.cpp"
         "src/system/power_service_linux.cpp")
 endif()
 

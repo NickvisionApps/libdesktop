@@ -3,10 +3,14 @@
 #include "app/logger.h"
 #include "hosting/lifetime_service.h"
 #include "notifications/notification_service.h"
+#include "secrets/secret_service.h"
+#include "system/power_service.h"
 
 using namespace desktop::app;
 using namespace desktop::notifications;
+using namespace desktop::secrets;
 using namespace desktop::services;
+using namespace desktop::system;
 
 namespace desktop::hosting
 {
@@ -15,6 +19,8 @@ namespace desktop::hosting
 	{
 		m_services->add_service<arguments_service>(service_scope::singleton, options.get_argc(), options.get_argv());
 		m_services->add_service<notification_service>(service_scope::singleton);
+		m_services->add_service<secret_service>(service_scope::singleton);
+		m_services->add_service<power_service>(service_scope::singleton);
 		m_services->add_service<logger>(service_scope::singleton, options.get_log_path());
 	}
 
