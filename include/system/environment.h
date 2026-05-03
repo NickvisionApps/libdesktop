@@ -1,0 +1,23 @@
+#pragma once
+
+#include <filesystem>
+#include <string>
+#include <vector>
+#include "dependency_search_option.h"
+#include "deployment_mode.h"
+
+namespace desktop::system::environment
+{
+	std::string execute(const std::string& command);
+	const std::filesystem::path& find_dependency(std::string_view name, dependency_search_option option);
+	std::string get_debugging_information();
+	deployment_mode get_deployment_mode();
+	std::filesystem::path get_executable_directory();
+	std::filesystem::path get_executable_path();
+	std::string get_locale();
+	std::vector<std::filesystem::path> get_path_variable();
+	std::string get_variable(std::string_view name);
+	bool has_variable(std::string_view name);
+	bool set_variable(std::string_view name, std::string_view value);
+	bool test_variable(std::string_view name);
+}

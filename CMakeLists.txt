@@ -62,6 +62,9 @@ add_library(${PROJECT_NAME}
     "include/services/service_collection.h"
     "include/services/service_provider.h"
     "include/services/service_scope.h"
+    "include/system/dependency_search_option.h"
+    "include/system/deployment_mode.h"
+    "include/system/environment.h"
     "include/system/power_service.h"
     "include/system/process.h"
     "include/system/process_status.h"
@@ -90,6 +93,7 @@ if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_windows.cpp"
         "src/secrets/secret_service_windows.cpp"
+        "src/system/environment_windows.cpp"
         "src/system/power_service_windows.cpp"
         "src/system/process_windows.cpp")
 endif()
@@ -101,12 +105,14 @@ if(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_macos.cpp"
         "src/secrets/secret_service_macos.cpp"
+        "src/system/environment_macos.cpp"
         "src/system/power_service_macos.cpp")
 endif()
 if(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_linux.cpp"
         "src/secrets/secret_service_linux.cpp"
+        "src/system/environment_linux.cpp"
         "src/system/power_service_linux.cpp")
 endif()
 
