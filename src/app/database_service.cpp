@@ -53,10 +53,10 @@ namespace desktop::app
 	}
 
 	database_service::database_service(std::shared_ptr<app_info> info, std::shared_ptr<secrets::secret_service> secret_service)
-		: m_info{ info }
-		, m_secret_service{ secret_service }
-		, m_db{ nullptr }
-		, m_is_encrypted{ false }
+		: m_db{ nullptr },
+		m_is_encrypted{ false },
+		m_info{ info },
+		m_secret_service{ secret_service }
 	{
 
 	}
@@ -72,6 +72,7 @@ namespace desktop::app
 
 	bool database_service::is_encrypted() const
 	{
+		ensure_database();
 		return m_is_encrypted;
 	}
 
@@ -407,7 +408,7 @@ namespace desktop::app
 		return result;
 	}
 
-	void database_service::ensure_database()
+	void database_service::ensure_database() const
 	{
 		std::lock_guard lock{ m_mutex };
 		if (m_db)

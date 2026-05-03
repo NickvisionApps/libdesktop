@@ -8,23 +8,33 @@ using namespace desktop::updates;
 
 class DatabaseService_Test : public ::testing::Test
 {
-protected:
-	std::shared_ptr<app_info> m_info;
-	std::shared_ptr<secret_service> m_secret_svc;
-	database_service m_svc;
-
+public:
 	DatabaseService_Test()
 		: m_info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") }
 		, m_secret_svc{ std::make_shared<secret_service>() }
 		, m_svc{ m_info, m_secret_svc }
 	{
-		try
+		if (!m_removed)
 		{
-			std::filesystem::remove(user_directories::get_config() / m_info->get_name() / "app.db");
+			try
+			{
+				std::filesystem::remove(user_directories::get_config() / m_info->get_name() / "app.db");
+			}
+			catch (...) {}
+			m_removed = true;
 		}
-		catch (...) { }
 	}
+
+protected:
+	std::shared_ptr<app_info> m_info;
+	std::shared_ptr<secret_service> m_secret_svc;
+	database_service m_svc;
+
+private:
+	static bool m_removed;
 };
+
+bool DatabaseService_Test::m_removed = false;
 
 TEST(App_Test, AppInfo_addArtist)
 {

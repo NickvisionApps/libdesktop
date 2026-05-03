@@ -42,11 +42,11 @@ namespace desktop::app
 		database_service& operator=(database_service&&) = delete;
 
 	private:
-		void ensure_database();
+		void ensure_database() const;
 		mutable std::mutex m_mutex;
+		mutable sqlite3* m_db;
+		mutable bool m_is_encrypted;
 		std::shared_ptr<app_info> m_info;
 		std::shared_ptr<secrets::secret_service> m_secret_service;
-		sqlite3* m_db;
-		bool m_is_encrypted;
 	};
 }
