@@ -1,12 +1,13 @@
 #include <gtest/gtest.h>
 #include <libdesktop.h>
 
+using namespace desktop::app;
 using namespace desktop::hosting;
 using namespace desktop::notifications;
 using namespace desktop::secrets;
 using namespace desktop::system;
 
-class HostTest : public ::testing::Test
+class Hosting_Test : public ::testing::Test
 {
 protected:
 	int m_argc{ 0 };
@@ -14,7 +15,49 @@ protected:
 	host m_host{ m_options };
 };
 
-TEST(HostingTest, HostOptions_StoresArgc)
+class test_lifetime_service : public lifetime_service
+{
+public:
+	test_lifetime_service()
+		: lifetime_service{ std::make_shared<logger>(), false }
+	{
+	
+	}
+
+protected:
+	void on_startup_and_run() override {}
+	void on_shutdown() override {}
+	void on_stop_requested() override {}
+};
+
+TEST_F(Hosting_Test, Host_servicesContainsNotificationService)
+{
+	EXPECT_TRUE(m_host.services()->contains<notification_service>());
+}
+
+TEST_F(Hosting_Test, Host_servicesContainsPowerService)
+{
+	EXPECT_TRUE(m_host.services()->contains<power_service>());
+}
+
+TEST_F(Hosting_Test, Host_servicesContainsSecretService)
+{
+	EXPECT_TRUE(m_host.services()->contains<secret_service>());
+}
+
+TEST_F(Hosting_Test, Host_servicesNotNull)
+{
+	EXPECT_NE(m_host.services(), nullptr);
+}
+
+TEST_F(Hosting_Test, HostOptions_defaultLogPath)
+{
+	int argc{ 0 };
+	host_options opts{ argc, nullptr };
+	EXPECT_TRUE(opts.get_log_path().empty());
+}
+
+TEST_F(Hosting_Test, HostOptions_getArgc)
 {
 	int argc{ 1 };
 	char arg0[]{ "test" };
@@ -23,7 +66,7 @@ TEST(HostingTest, HostOptions_StoresArgc)
 	EXPECT_EQ(opts.get_argc(), 1);
 }
 
-TEST(HostingTest, HostOptions_StoresArgv)
+TEST_F(Hosting_Test, HostOptions_getArgv)
 {
 	int argc{ 1 };
 	char arg0[]{ "test" };
@@ -32,14 +75,7 @@ TEST(HostingTest, HostOptions_StoresArgv)
 	EXPECT_EQ(opts.get_argv(), argv);
 }
 
-TEST(HostingTest, HostOptions_DefaultLogPathEmpty)
-{
-	int argc{ 0 };
-	host_options opts{ argc, nullptr };
-	EXPECT_TRUE(opts.get_log_path().empty());
-}
-
-TEST(HostingTest, HostOptions_SetLogPath)
+TEST_F(Hosting_Test, HostOptions_setLogPath)
 {
 	int argc{ 0 };
 	host_options opts{ argc, nullptr };
@@ -47,22 +83,20 @@ TEST(HostingTest, HostOptions_SetLogPath)
 	EXPECT_EQ(opts.get_log_path(), "test.log");
 }
 
-TEST_F(HostTest, Services_NotNull)
+TEST_F(Hosting_Test, LifetimeService_getStopSource)
 {
-	EXPECT_NE(m_host.services(), nullptr);
+	test_lifetime_service svc;
+	EXPECT_NO_THROW(svc.get_stop_source());
 }
 
-TEST_F(HostTest, Services_ContainsNotificationService)
+TEST_F(Hosting_Test, LifetimeService_getUptime)
 {
-	EXPECT_TRUE(m_host.services()->contains<notification_service>());
+	test_lifetime_service svc;
+	EXPECT_GE(svc.get_uptime().count(), 0);
 }
 
-TEST_F(HostTest, Services_ContainsSecretService)
+TEST_F(Hosting_Test, LifetimeService_stop)
 {
-	EXPECT_TRUE(m_host.services()->contains<secret_service>());
-}
-
-TEST_F(HostTest, Services_ContainsPowerService)
-{
-	EXPECT_TRUE(m_host.services()->contains<power_service>());
+	test_lifetime_service svc;
+	EXPECT_NO_THROW(svc.stop());
 }
