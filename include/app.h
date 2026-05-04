@@ -8,3 +8,4 @@
 #include "app/database_service.h"
 #include "app/logger.h"
 #include "app/log_type.h"
+#include "app/window_geometry.h"
