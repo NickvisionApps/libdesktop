@@ -46,12 +46,12 @@ namespace desktop::updates
 			{ "major", v.get_major() },
 			{ "minor", v.get_minor() },
 			{ "patch", v.get_patch() },
-			{ "preview", v.get_preview() } 
+			{ "preview", v.get_preview() }
 		};
 	}
 
 	inline void from_json(const nlohmann::json& j, version& v)
 	{
-		v = version{ j.at("major").get<int>(), j.at("minor").get<int>(), j.at("patch").get<int>(), j.value("preview", "")};
+		v = version{ j.at("major").get<int>(), j.at("minor").get<int>(), j.at("patch").get<int>(), j.value("preview", std::string{}) };
 	}
 }
