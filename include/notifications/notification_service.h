@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mutex>
 #include "events/event.h"
 #include "services/service.h"
 #include "notification_sent_event_args.h"
@@ -20,7 +19,6 @@ namespace desktop::notifications
 		notification_service& operator=(notification_service&&) = delete;
 
 	private:
-		mutable std::mutex m_mutex;
 		events::event<notification_service, notification_sent_event_args> m_notification_sent_event;
 	};
 }

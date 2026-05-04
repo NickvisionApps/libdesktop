@@ -31,16 +31,16 @@ namespace desktop::events
 
         void invoke(const T& sender, const U& args)
         {
-            std::lock_guard lock{ m_mutex };
-            for (const std::pair<const event_id, std::function<void(const T&, const U&)>>& pair : m_handlers)
+            std::unordered_map<event_id, std::function<void(const T&, const U&)>> snapshot;
+            {
+                std::lock_guard lock{ m_mutex };
+                snapshot = m_handlers;
+            }
+            for (const std::pair<const event_id, std::function<void(const T&, const U&)>>& pair : snapshot)
             {
                 if (pair.second)
                 {
                     pair.second(sender, args);
-                }
-                else
-                {
-					m_handlers.erase(pair.first);
                 }
             }
 		}
