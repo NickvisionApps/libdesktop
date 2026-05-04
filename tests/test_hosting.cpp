@@ -35,6 +35,11 @@ TEST_F(Hosting_Test, Host_servicesContainsDatabaseService)
 	EXPECT_TRUE(m_host.services()->contains<database_service>());
 }
 
+TEST_F(Hosting_Test, Host_servicesContainsConfigurationService)
+{
+	EXPECT_TRUE(m_host.services()->contains<configuration_service>());
+}
+
 TEST_F(Hosting_Test, Host_servicesContainsNotificationService)
 {
 	EXPECT_TRUE(m_host.services()->contains<notification_service>());
