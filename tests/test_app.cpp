@@ -18,8 +18,6 @@ struct ConfigurationService_TestWindow
 {
 	int width{ 0 };
 	int height{ 0 };
-
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ConfigurationService_TestWindow, width, height)
 };
 
 class ConfigurationService_Test : public ::testing::Test
@@ -82,6 +80,17 @@ private:
 
 bool ConfigurationService_Test::m_removed = false;
 bool DatabaseService_Test::m_removed = false;
+
+inline void to_json(nlohmann::json& j, const ConfigurationService_TestWindow& w)
+{
+	j = { {"width", w.width}, {"height", w.height} };
+}
+
+inline void from_json(const nlohmann::json& j, ConfigurationService_TestWindow& w)
+{
+	j.at("width").get_to(w.width);
+	j.at("height").get_to(w.height);
+}
 
 TEST(App_Test, AppInfo_addArtist)
 {

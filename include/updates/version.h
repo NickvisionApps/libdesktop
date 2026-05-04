@@ -2,6 +2,7 @@
 
 #include <compare>
 #include <string>
+#include <nlohmann/json.hpp>
 
 namespace desktop::updates
 {
@@ -38,4 +39,19 @@ namespace desktop::updates
 		std::string m_preview;
 		std::string m_str;
 	};
+
+	inline void to_json(nlohmann::json& j, const version& v)
+	{
+		j = {
+			{ "major", v.get_major() },
+			{ "minor", v.get_minor() },
+			{ "patch", v.get_patch() },
+			{ "preview", v.get_preview() } 
+		};
+	}
+
+	inline void from_json(const nlohmann::json& j, version& v)
+	{
+		v = version{ j.at("major").get<int>(), j.at("minor").get<int>(), j.at("patch").get<int>(), j.value("preview", "")};
+	}
 }

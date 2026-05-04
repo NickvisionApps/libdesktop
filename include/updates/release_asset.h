@@ -35,4 +35,20 @@ namespace desktop::updates
 		std::string m_digest;
 		std::string m_browser_download_url;
 	};
+
+	inline void to_json(nlohmann::json& j, const release_asset& a)
+	{
+		j = {
+			{ "url", a.get_url() },
+			{ "name", a.get_name() },
+			{ "size", a.get_size() },
+			{ "digest", a.get_digest() },
+			{ "browser_download_url", a.get_browser_download_url() }
+		};
+	}
+
+	inline void from_json(const nlohmann::json& j, release_asset& a)
+	{
+		a = release_asset{ j };
+	}
 }

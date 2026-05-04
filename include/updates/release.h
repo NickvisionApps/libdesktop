@@ -35,4 +35,19 @@ namespace desktop::updates
 		bool m_draft;
 		std::vector<release_asset> m_assets;
 	};
+
+	inline void to_json(nlohmann::json& j, const release& r)
+	{
+		j = {
+			{ "tag_name", r.get_tag_name() },
+			{ "prerelease", r.is_prerelease() },
+			{ "draft", r.is_draft() },
+			{ "assets", r.get_assets() }
+		};
+	}
+
+	inline void from_json(const nlohmann::json& j, release& r)
+	{
+		r = release{ j };
+	}
 }
