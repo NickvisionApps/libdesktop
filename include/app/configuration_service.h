@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -43,6 +44,7 @@ namespace desktop::app
 		T get(const std::string& name, T default_value)
 		{
 			ensure_table();
+			std::lock_guard<std::mutex> lock{ m_mutex };
 			std::string raw;
 			bool found{ false };
 			if (m_cache.contains(name))
@@ -104,6 +106,7 @@ namespace desktop::app
 		T get(const std::string& name, const T& default_value)
 		{
 			ensure_table();
+			std::lock_guard<std::mutex> lock{ m_mutex };
 			std::string raw;
 			if (m_cache.contains(name))
 			{
@@ -173,26 +176,30 @@ namespace desktop::app
 				str_value = std::to_string(static_cast<int64_t>(value));
 				event_value = database_value{ static_cast<int64_t>(value) };
 			}
-			m_cache[name] = str_value;
 			ensure_table();
+			std::unique_lock<std::mutex> lock{ m_mutex };
+			m_cache[name] = str_value;
 			m_db->replace_into_table("configuration",
 			{ 
 				{ "name", name },
 				{ "value", str_value }
 			});
+			lock.unlock();
 			m_saved_event.invoke(*this, { name, event_value });
 		}
 		template<configuration_object T>
 		void set(const std::string& name, const T& value)
 		{
 			std::string json_str{ nlohmann::json(value).dump() };
-			m_cache[name] = json_str;
 			ensure_table();
+			std::unique_lock<std::mutex> lock{ m_mutex };
+			m_cache[name] = json_str;
 			m_db->replace_into_table("configuration",
 			{ 
 				{ "name", name },
 				{ "value", json_str }
 			});
+			lock.unlock();
 			m_saved_event.invoke(*this, { name, json_str });
 		}
 		configuration_service& operator=(const configuration_service&) = delete;
@@ -200,6 +207,7 @@ namespace desktop::app
 
 	private:
 		void ensure_table();
+		mutable std::mutex m_mutex;
 		std::shared_ptr<database_service> m_db;
 		bool m_table_ensured;
 		std::unordered_map<std::string, std::string> m_cache;

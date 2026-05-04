@@ -19,6 +19,7 @@ namespace desktop::app
 	std::unordered_map<std::string, std::string> configuration_service::get_all_raw()
 	{
 		ensure_table();
+		std::lock_guard<std::mutex> lock{ m_mutex };
 		std::unordered_map<std::string, std::string> result;
 		for (const std::unordered_map<std::string, std::string>& row : m_db->select_all_from_table("configuration"))
 		{
@@ -33,6 +34,7 @@ namespace desktop::app
 	void configuration_service::set_many(const std::unordered_map<std::string, std::string>& values)
 	{
 		ensure_table();
+		std::unique_lock<std::mutex> lock{ m_mutex };
 		m_db->begin_transaction();
 		for (const std::pair<const std::string, std::string>& pair : values)
 		{
@@ -42,9 +44,10 @@ namespace desktop::app
 				{ "name", pair.first },
 				{ "value", pair.second }
 			});
-			m_saved_event.invoke(*this, { pair.first, database_value{ pair.second } });
 		}
 		m_db->commit_transaction();
+		lock.unlock();
+		m_saved_event.invoke(*this, { std::string(), "" });
 	}
 
 	int configuration_service::import_from_json_file(const std::filesystem::path& path)
@@ -71,6 +74,7 @@ namespace desktop::app
 		}
 		int imported{ 0 };
 		ensure_table();
+		std::unique_lock<std::mutex> lock{ m_mutex };
 		m_db->begin_transaction();
 		for (nlohmann::json::iterator it = j.begin(); it != j.end(); ++it)
 		{
@@ -81,15 +85,17 @@ namespace desktop::app
 				{ "name", it.key() },
 				{ "value", val }
 			});
-			m_saved_event.invoke(*this, configuration_saved_event_args{ it.key(), database_value{ val } });
 			++imported;
 		}
 		m_db->commit_transaction();
+		lock.unlock();
+		m_saved_event.invoke(*this, { std::string(), "" });
 		return imported;
 	}
 
 	void configuration_service::ensure_table()
 	{
+		std::lock_guard<std::mutex> lock{ m_mutex };
 		if (m_table_ensured)
 		{
 			return;
