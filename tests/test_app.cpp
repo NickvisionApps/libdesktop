@@ -400,6 +400,26 @@ TEST_F(DatabaseService_Test, DatabaseService_executeNonQuery)
 	m_svc.drop_table("executeNonQuery");
 }
 
+TEST_F(DatabaseService_Test, DatabaseService_executeQuery)
+{
+	m_svc.ensure_table_exists("executeQuery", "id INTEGER PRIMARY KEY, val TEXT");
+	m_svc.insert_into_table("executeQuery", { { "val", "alpha" } });
+	m_svc.insert_into_table("executeQuery", { { "val", "beta" } });
+	std::vector<std::vector<database_value>> rows{ m_svc.execute_query("SELECT * FROM executeQuery WHERE val = $val;", { { "val", "alpha" } }) };
+	ASSERT_EQ(rows.size(), 1u);
+	std::string val;
+	for (const database_value& col : rows[0])
+	{
+		if (col.get_column_name() == "val")
+		{
+			val = col.str();
+			break;
+		}
+	}
+	EXPECT_EQ(val, "alpha");
+	m_svc.drop_table("executeQuery");
+}
+
 TEST_F(DatabaseService_Test, DatabaseService_insertIntoTable)
 {
 	m_svc.ensure_table_exists("insertIntoTable", "id INTEGER PRIMARY KEY, name TEXT");

@@ -253,7 +253,7 @@ namespace desktop::app
 			int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
 			if (idx > 0)
 			{
-				bind_value(stmt, idx, { "", pair.second });
+				sqlite3_bind_text(stmt, idx, pair.second.c_str(), -1, SQLITE_TRANSIENT);
 			}
 		}
 		int rc{ sqlite3_step(stmt) };
@@ -282,7 +282,7 @@ namespace desktop::app
 			int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
 			if (idx > 0)
 			{
-				bind_value(stmt, idx, { "", pair.second });
+				sqlite3_bind_text(stmt, idx, pair.second.c_str(), -1, SQLITE_TRANSIENT);
 			}
 		}
 		std::vector<std::vector<database_value>> rows{ fetch_rows(stmt) };
