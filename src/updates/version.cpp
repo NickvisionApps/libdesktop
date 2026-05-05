@@ -1,29 +1,29 @@
-﻿#include "updates/version.h"
-#include <stdexcept>
+﻿#include <stdexcept>
+#include "updates/version.h"
 
 namespace desktop::updates
 {
 	version::version()
-		: m_major{ 0 },
-		m_minor{ 0 },
-		m_patch{ 0 }
+	    : m_major{ 0 },
+	      m_minor{ 0 },
+	      m_patch{ 0 }
 	{
 		build_str();
 	}
 
 	version::version(int major, int minor, int patch)
-		: m_major{ major },
-		m_minor{ minor },
-		m_patch{ patch }
+	    : m_major{ major },
+	      m_minor{ minor },
+	      m_patch{ patch }
 	{
 		build_str();
 	}
 
 	version::version(int major, int minor, int patch, const std::string& preview)
-		: m_major{ major },
-		m_minor{ minor },
-		m_patch{ patch },
-		m_preview{ preview }
+	    : m_major{ major },
+	      m_minor{ minor },
+	      m_patch{ patch },
+	      m_preview{ preview }
 	{
 		if (preview.empty())
 		{
@@ -33,9 +33,9 @@ namespace desktop::updates
 	}
 
 	version::version(const std::string& s)
-		: m_major{ 0 },
-		m_minor{ 0 },
-		m_patch{ 0 }
+	    : m_major{ 0 },
+	      m_minor{ 0 },
+	      m_patch{ 0 }
 	{
 		std::string v{ s };
 		if (!v.empty() && v[0] == 'v')

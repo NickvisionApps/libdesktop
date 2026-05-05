@@ -10,7 +10,7 @@ TEST(Helpers_Test, StringManip_base64DecodeEmptyInput)
 
 TEST(Helpers_Test, StringManip_base64Roundtrip)
 {
-	std::vector<std::byte> input{ std::byte{'H'}, std::byte{'e'}, std::byte{'l'}, std::byte{'l'}, std::byte{'o'} };
+	std::vector<std::byte> input{ std::byte{ 'H' }, std::byte{ 'e' }, std::byte{ 'l' }, std::byte{ 'l' }, std::byte{ 'o' } };
 	std::string encoded{ string_manip::base64_encode(input) };
 	EXPECT_FALSE(encoded.empty());
 	std::vector<std::byte> decoded{ string_manip::base64_decode(encoded) };

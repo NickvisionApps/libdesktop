@@ -3,65 +3,57 @@
 namespace desktop::app
 {
 	database_value::database_value(const std::string& name, bool v)
-		: m_column_name{ name },
-		m_value{ static_cast<int64_t>(v ? 1 : 0) }
+	    : m_column_name{ name },
+	      m_value{ static_cast<int64_t>(v ? 1 : 0) }
 	{
 	}
 
 	database_value::database_value(const std::string& name, int v)
-		: m_column_name{ name },
-		m_value{ static_cast<int64_t>(v) }
+	    : m_column_name{ name },
+	      m_value{ static_cast<int64_t>(v) }
 	{
-
 	}
 
 	database_value::database_value(const std::string& name, int64_t v)
-		: m_column_name{ name }, 
-		m_value{ v }
+	    : m_column_name{ name },
+	      m_value{ v }
 	{
-
 	}
 
 	database_value::database_value(const std::string& name, double v)
-		: m_column_name{ name },
-		m_value{ v }
+	    : m_column_name{ name },
+	      m_value{ v }
 	{
-
 	}
 
 	database_value::database_value(const std::string& name, float v)
-		: m_column_name{ name },
-		m_value{ static_cast<double>(v) }
+	    : m_column_name{ name },
+	      m_value{ static_cast<double>(v) }
 	{
-
 	}
 
 	database_value::database_value(const std::string& name, const std::string& v)
-		: m_column_name{ name },
-		m_value{ v }
+	    : m_column_name{ name },
+	      m_value{ v }
 	{
-
 	}
 
 	database_value::database_value(const std::string& name, std::string_view v)
-		: m_column_name{ name },
-		m_value{ std::string{ v } }
+	    : m_column_name{ name },
+	      m_value{ std::string{ v } }
 	{
-
 	}
 
 	database_value::database_value(const std::string& name, const char* v)
-		: m_column_name{ name },
-		m_value{ std::string{ v ? v : "" } }
+	    : m_column_name{ name },
+	      m_value{ std::string{ v ? v : "" } }
 	{
-
 	}
 
 	database_value::database_value(const std::string& name, std::nullptr_t)
-		: m_column_name{ name },
-		m_value{ nullptr }
+	    : m_column_name{ name },
+	      m_value{ nullptr }
 	{
-
 	}
 
 	const std::variant<int64_t, double, std::string, std::nullptr_t>& database_value::get_value() const

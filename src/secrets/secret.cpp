@@ -3,10 +3,9 @@
 namespace desktop::secrets
 {
 	secret::secret(const std::string& name, const std::string& value)
-		: m_name{ name },
-		m_value{ value }
+	    : m_name{ name },
+	      m_value{ value }
 	{
-
 	}
 
 	const std::string& secret::get_name() const

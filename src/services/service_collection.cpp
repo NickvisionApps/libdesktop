@@ -1,6 +1,6 @@
-#include "services/service_collection.h"
 #include <stdexcept>
 #include <unordered_set>
+#include "services/service_collection.h"
 
 namespace desktop::services
 {

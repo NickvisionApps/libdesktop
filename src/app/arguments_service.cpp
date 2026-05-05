@@ -1,12 +1,11 @@
-#include "app/arguments_service.h"
 #include <algorithm>
+#include "app/arguments_service.h"
 
 namespace desktop::app
 {
 	arguments_service::arguments_service(int argc, char* argv[])
-		: m_arguments{ argv, argv + argc }
+	    : m_arguments{ argv, argv + argc }
 	{
-
 	}
 
 	void arguments_service::add(const std::string& argument)

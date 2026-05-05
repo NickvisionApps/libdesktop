@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include <compare>
-#include <string>
 #include <nlohmann/json.hpp>
+#include <string>
 
 namespace desktop::updates
 {
@@ -42,12 +42,7 @@ namespace desktop::updates
 
 	inline void to_json(nlohmann::json& j, const version& v)
 	{
-		j = {
-			{ "major", v.get_major() },
-			{ "minor", v.get_minor() },
-			{ "patch", v.get_patch() },
-			{ "preview", v.get_preview() }
-		};
+		j = { { "major", v.get_major() }, { "minor", v.get_minor() }, { "patch", v.get_patch() }, { "preview", v.get_preview() } };
 	}
 
 	inline void from_json(const nlohmann::json& j, version& v)

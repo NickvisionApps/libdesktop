@@ -1,14 +1,13 @@
-#include "app/configuration_service.h"
 #include <fstream>
 #include <sstream>
+#include "app/configuration_service.h"
 
 namespace desktop::app
 {
 	configuration_service::configuration_service(std::shared_ptr<database_service> db)
-		: m_db{ db },
-		m_table_ensured{ false }
+	    : m_db{ db },
+	      m_table_ensured{ false }
 	{
-
 	}
 	const events::event<configuration_service, configuration_saved_event_args>& configuration_service::get_saved_event() const
 	{
@@ -76,11 +75,7 @@ namespace desktop::app
 		{
 			std::string val{ it.value().is_string() ? it.value().get<std::string>() : it.value().dump() };
 			m_cache[it.key()] = val;
-			m_db->replace_into_table("configuration",
-			{
-				{ "name", it.key() },
-				{ "value", val }
-			});
+			m_db->replace_into_table("configuration", { { "name", it.key() }, { "value", val } });
 			imported++;
 		}
 		m_db->commit_transaction();

@@ -128,7 +128,7 @@ namespace desktop::system
 			return std::locale("").name();
 		}
 		catch (...)
-		{ 
+		{
 			return {};
 		}
 	}

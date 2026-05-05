@@ -1,8 +1,8 @@
 #pragma once
 
 #include "events/event.h"
-#include "services/service.h"
 #include "notification_sent_event_args.h"
+#include "services/service.h"
 
 namespace desktop::notifications
 {

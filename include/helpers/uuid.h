@@ -4,5 +4,5 @@
 
 namespace desktop::helpers::uuid
 {
-    std::string get_new();
+	std::string get_new();
 }

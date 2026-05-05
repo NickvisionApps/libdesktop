@@ -22,12 +22,12 @@ namespace desktop::services
 		service_collection(const service_collection&) = delete;
 		service_collection(service_collection&&) = delete;
 
-		template<typename TService, typename TFirst, typename... TRest>
-			requires is_service<TService> && std::constructible_from<TService, TFirst, TRest...>
+		template <typename TService, typename TFirst, typename... TRest>
+		    requires is_service<TService> && std::constructible_from<TService, TFirst, TRest...>
 		void add_service(service_scope scope, TFirst&& first, TRest&&... rest)
 		{
 			std::lock_guard lock{ m_mutex };
-			if(m_services.contains(typeid(TService)))
+			if (m_services.contains(typeid(TService)))
 			{
 				return;
 			}
@@ -37,12 +37,12 @@ namespace desktop::services
 			} });
 		}
 
-		template<typename TInterface, typename TImpl, typename TFirst, typename... TRest>
-			requires is_service<TInterface> && std::derived_from<TImpl, TInterface> && std::constructible_from<TImpl, TFirst, TRest...>
+		template <typename TInterface, typename TImpl, typename TFirst, typename... TRest>
+		    requires is_service<TInterface> && std::derived_from<TImpl, TInterface> && std::constructible_from<TImpl, TFirst, TRest...>
 		void add_service(service_scope scope, TFirst&& first, TRest&&... rest)
 		{
 			std::lock_guard lock{ m_mutex };
-			if(m_services.contains(typeid(TInterface)))
+			if (m_services.contains(typeid(TInterface)))
 			{
 				return;
 			}
@@ -52,24 +52,24 @@ namespace desktop::services
 			} });
 		}
 
-		template<typename TService>
-			requires is_service<TService>
+		template <typename TService>
+		    requires is_service<TService>
 		void add_service(service_scope scope, std::shared_ptr<TService> instance)
 		{
 			std::lock_guard lock{ m_mutex };
-			if(m_services.contains(typeid(TService)))
+			if (m_services.contains(typeid(TService)))
 			{
 				return;
 			}
 			m_services.emplace(typeid(TService), service_entry{ scope, nullptr, std::make_any<std::shared_ptr<TService>>(std::move(instance)) });
 		}
 
-		template<typename TService>
-			requires is_service<TService>
+		template <typename TService>
+		    requires is_service<TService>
 		void add_service(service_scope scope, std::function<std::shared_ptr<TService>()> factory)
 		{
 			std::lock_guard lock{ m_mutex };
-			if(m_services.contains(typeid(TService)))
+			if (m_services.contains(typeid(TService)))
 			{
 				return;
 			}
@@ -79,12 +79,12 @@ namespace desktop::services
 			} });
 		}
 
-		template<typename TInterface, typename TImpl>
-			requires is_service<TInterface> && std::derived_from<TImpl, TInterface> && !std::same_as<TInterface, TImpl>
+		template <typename TInterface, typename TImpl>
+		    requires is_service<TInterface> && std::derived_from<TImpl, TInterface> && (!std::same_as<TInterface, TImpl>)
 		void add_service(service_scope scope, std::function<std::shared_ptr<TImpl>()> factory)
 		{
 			std::lock_guard lock{ m_mutex };
-			if(m_services.contains(typeid(TInterface)))
+			if (m_services.contains(typeid(TInterface)))
 			{
 				return;
 			}
@@ -94,35 +94,35 @@ namespace desktop::services
 			} });
 		}
 
-		template<typename TInterface, typename TImpl>
-			requires is_service<TInterface> && std::derived_from<TImpl, TInterface>
+		template <typename TInterface, typename TImpl>
+		    requires is_service<TInterface> && std::derived_from<TImpl, TInterface>
 		void add_service(service_scope scope)
 		{
 			std::lock_guard lock{ m_mutex };
-			if(m_services.contains(typeid(TInterface)))
+			if (m_services.contains(typeid(TInterface)))
 			{
 				return;
 			}
 			m_services.emplace(typeid(TInterface), service_entry{ scope, make_resolving_factory<TInterface, TImpl>(), std::nullopt });
 		}
 
-		template<typename TService>
-			requires is_service<TService>
+		template <typename TService>
+		    requires is_service<TService>
 		void add_service(service_scope scope)
 		{
 			add_service<TService, TService>(scope);
 		}
 
-		template<typename TService>
-			requires is_service<TService>
+		template <typename TService>
+		    requires is_service<TService>
 		bool contains() const
 		{
 			std::lock_guard lock{ m_mutex };
 			return m_services.contains(typeid(TService));
 		}
 
-		template<typename TService>
-			requires is_service<TService>
+		template <typename TService>
+		    requires is_service<TService>
 		void remove_service()
 		{
 			std::lock_guard lock{ m_mutex };
@@ -139,11 +139,10 @@ namespace desktop::services
 			service_entry() = delete;
 			~service_entry() = default;
 			service_entry(service_scope scope, std::function<std::any()> factory, std::optional<std::any> instance = std::nullopt)
-				: scope{ scope },
-				factory{ std::move(factory) },
-				instance{ std::move(instance) }
+			    : scope{ scope },
+			      factory{ std::move(factory) },
+			      instance{ std::move(instance) }
 			{
-
 			}
 			service_entry(const service_entry&) = default;
 			service_entry(service_entry&&) noexcept = default;
@@ -159,8 +158,8 @@ namespace desktop::services
 
 		std::any get_service_impl(std::type_index type) const override;
 
-		template<typename TInterface, typename TImpl>
-			requires is_service<TInterface>&& std::derived_from<TImpl, TInterface>
+		template <typename TInterface, typename TImpl>
+		    requires is_service<TInterface> && std::derived_from<TImpl, TInterface>
 		std::function<std::any()> make_resolving_factory()
 		{
 			if constexpr (has_dependencies<TImpl>)
@@ -169,18 +168,18 @@ namespace desktop::services
 			}
 			else
 			{
-				return []() 
+				return []()
 				{
 					return std::make_any<std::shared_ptr<TInterface>>(std::make_shared<TImpl>());
 				};
 			}
 		}
 
-		template<typename TInterface, typename TImpl, typename... TDeps>
-			requires is_service<TInterface>&& std::derived_from<TImpl, TInterface>&& std::constructible_from<TImpl, std::shared_ptr<TDeps>...>
+		template <typename TInterface, typename TImpl, typename... TDeps>
+		    requires is_service<TInterface> && std::derived_from<TImpl, TInterface> && std::constructible_from<TImpl, std::shared_ptr<TDeps>...>
 		std::function<std::any()> make_resolving_factory_deps(std::tuple<TDeps...>*)
 		{
-			return [this]() 
+			return [this]()
 			{
 				return std::make_any<std::shared_ptr<TInterface>>(std::make_shared<TImpl>(this->get_service<TDeps>()...));
 			};

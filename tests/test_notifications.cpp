@@ -80,8 +80,14 @@ TEST(Notifications_Test, NotificationService_handlersInvokedOnSend)
 {
 	notification_service svc;
 	int count{ 0 };
-	event_id id1{ svc.get_notification_sent_event().add_handler([&count](const notification_service&, const notification_sent_event_args&) { count++; }) };
-	event_id id2{ svc.get_notification_sent_event().add_handler([&count](const notification_service&, const notification_sent_event_args&) { count++; }) };
+	event_id id1{ svc.get_notification_sent_event().add_handler([&count](const notification_service&, const notification_sent_event_args&)
+	{
+		count++;
+	}) };
+	event_id id2{ svc.get_notification_sent_event().add_handler([&count](const notification_service&, const notification_sent_event_args&)
+	{
+		count++;
+	}) };
 	svc.send(std::make_shared<notification>("Test", notification_severity::information));
 	EXPECT_EQ(count, 2);
 	svc.get_notification_sent_event().remove_handler(id1);
@@ -92,7 +98,10 @@ TEST(Notifications_Test, NotificationService_removedHandlerNotInvoked)
 {
 	notification_service svc;
 	int count{ 0 };
-	event_id id{ svc.get_notification_sent_event().add_handler([&count](const notification_service&, const notification_sent_event_args&) { count++; }) };
+	event_id id{ svc.get_notification_sent_event().add_handler([&count](const notification_service&, const notification_sent_event_args&)
+	{
+		count++;
+	}) };
 	svc.get_notification_sent_event().remove_handler(id);
 	svc.send(std::make_shared<notification>("Test", notification_severity::information));
 	EXPECT_EQ(count, 0);

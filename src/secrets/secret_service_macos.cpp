@@ -17,7 +17,7 @@ namespace desktop::secrets
 		OSStatus status{ SecItemCopyMatching(query, &result) };
 		CFRelease(query);
 		CFRelease(name_ref);
-		if(status != errSecSuccess || !result)
+		if (status != errSecSuccess || !result)
 		{
 			return std::nullopt;
 		}
@@ -31,7 +31,7 @@ namespace desktop::secrets
 	{
 		password_generator gen;
 		secret s{ name, gen.next(64) };
-		if(add(s))
+		if (add(s))
 		{
 			return s;
 		}
@@ -40,7 +40,7 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
-		if(s.get_value().empty())
+		if (s.get_value().empty())
 		{
 			return false;
 		}
@@ -60,7 +60,7 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
-		if(s.get_value().empty())
+		if (s.get_value().empty())
 		{
 			return false;
 		}

@@ -3,18 +3,16 @@
 namespace desktop::app
 {
 	configuration_saved_event_args::configuration_saved_event_args()
-		: m_changed_property_new_value{ "", "" },
-		m_is_bulk{ true }
+	    : m_changed_property_new_value{ "", "" },
+	      m_is_bulk{ true }
 	{
-
 	}
 
 	configuration_saved_event_args::configuration_saved_event_args(const std::string& changed_property_name, const database_value& changed_property_new_value)
-		: m_changed_property_name{ changed_property_name },
-		m_changed_property_new_value{ changed_property_new_value },
-		m_is_bulk{ false }
+	    : m_changed_property_name{ changed_property_name },
+	      m_changed_property_new_value{ changed_property_new_value },
+	      m_is_bulk{ false }
 	{
-
 	}
 
 	const std::string& configuration_saved_event_args::get_changed_property_name() const

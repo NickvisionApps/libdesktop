@@ -1,0 +1,77 @@
+---
+Language: Cpp
+Standard: c++20
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation
+AccessModifierOffset: -4
+IndentCaseLabels: false
+NamespaceIndentation: All
+
+# Braces — Allman style (braces on their own line)
+BreakBeforeBraces: Allman
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+
+# Line length
+ColumnLimit: 160
+
+# Pointer and reference alignment — attach to type (const std::string&)
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Includes — sort within groups, preserve group separation
+SortIncludes: CaseSensitive
+IncludeBlocks: Merge
+IncludeIsMainRegex: '([-_]|(/.*/)?)[A-Za-z0-9_]+$'
+IncludeCategories:
+  # <windows.h> must always precede other Win32 headers
+  - Regex: '^<windows\.h>'
+    Priority: 1
+  # System/third-party angle-bracket headers
+  - Regex: '^<'
+    Priority: 2
+  # Other project headers
+  - Regex: '^"'
+    Priority: 3
+
+# Spacing
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SpacesInAngles: Never
+SpacesInParens: Never
+SpaceBeforeCpp11BracedList: false
+SpaceInEmptyBlock: true
+Cpp11BracedListStyle: false
+
+# Short constructs — keep inline only for truly trivial cases
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: None
+LambdaBodyIndentation: OuterScope
+
+# Constructor initializer lists
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 4
+PackConstructorInitializers: Never
+
+# Misc
+MaxEmptyLinesToKeep: 1
+FixNamespaceComments: false
+SortUsingDeclarations: Lexicographic
+AlwaysBreakTemplateDeclarations: Yes
+RequiresClausePosition: OwnLine
+IndentRequiresClause: true

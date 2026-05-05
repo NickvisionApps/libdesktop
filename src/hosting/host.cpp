@@ -1,8 +1,8 @@
-#include "hosting/host.h"
 #include "app/arguments_service.h"
 #include "app/configuration_service.h"
 #include "app/database_service.h"
 #include "app/logger.h"
+#include "hosting/host.h"
 #include "hosting/lifetime_service.h"
 #include "notifications/notification_service.h"
 #include "secrets/secret_service.h"
@@ -17,7 +17,7 @@ using namespace desktop::system;
 namespace desktop::hosting
 {
 	host::host(const host_options& options)
-		: m_services{ std::make_shared<service_collection>() }
+	    : m_services{ std::make_shared<service_collection>() }
 	{
 		m_services->add_service<arguments_service>(service_scope::singleton, options.get_argc(), options.get_argv());
 		if (options.get_app_info())

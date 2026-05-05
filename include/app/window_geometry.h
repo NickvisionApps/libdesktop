@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 
 namespace desktop::app
-{ 
+{
 	class window_geometry
 	{
 	public:
@@ -36,23 +36,11 @@ namespace desktop::app
 
 	inline void to_json(nlohmann::json& j, const window_geometry& w)
 	{
-		j = {
-			{ "height", w.get_height() },
-			{ "width", w.get_width() },
-			{ "maximized", w.is_maximized() },
-			{ "x", w.get_x() },
-			{ "y", w.get_y() }
-		};
+		j = { { "height", w.get_height() }, { "width", w.get_width() }, { "maximized", w.is_maximized() }, { "x", w.get_x() }, { "y", w.get_y() } };
 	}
 
 	inline void from_json(const nlohmann::json& j, window_geometry& w)
 	{
-		w = window_geometry{
-			j.at("height").get<int>(),
-			j.at("width").get<int>(),
-			j.at("maximized").get<bool>(),
-			j.at("x").get<int>(),
-			j.at("y").get<int>()
-		};
+		w = window_geometry{ j.at("height").get<int>(), j.at("width").get<int>(), j.at("maximized").get<bool>(), j.at("x").get<int>(), j.at("y").get<int>() };
 	}
 }

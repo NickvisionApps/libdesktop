@@ -30,7 +30,8 @@ TEST_F(Secrets_Test, PasswordContent_bitwiseAnd)
 
 TEST_F(Secrets_Test, PasswordContent_bitwiseNot)
 {
-	password_content flags{ password_content::numeric | password_content::uppercase | password_content::lowercase | password_content::special | password_content::space };
+	password_content flags{ password_content::numeric | password_content::uppercase | password_content::lowercase | password_content::special |
+		                    password_content::space };
 	password_content result{ ~flags };
 	EXPECT_EQ(result & flags, static_cast<password_content>(0));
 }

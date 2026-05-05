@@ -1,8 +1,8 @@
-#include "app/app_info.h"
+#include <maddy/parser.h>
 #include <ranges>
 #include <sstream>
 #include <string_view>
-#include <maddy/parser.h>
+#include "app/app_info.h"
 #include "helpers/string_manip.h"
 
 using namespace desktop::helpers;
@@ -10,12 +10,11 @@ using namespace desktop::helpers;
 namespace desktop::app
 {
 	app_info::app_info(const std::string& id, const std::string& name, const std::string english_short_name)
-		: m_id{ id },
-		m_name{ name },
-		m_english_short_name{ english_short_name },
-		m_portable{ false }
+	    : m_id{ id },
+	      m_name{ name },
+	      m_english_short_name{ english_short_name },
+	      m_portable{ false }
 	{
-
 	}
 
 	const std::unordered_map<std::string, std::string>& app_info::get_artists() const

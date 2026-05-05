@@ -20,13 +20,12 @@ namespace desktop::app
 		database_value(const std::string& name, std::string_view v);
 		database_value(const std::string& name, const char* v);
 		database_value(const std::string& name, std::nullptr_t);
-		template<typename T>
-			requires std::is_enum_v<T>
+		template <typename T>
+		    requires std::is_enum_v<T>
 		database_value(const std::string& name, T v)
-			: m_column_name{ name },
-			m_value{ static_cast<int64_t>(v) }
+		    : m_column_name{ name },
+		      m_value{ static_cast<int64_t>(v) }
 		{
-
 		}
 		~database_value() = default;
 		database_value(const database_value&) = default;

@@ -15,9 +15,9 @@ namespace desktop::services
 		service& operator=(service&&) = delete;
 	};
 
-	template<typename T>
+	template <typename T>
 	concept has_dependencies = requires { typename T::dependencies; };
 
-	template<typename T>
+	template <typename T>
 	concept is_service = std::derived_from<T, service>;
 }

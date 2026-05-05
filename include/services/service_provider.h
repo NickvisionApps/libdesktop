@@ -16,20 +16,20 @@ namespace desktop::services
 		service_provider(const service_provider&) = delete;
 		service_provider(service_provider&&) = delete;
 
-		template<typename TService>
-			requires is_service<TService>
+		template <typename TService>
+		    requires is_service<TService>
 		std::shared_ptr<TService> get_service() const
 		{
 			std::any result{ get_service_impl(typeid(TService)) };
-			if(!result.has_value())
+			if (!result.has_value())
 			{
 				return nullptr;
 			}
 			return std::any_cast<std::shared_ptr<TService>>(result);
 		}
 
-		template<typename TService>
-			requires is_service<TService>
+		template <typename TService>
+		    requires is_service<TService>
 		std::shared_ptr<TService> get_required_service() const
 		{
 			auto svc{ get_service<TService>() };

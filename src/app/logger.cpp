@@ -1,6 +1,6 @@
-#include "app/logger.h"
 #include <format>
 #include <iostream>
+#include "app/logger.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -111,7 +111,7 @@ namespace desktop::app
 		std::lock_guard lock{ m_mutex };
 		bool is_severe{ type == log_type::error || type == log_type::critical };
 		std::string file_name{ std::filesystem::path(file).filename().string() };
-		std::string msg{ std::format("[{}] {} ({}:{})", log_type_to_string(type), message, file_name, line)};
+		std::string msg{ std::format("[{}] {} ({}:{})", log_type_to_string(type), message, file_name, line) };
 		if (is_severe)
 		{
 			std::cerr << log_type_to_color(type) << msg << reset << '\n';

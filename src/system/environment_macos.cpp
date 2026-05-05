@@ -1,10 +1,10 @@
 #include "system/environment.h"
 #include <cstdlib>
 #include <locale>
-#include <sstream>
-#include <unordered_map>
 #include <mach-o/dyld.h>
+#include <sstream>
 #include <sys/syslimits.h>
+#include <unordered_map>
 #include "filesystem/user_directories.h"
 #include "helpers/string_manip.h"
 #include "system/process.h"

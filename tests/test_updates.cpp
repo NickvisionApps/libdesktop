@@ -5,23 +5,15 @@ using namespace desktop::updates;
 
 TEST(Updates_Test, Release_constructFromJson)
 {
-	nlohmann::json json
-	{
-		{ "url", "https://api.example.com/releases/1" },
-		{ "tag_name", "v2.0.0" },
-		{ "prerelease", true },
-		{ "draft", false },
-		{ "assets", nlohmann::json::array(
-		{
-			{
-				{ "url", "https://api.example.com/assets/1" },
-				{ "name", "app.tar.gz" },
-				{ "size", 512 },
-				{ "digest", "sha256:abc" },
-				{ "browser_download_url", "https://download/app.tar.gz" }
-			}
-		}) }
-	};
+	nlohmann::json json{ { "url", "https://api.example.com/releases/1" },
+		                 { "tag_name", "v2.0.0" },
+		                 { "prerelease", true },
+		                 { "draft", false },
+		                 { "assets", nlohmann::json::array({ { { "url", "https://api.example.com/assets/1" },
+		                                                       { "name", "app.tar.gz" },
+		                                                       { "size", 512 },
+		                                                       { "digest", "sha256:abc" },
+		                                                       { "browser_download_url", "https://download/app.tar.gz" } } }) } };
 	release r{ json };
 	EXPECT_EQ(r.get_tag_name(), "v2.0.0");
 	EXPECT_TRUE(r.is_prerelease());
@@ -77,14 +69,11 @@ TEST(Updates_Test, Release_isPrerelease)
 
 TEST(Updates_Test, ReleaseAsset_constructFromJson)
 {
-	nlohmann::json json
-	{
-		{ "url", "https://api.example.com/assets/1" },
-		{ "name", "app.tar.gz" },
-		{ "size", 1024 },
-		{ "digest", "sha256:abc123" },
-		{ "browser_download_url", "https://download/app.tar.gz" }
-	};
+	nlohmann::json json{ { "url", "https://api.example.com/assets/1" },
+		                 { "name", "app.tar.gz" },
+		                 { "size", 1024 },
+		                 { "digest", "sha256:abc123" },
+		                 { "browser_download_url", "https://download/app.tar.gz" } };
 	release_asset asset{ json };
 	EXPECT_EQ(asset.get_url(), "https://api.example.com/assets/1");
 	EXPECT_EQ(asset.get_name(), "app.tar.gz");

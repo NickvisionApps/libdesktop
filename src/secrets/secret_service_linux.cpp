@@ -2,15 +2,9 @@
 #include <libsecret/secret.h>
 #include "secrets/password_generator.h"
 
-static const SecretSchema LIBDESKTOP_SCHEMA =
-{
-	"libdesktop",
-	SECRET_SCHEMA_DONT_MATCH_NAME,
-	{
-		{ "application", SECRET_SCHEMA_ATTRIBUTE_STRING },
-		{ "NULL", SECRET_SCHEMA_ATTRIBUTE_STRING }
-	}
-};
+static const SecretSchema LIBDESKTOP_SCHEMA = { "libdesktop",
+	                                            SECRET_SCHEMA_DONT_MATCH_NAME,
+	                                            { { "application", SECRET_SCHEMA_ATTRIBUTE_STRING }, { "NULL", SECRET_SCHEMA_ATTRIBUTE_STRING } } };
 
 namespace desktop::secrets
 {
@@ -18,12 +12,12 @@ namespace desktop::secrets
 	{
 		GError* error{ nullptr };
 		char* value{ secret_password_lookup_sync(&LIBDESKTOP_SCHEMA, nullptr, &error, "application", name.c_str(), nullptr) };
-		if(error)
+		if (error)
 		{
 			g_error_free(error);
 			return std::nullopt;
 		}
-		if(!value)
+		if (!value)
 		{
 			return std::nullopt;
 		}
@@ -36,7 +30,7 @@ namespace desktop::secrets
 	{
 		password_generator gen;
 		secret s{ name, gen.next(64) };
-		if(add(s))
+		if (add(s))
 		{
 			return s;
 		}
@@ -45,13 +39,14 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
-		if(s.get_value().empty())
+		if (s.get_value().empty())
 		{
 			return false;
 		}
 		GError* error{ nullptr };
-		secret_password_store_sync(&LIBDESKTOP_SCHEMA, SECRET_COLLECTION_DEFAULT, s.get_name().c_str(), s.get_value().c_str(), nullptr, &error, "application", s.get_name().c_str(), nullptr);
-		if(error)
+		secret_password_store_sync(&LIBDESKTOP_SCHEMA, SECRET_COLLECTION_DEFAULT, s.get_name().c_str(), s.get_value().c_str(), nullptr, &error, "application",
+		                           s.get_name().c_str(), nullptr);
+		if (error)
 		{
 			g_error_free(error);
 			return false;
@@ -61,24 +56,25 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
-		if(s.get_value().empty())
+		if (s.get_value().empty())
 		{
 			return false;
 		}
 		GError* error{ nullptr };
 		char* existing{ secret_password_lookup_sync(&LIBDESKTOP_SCHEMA, nullptr, &error, "application", s.get_name().c_str(), nullptr) };
-		if(error)
+		if (error)
 		{
 			g_error_free(error);
 			return false;
 		}
-		if(!existing)
+		if (!existing)
 		{
 			return false;
 		}
 		secret_password_free(existing);
-		secret_password_store_sync(&LIBDESKTOP_SCHEMA, SECRET_COLLECTION_DEFAULT, s.get_name().c_str(), s.get_value().c_str(), nullptr, &error, "application", s.get_name().c_str(), nullptr);
-		if(error)
+		secret_password_store_sync(&LIBDESKTOP_SCHEMA, SECRET_COLLECTION_DEFAULT, s.get_name().c_str(), s.get_value().c_str(), nullptr, &error, "application",
+		                           s.get_name().c_str(), nullptr);
+		if (error)
 		{
 			g_error_free(error);
 			return false;
@@ -90,7 +86,7 @@ namespace desktop::secrets
 	{
 		GError* error{ nullptr };
 		bool res{ static_cast<bool>(secret_password_clear_sync(&LIBDESKTOP_SCHEMA, nullptr, &error, "application", name.c_str(), nullptr)) };
-		if(error)
+		if (error)
 		{
 			g_error_free(error);
 			return false;

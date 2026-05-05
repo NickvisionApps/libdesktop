@@ -3,10 +3,9 @@
 namespace desktop::hosting
 {
 	host_options::host_options(int argc, char* argv[])
-		: m_argc{ argc },
-		m_argv{ argv }
+	    : m_argc{ argc },
+	      m_argv{ argv }
 	{
-
 	}
 
 	int host_options::get_argc() const

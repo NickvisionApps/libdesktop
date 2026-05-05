@@ -3,13 +3,12 @@
 namespace desktop::updates
 {
 	release_asset::release_asset(const nlohmann::json& json)
-		: m_url{ json.value("url", "") },
-		m_name{ json.value("name", "") },
-		m_size{ json.value("size", int64_t{0}) },
-		m_digest{ json.value("digest", "") },
-		m_browser_download_url{ json.value("browser_download_url", "") }
+	    : m_url{ json.value("url", "") },
+	      m_name{ json.value("name", "") },
+	      m_size{ json.value("size", int64_t{ 0 }) },
+	      m_digest{ json.value("digest", "") },
+	      m_browser_download_url{ json.value("browser_download_url", "") }
 	{
-	
 	}
 
 	const std::string& release_asset::get_url() const

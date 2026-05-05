@@ -3,10 +3,9 @@
 namespace desktop::notifications
 {
 	notification::notification(const std::string& message, notification_severity severity)
-		: m_message{ message },
-		m_severity{ severity }
+	    : m_message{ message },
+	      m_severity{ severity }
 	{
-
 	}
 
 	const std::string& notification::get_message() const

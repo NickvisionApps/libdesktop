@@ -19,7 +19,7 @@ namespace desktop::notifications
 		const std::string& get_action_parameter() const;
 		notification& operator=(const notification&) = default;
 		notification& operator=(notification&&) noexcept = default;
-			
+
 	private:
 		std::string m_message;
 		notification_severity m_severity;

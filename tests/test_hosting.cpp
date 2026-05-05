@@ -19,15 +19,14 @@ class test_lifetime_service : public lifetime_service
 {
 public:
 	test_lifetime_service()
-		: lifetime_service{ std::make_shared<logger>(), false }
+	    : lifetime_service{ std::make_shared<logger>(), false }
 	{
-	
 	}
 
 protected:
-	void on_startup_and_run() override {}
-	void on_shutdown() override {}
-	void on_stop_requested() override {}
+	void on_startup_and_run() override { }
+	void on_shutdown() override { }
+	void on_stop_requested() override { }
 };
 
 TEST_F(Hosting_Test, Host_servicesContainsDatabaseService)

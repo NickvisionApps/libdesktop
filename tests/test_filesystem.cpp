@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include <filesystem>
+#include <gtest/gtest.h>
 #include <libdesktop.h>
 
 using namespace desktop::filesystem;

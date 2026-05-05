@@ -9,7 +9,8 @@ namespace desktop::secrets
 	class password_generator
 	{
 	public:
-		password_generator(password_content content_flags = password_content::numeric | password_content::uppercase | password_content::lowercase | password_content::special | password_content::space) noexcept;
+		password_generator(password_content content_flags = password_content::numeric | password_content::uppercase | password_content::lowercase |
+		                                                    password_content::special | password_content::space) noexcept;
 		~password_generator() = default;
 		password_generator(const password_generator& other);
 		password_generator(password_generator&& other) noexcept;

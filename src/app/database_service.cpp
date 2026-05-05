@@ -1,6 +1,6 @@
-#include "app/database_service.h"
 #include <filesystem>
 #include <sstream>
+#include "app/database_service.h"
 #include "filesystem/user_directories.h"
 #include "system/environment.h"
 
@@ -88,12 +88,11 @@ namespace desktop::app
 	}
 
 	database_service::database_service(std::shared_ptr<app_info> info, std::shared_ptr<secrets::secret_service> secret_service)
-		: m_db{ nullptr },
-		m_is_encrypted{ false },
-		m_info{ info },
-		m_secret_service{ secret_service }
+	    : m_db{ nullptr },
+	      m_is_encrypted{ false },
+	      m_info{ info },
+	      m_secret_service{ secret_service }
 	{
-
 	}
 
 	database_service::~database_service()
@@ -274,7 +273,8 @@ namespace desktop::app
 		return sqlite3_changes(m_db);
 	}
 
-	std::vector<std::vector<database_value>> database_service::execute_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters)
+	std::vector<std::vector<database_value>> database_service::execute_query(const std::string& sql,
+	                                                                         const std::unordered_map<std::string, std::string>& parameters)
 	{
 		ensure_database();
 		if (!m_db)
@@ -443,7 +443,8 @@ namespace desktop::app
 			assignments << quote(new_data[i].get_column_name()) << " = ?" << (i + 1);
 		}
 		int where_idx{ static_cast<int>(new_data.size() + 1) };
-		std::string sql{ "UPDATE " + quote(table_name) + " SET " + assignments.str() + " WHERE " + quote(matching_value.get_column_name()) + " = ?" + std::to_string(where_idx) + ";" };
+		std::string sql{ "UPDATE " + quote(table_name) + " SET " + assignments.str() + " WHERE " + quote(matching_value.get_column_name()) + " = ?" +
+			             std::to_string(where_idx) + ";" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
@@ -490,7 +491,9 @@ namespace desktop::app
 					password = s->get_value();
 				}
 			}
-			catch (...) {}
+			catch (...)
+			{
+			}
 		}
 		std::error_code ec;
 		std::filesystem::create_directories(path.parent_path(), ec);

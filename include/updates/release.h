@@ -1,8 +1,8 @@
 #pragma once
 
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
 #include "release_asset.h"
 
 namespace desktop::updates
@@ -38,12 +38,7 @@ namespace desktop::updates
 
 	inline void to_json(nlohmann::json& j, const release& r)
 	{
-		j = {
-			{ "tag_name", r.get_tag_name() },
-			{ "prerelease", r.is_prerelease() },
-			{ "draft", r.is_draft() },
-			{ "assets", r.get_assets() }
-		};
+		j = { { "tag_name", r.get_tag_name() }, { "prerelease", r.is_prerelease() }, { "draft", r.is_draft() }, { "assets", r.get_assets() } };
 	}
 
 	inline void from_json(const nlohmann::json& j, release& r)

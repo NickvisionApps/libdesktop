@@ -3,10 +3,10 @@
 namespace desktop::updates
 {
 	release::release(const nlohmann::json& json)
-		: m_url{ json.value("url", "") },
-		m_tag_name{ json.value("tag_name", "") },
-		m_prerelease{ json.value("prerelease", false) },
-		m_draft{ json.value("draft", false) }
+	    : m_url{ json.value("url", "") },
+	      m_tag_name{ json.value("tag_name", "") },
+	      m_prerelease{ json.value("prerelease", false) },
+	      m_draft{ json.value("draft", false) }
 	{
 		for (const nlohmann::json& asset_json : json["assets"])
 		{

@@ -2,11 +2,11 @@
 
 #include <memory>
 #include <mutex>
+#include <sqlite3.h>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <sqlite3.h>
 #include "app/app_info.h"
 #include "app/database_value.h"
 #include "secrets/secret_service.h"

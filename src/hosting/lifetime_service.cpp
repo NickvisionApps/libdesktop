@@ -1,5 +1,5 @@
-#include "hosting/lifetime_service.h"
 #include <format>
+#include "hosting/lifetime_service.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -10,10 +10,9 @@ using namespace desktop::services;
 namespace desktop::hosting
 {
 	lifetime_service::lifetime_service(std::shared_ptr<logger> logger, bool graphical)
-		: m_logger{ logger },
-		m_graphical{ graphical }
+	    : m_logger{ logger },
+	      m_graphical{ graphical }
 	{
-
 	}
 
 	lifetime_service::~lifetime_service()

@@ -1,8 +1,8 @@
 #include "system/environment.h"
+#include <windows.h>
 #include <cstdlib>
 #include <sstream>
 #include <unordered_map>
-#include <windows.h>
 #include "filesystem/user_directories.h"
 #include "helpers/string_manip.h"
 #include "system/process.h"

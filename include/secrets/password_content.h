@@ -15,17 +15,20 @@ namespace desktop::secrets
 
 	inline password_content operator|(password_content a, password_content b) noexcept
 	{
-		return static_cast<password_content>(static_cast<std::underlying_type_t<password_content>>(a) | static_cast<std::underlying_type_t<password_content>>(b));
+		return static_cast<password_content>(static_cast<std::underlying_type_t<password_content>>(a) |
+		                                     static_cast<std::underlying_type_t<password_content>>(b));
 	}
 
 	inline password_content operator&(password_content a, password_content b) noexcept
 	{
-		return static_cast<password_content>(static_cast<std::underlying_type_t<password_content>>(a) & static_cast<std::underlying_type_t<password_content>>(b));
+		return static_cast<password_content>(static_cast<std::underlying_type_t<password_content>>(a) &
+		                                     static_cast<std::underlying_type_t<password_content>>(b));
 	}
 
 	inline password_content operator^(password_content a, password_content b) noexcept
 	{
-		return static_cast<password_content>(static_cast<std::underlying_type_t<password_content>>(a) ^ static_cast<std::underlying_type_t<password_content>>(b));
+		return static_cast<password_content>(static_cast<std::underlying_type_t<password_content>>(a) ^
+		                                     static_cast<std::underlying_type_t<password_content>>(b));
 	}
 
 	inline password_content operator~(password_content a) noexcept
@@ -34,17 +37,17 @@ namespace desktop::secrets
 	}
 
 	inline password_content& operator|=(password_content& a, password_content b) noexcept
-	{ 
+	{
 		return a = a | b;
 	}
 
 	inline password_content& operator&=(password_content& a, password_content b) noexcept
-	{ 
+	{
 		return a = a & b;
 	}
 
 	inline password_content& operator^=(password_content& a, password_content b) noexcept
-	{ 
-		return a = a ^ b; 
+	{
+		return a = a ^ b;
 	}
 }

@@ -1,32 +1,32 @@
-#include "secrets/password_generator.h"
 #include <cmath>
+#include "secrets/password_generator.h"
 
 namespace desktop::secrets
 {
 	static const std::vector<char> s_numeric{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-	static const std::vector<char> s_uppercase{ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
-	static const std::vector<char> s_lowercase{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
-	static const std::vector<char> s_special{ '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
+	static const std::vector<char> s_uppercase{ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		                                        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+	static const std::vector<char> s_lowercase{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+		                                        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
+	static const std::vector<char> s_special{ '!', '"', '#', '$', '%', '&', '\'', '(',  ')', '*', '+', ',', '-', '.', '/', ':',
+		                                      ';', '<', '=', '>', '?', '@', '[',  '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
 
 	password_generator::password_generator(password_content content_flags) noexcept
-		: m_content_flags{ content_flags },
-		m_random_engine{ m_random_device() }
+	    : m_content_flags{ content_flags },
+	      m_random_engine{ m_random_device() }
 	{
-
 	}
 
-	password_generator::password_generator(const password_generator& other) 
-		: m_content_flags{ other.m_content_flags },
-		m_random_engine{ m_random_device() }
+	password_generator::password_generator(const password_generator& other)
+	    : m_content_flags{ other.m_content_flags },
+	      m_random_engine{ m_random_device() }
 	{
-
 	}
 
 	password_generator::password_generator(password_generator&& other) noexcept
-		: m_content_flags{ std::move(other.m_content_flags) },
-		m_random_engine{ std::move(other.m_random_engine) }
+	    : m_content_flags{ std::move(other.m_content_flags) },
+	      m_random_engine{ std::move(other.m_random_engine) }
 	{
-
 	}
 
 	password_content password_generator::get_content_flags() const noexcept
@@ -48,28 +48,28 @@ namespace desktop::secrets
 		static std::uniform_int_distribution<std::size_t> special_dist{ 0, s_special.size() - 1 };
 		std::string password;
 		password.reserve(length);
-		for(std::size_t i{ 0 }; i < length; i++)
+		for (std::size_t i{ 0 }; i < length; i++)
 		{
-			while(true)
+			while (true)
 			{
 				password_content random_type{ static_cast<int>(std::pow(2, type_dist(m_random_engine))) };
-				if((m_content_flags & random_type) == password_content::numeric)
+				if ((m_content_flags & random_type) == password_content::numeric)
 				{
 					password += s_numeric[numeric_dist(m_random_engine)];
 				}
-				else if((m_content_flags & random_type) == password_content::uppercase)
+				else if ((m_content_flags & random_type) == password_content::uppercase)
 				{
 					password += s_uppercase[upper_dist(m_random_engine)];
 				}
-				else if((m_content_flags & random_type) == password_content::lowercase)
+				else if ((m_content_flags & random_type) == password_content::lowercase)
 				{
 					password += s_lowercase[lower_dist(m_random_engine)];
 				}
-				else if((m_content_flags & random_type) == password_content::special)
+				else if ((m_content_flags & random_type) == password_content::special)
 				{
 					password += s_special[special_dist(m_random_engine)];
 				}
-				else if((m_content_flags & random_type) == password_content::space)
+				else if ((m_content_flags & random_type) == password_content::space)
 				{
 					password += ' ';
 				}
@@ -85,7 +85,7 @@ namespace desktop::secrets
 
 	password_generator& password_generator::operator=(const password_generator& other)
 	{
-		if(this != &other)
+		if (this != &other)
 		{
 			m_content_flags = other.m_content_flags;
 			m_random_engine = std::mt19937{ m_random_device() };
@@ -95,7 +95,7 @@ namespace desktop::secrets
 
 	password_generator& password_generator::operator=(password_generator&& other) noexcept
 	{
-		if(this != &other)
+		if (this != &other)
 		{
 			m_content_flags = std::move(other.m_content_flags);
 			m_random_engine = std::move(other.m_random_engine);

@@ -12,11 +12,11 @@ namespace desktop::secrets
 	{
 		std::wstring wname{ string_manip::wstr(name) };
 		CREDENTIALW* cred{ nullptr };
-		if(!CredReadW(wname.c_str(), CRED_TYPE_GENERIC, 0, &cred))
+		if (!CredReadW(wname.c_str(), CRED_TYPE_GENERIC, 0, &cred))
 		{
 			return std::nullopt;
 		}
-		if(!cred->CredentialBlob || cred->CredentialBlobSize == 0)
+		if (!cred->CredentialBlob || cred->CredentialBlobSize == 0)
 		{
 			CredFree(cred);
 			return std::nullopt;
@@ -31,7 +31,7 @@ namespace desktop::secrets
 	{
 		password_generator gen;
 		secret s{ name, gen.generate(64) };
-		if(add(s))
+		if (add(s))
 		{
 			return s;
 		}
@@ -40,7 +40,7 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
-		if(s.get_value().empty())
+		if (s.get_value().empty())
 		{
 			return false;
 		}
@@ -57,13 +57,13 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
-		if(s.get_value().empty())
+		if (s.get_value().empty())
 		{
 			return false;
 		}
 		std::wstring wname{ string_manip::wstr(s.get_name()) };
 		CREDENTIALW* existing{ nullptr };
-		if(!CredReadW(wname.c_str(), CRED_TYPE_GENERIC, 0, &existing))
+		if (!CredReadW(wname.c_str(), CRED_TYPE_GENERIC, 0, &existing))
 		{
 			return false;
 		}
