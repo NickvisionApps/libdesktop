@@ -17,6 +17,9 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_program(CLANG_FORMAT clang-format)
+find_program(CLANG_TIDY clang-tidy)
+
 project("libdesktop" LANGUAGES C CXX VERSION 2025.5.0 DESCRIPTION "A cross-platform desktop library.")
 
 option(BUILD_SHARED_LIBS "Build libdesktop as a shared library" OFF)
@@ -143,6 +146,24 @@ if(LINUX)
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+
+if(CLANG_TIDY)
+    set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY}")
+endif()
+
+if(CLANG_FORMAT)
+    file(GLOB_RECURSE FORMAT_SOURCE_FILES
+        "${CMAKE_SOURCE_DIR}/include/*.h"
+        "${CMAKE_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/tests/*.cpp"
+        "${CMAKE_SOURCE_DIR}/tests/*.h")
+    add_custom_target(format
+        COMMAND ${CLANG_FORMAT} -i ${FORMAT_SOURCE_FILES}
+        COMMENT "Running clang-format")
+    add_custom_target(format-check
+        COMMAND ${CLANG_FORMAT} --dry-run --Werror ${FORMAT_SOURCE_FILES}
+        COMMENT "Checking clang-format")
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
