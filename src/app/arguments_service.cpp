@@ -10,35 +10,39 @@ namespace desktop::app
 
 	void arguments_service::add(const std::string& argument)
 	{
-		std::lock_guard lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		m_arguments.push_back(argument);
 	}
 
 	bool arguments_service::contains(std::string_view argument) const
 	{
-		std::lock_guard lock{ m_mutex };
-		return std::find(m_arguments.begin(), m_arguments.end(), argument) != m_arguments.end();
+		std::scoped_lock lock{ m_mutex };
+		return std::ranges::find(m_arguments, argument) != m_arguments.end();
 	}
 
 	const std::vector<std::string>& arguments_service::get_all() const
 	{
-		std::lock_guard lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_arguments;
 	}
 
 	size_t arguments_service::get_count() const
 	{
-		std::lock_guard lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_arguments.size();
 	}
 
 	std::optional<std::string> arguments_service::get_next(std::string_view argument) const
 	{
-		std::lock_guard lock{ m_mutex };
-		auto it = std::find(m_arguments.begin(), m_arguments.end(), argument);
-		if (it != m_arguments.end() && ++it != m_arguments.end())
+		std::scoped_lock lock{ m_mutex };
+		auto it = std::ranges::find(m_arguments, argument);
+		if (it != m_arguments.end())
 		{
-			return *it;
+			it++;
+			if (it != m_arguments.end())
+			{
+				return *it;
+			}
 		}
 		return std::nullopt;
 	}

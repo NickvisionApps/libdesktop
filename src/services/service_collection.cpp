@@ -18,7 +18,7 @@ namespace desktop::services
 		service_scope scope;
 		std::function<std::any()> factory;
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			auto it{ m_services.find(type) };
 			if (it == m_services.end())
 			{
@@ -50,7 +50,7 @@ namespace desktop::services
 		}
 		if (scope == service_scope::singleton)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			auto it{ m_services.find(type) };
 			if (it != m_services.end())
 			{

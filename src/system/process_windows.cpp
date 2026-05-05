@@ -233,7 +233,7 @@ namespace desktop::system
 			{
 				return;
 			}
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			buffer.append(chunk.data(), read);
 		}
 	}
@@ -253,25 +253,25 @@ namespace desktop::system
 
 	int process::impl::get_exit_code() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_exit_code;
 	}
 
 	const std::string& process::impl::get_standard_error() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_standard_error;
 	}
 
 	const std::string& process::impl::get_standard_output() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_standard_output;
 	}
 
 	process_status process::impl::get_status() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_status;
 	}
 
@@ -279,7 +279,7 @@ namespace desktop::system
 	{
 		HANDLE stdin_write{ nullptr };
 		{
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_status != process_status::running)
 			{
 				return false;
@@ -304,7 +304,7 @@ namespace desktop::system
 
 	bool process::impl::kill()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::running && m_status != process_status::paused)
 		{
 			return false;
@@ -319,7 +319,7 @@ namespace desktop::system
 
 	bool process::impl::pause()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::running)
 		{
 			return false;
@@ -331,7 +331,7 @@ namespace desktop::system
 
 	bool process::impl::resume()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::paused)
 		{
 			return false;
@@ -343,7 +343,7 @@ namespace desktop::system
 
 	bool process::impl::start()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::created)
 		{
 			return false;
@@ -432,7 +432,7 @@ namespace desktop::system
 	int process::impl::wait_for_exit()
 	{
 		{
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_status == process_status::created)
 			{
 				return -1;
@@ -442,7 +442,7 @@ namespace desktop::system
 		{
 			m_watch_thread.join();
 		}
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_exit_code;
 	}
 
@@ -469,7 +469,7 @@ namespace desktop::system
 		append_pipe_output(m_standard_error, m_stderr_read);
 		int exit_code;
 		{
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (process_exit_code == STILL_ACTIVE && !GetExitCodeProcess(m_process_information.hProcess, &process_exit_code))
 			{
 				process_exit_code = static_cast<DWORD>(-1);

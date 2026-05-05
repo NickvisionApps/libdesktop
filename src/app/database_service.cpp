@@ -90,14 +90,14 @@ namespace desktop::app
 	database_service::database_service(std::shared_ptr<app_info> info, std::shared_ptr<secrets::secret_service> secret_service)
 	    : m_db{ nullptr },
 	      m_is_encrypted{ false },
-	      m_info{ info },
-	      m_secret_service{ secret_service }
+	      m_info{ std::move(info) },
+	      m_secret_service{ std::move(secret_service) }
 	{
 	}
 
 	database_service::~database_service()
 	{
-		if (m_db)
+		if (m_db != nullptr)
 		{
 			sqlite3_close(m_db);
 			m_db = nullptr;
@@ -113,7 +113,7 @@ namespace desktop::app
 	bool database_service::begin_transaction()
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -122,7 +122,7 @@ namespace desktop::app
 
 	bool database_service::commit_transaction()
 	{
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -131,7 +131,7 @@ namespace desktop::app
 
 	bool database_service::rollback_transaction()
 	{
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -141,7 +141,7 @@ namespace desktop::app
 	bool database_service::clear_table(const std::string& table_name)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -152,7 +152,7 @@ namespace desktop::app
 	int database_service::count_in_table(const std::string& table_name)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return -1;
 		}
@@ -174,7 +174,7 @@ namespace desktop::app
 	bool database_service::contains_in_table(const std::string& table_name, const database_value& matching_value)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -197,7 +197,7 @@ namespace desktop::app
 	bool database_service::delete_from_table(const std::string& table_name, const database_value& matching_value)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -216,7 +216,7 @@ namespace desktop::app
 	bool database_service::drop_table(const std::string& table_name)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -247,7 +247,7 @@ namespace desktop::app
 	int database_service::execute_non_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return -1;
 		}
@@ -277,7 +277,7 @@ namespace desktop::app
 	                                                                         const std::unordered_map<std::string, std::string>& parameters)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return {};
 		}
@@ -370,7 +370,7 @@ namespace desktop::app
 	std::vector<std::vector<database_value>> database_service::select_from_table(const std::string& table_name, const database_value& matching_value)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return {};
 		}
@@ -389,7 +389,7 @@ namespace desktop::app
 	std::vector<std::vector<database_value>> database_service::select_all_from_table(const std::string& table_name)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return {};
 		}
@@ -407,7 +407,7 @@ namespace desktop::app
 	bool database_service::table_exists(const std::string& table_name)
 	{
 		ensure_database();
-		if (!m_db)
+		if (m_db == nullptr)
 		{
 			return false;
 		}
@@ -462,8 +462,8 @@ namespace desktop::app
 
 	void database_service::ensure_database() const
 	{
-		std::lock_guard lock{ m_mutex };
-		if (m_db)
+		std::scoped_lock lock{ m_mutex };
+		if (m_db != nullptr)
 		{
 			return;
 		}

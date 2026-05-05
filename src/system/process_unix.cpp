@@ -123,25 +123,25 @@ namespace desktop::system
 
 	int process::impl::get_exit_code() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_exit_code;
 	}
 
 	const std::string& process::impl::get_standard_error() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_standard_error;
 	}
 
 	const std::string& process::impl::get_standard_output() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_standard_output;
 	}
 
 	process_status process::impl::get_status() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_status;
 	}
 
@@ -149,7 +149,7 @@ namespace desktop::system
 	{
 		int stdin_fd{ -1 };
 		{
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_status != process_status::running)
 			{
 				return false;
@@ -177,7 +177,7 @@ namespace desktop::system
 
 	bool process::impl::kill()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::running && m_status != process_status::paused)
 		{
 			return false;
@@ -192,7 +192,7 @@ namespace desktop::system
 
 	bool process::impl::pause()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::running)
 		{
 			return false;
@@ -213,7 +213,7 @@ namespace desktop::system
 			const ssize_t bytes{ read(fd, chunk.data(), chunk.size()) };
 			if (bytes > 0)
 			{
-				std::lock_guard<std::mutex> lock{ m_mutex };
+				std::scoped_lock lock{ m_mutex };
 				buffer.append(chunk.data(), static_cast<std::size_t>(bytes));
 				continue;
 			}
@@ -230,7 +230,7 @@ namespace desktop::system
 
 	bool process::impl::resume()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::paused)
 		{
 			return false;
@@ -245,7 +245,7 @@ namespace desktop::system
 
 	bool process::impl::start()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_status != process_status::created)
 		{
 			return false;
@@ -326,7 +326,7 @@ namespace desktop::system
 	int process::impl::wait_for_exit()
 	{
 		{
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_status == process_status::created)
 			{
 				return -1;
@@ -336,7 +336,7 @@ namespace desktop::system
 		{
 			m_watch_thread.join();
 		}
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_exit_code;
 	}
 
@@ -349,7 +349,7 @@ namespace desktop::system
 			const pid_t result{ waitpid(m_pid, &status_value, WNOHANG | WUNTRACED | WCONTINUED) };
 			if (result == m_pid)
 			{
-				std::lock_guard<std::mutex> lock{ m_mutex };
+				std::scoped_lock lock{ m_mutex };
 				if (WIFSTOPPED(status_value))
 				{
 					m_status = process_status::paused;
@@ -377,7 +377,7 @@ namespace desktop::system
 		read_available(m_stderr_pipe[0], m_standard_error);
 		int exit_code;
 		{
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			m_exit_code = WIFEXITED(status_value) ? WEXITSTATUS(status_value) : -1;
 			if (m_status != process_status::killed)
 			{

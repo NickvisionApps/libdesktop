@@ -5,7 +5,7 @@
 namespace desktop::app
 {
 	configuration_service::configuration_service(std::shared_ptr<database_service> db)
-	    : m_db{ db },
+	    : m_db{ std::move(db) },
 	      m_table_ensured{ false }
 	{
 	}
@@ -17,7 +17,7 @@ namespace desktop::app
 	std::unordered_map<std::string, std::string> configuration_service::get_all_raw()
 	{
 		ensure_table();
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		std::unordered_map<std::string, std::string> result;
 		for (const std::vector<database_value>& row : m_db->select_all_from_table("configuration"))
 		{
@@ -90,7 +90,7 @@ namespace desktop::app
 		{
 			return;
 		}
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_table_ensured)
 		{
 			return;

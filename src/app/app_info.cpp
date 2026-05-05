@@ -9,10 +9,10 @@ using namespace desktop::helpers;
 
 namespace desktop::app
 {
-	app_info::app_info(const std::string& id, const std::string& name, const std::string& english_short_name)
-	    : m_id{ id },
-	      m_name{ name },
-	      m_english_short_name{ english_short_name },
+	app_info::app_info(std::string id, std::string name, std::string english_short_name)
+	    : m_id{ std::move(id) },
+	      m_name{ std::move(name) },
+	      m_english_short_name{ std::move(english_short_name) },
 	      m_portable{ false }
 	{
 	}
@@ -53,7 +53,7 @@ namespace desktop::app
 				{
 					continue;
 				}
-				ss << string_manip::trim(line) << std::endl;
+				ss << string_manip::trim(line) << '\n';
 			}
 			maddy::Parser parser;
 			m_changelog_html = parser.Parse(ss);

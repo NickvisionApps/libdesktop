@@ -16,13 +16,13 @@ namespace desktop::system
 
 	bool power_service::is_suspended() const
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		return m_suspended;
 	}
 
 	bool power_service::allow_suspend()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (!m_suspended)
 		{
 			return true;
@@ -51,7 +51,7 @@ namespace desktop::system
 
 	bool power_service::prevent_suspend()
 	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_suspended)
 		{
 			return true;

@@ -10,7 +10,7 @@ namespace desktop::app
 	{
 	public:
 		configuration_saved_event_args();
-		configuration_saved_event_args(const std::string& changed_property_name, const database_value& changed_property_new_value);
+		configuration_saved_event_args(std::string changed_property_name, database_value changed_property_new_value);
 		~configuration_saved_event_args() override = default;
 		configuration_saved_event_args(const configuration_saved_event_args&) = default;
 		configuration_saved_event_args(configuration_saved_event_args&&) noexcept = default;

@@ -11,19 +11,19 @@ namespace desktop::app
 	class database_value
 	{
 	public:
-		database_value(const std::string& name, bool v);
-		database_value(const std::string& name, int v);
-		database_value(const std::string& name, int64_t v);
-		database_value(const std::string& name, double v);
-		database_value(const std::string& name, float v);
-		database_value(const std::string& name, const std::string& v);
-		database_value(const std::string& name, std::string_view v);
-		database_value(const std::string& name, const char* v);
-		database_value(const std::string& name, std::nullptr_t);
+		database_value(std::string name, bool v);
+		database_value(std::string name, int v);
+		database_value(std::string name, int64_t v);
+		database_value(std::string name, double v);
+		database_value(std::string name, float v);
+		database_value(std::string name, std::string v);
+		database_value(std::string name, std::string_view v);
+		database_value(std::string name, const char* v);
+		database_value(std::string name, std::nullptr_t);
 		template <typename T>
 		    requires std::is_enum_v<T>
-		database_value(const std::string& name, T v)
-		    : m_column_name{ name },
+		database_value(std::string name, T v)
+		    : m_column_name{ std::move(name) },
 		      m_value{ static_cast<int64_t>(v) }
 		{
 		}

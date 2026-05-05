@@ -8,9 +8,9 @@ namespace desktop::app
 	{
 	}
 
-	configuration_saved_event_args::configuration_saved_event_args(const std::string& changed_property_name, const database_value& changed_property_new_value)
-	    : m_changed_property_name{ changed_property_name },
-	      m_changed_property_new_value{ changed_property_new_value },
+	configuration_saved_event_args::configuration_saved_event_args(std::string changed_property_name, database_value changed_property_new_value)
+	    : m_changed_property_name{ std::move(changed_property_name) },
+	      m_changed_property_new_value{ std::move(changed_property_new_value) },
 	      m_is_bulk{ false }
 	{
 	}

@@ -10,7 +10,7 @@ using namespace desktop::services;
 namespace desktop::hosting
 {
 	lifetime_service::lifetime_service(std::shared_ptr<logger> logger, bool graphical)
-	    : m_logger{ logger },
+	    : m_logger{ std::move(logger) },
 	      m_graphical{ graphical }
 	{
 	}
