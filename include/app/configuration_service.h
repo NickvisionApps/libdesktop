@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <filesystem>
 #include <memory>
 #include <mutex>
@@ -38,7 +39,6 @@ namespace desktop::app
 		configuration_service(configuration_service&&) = delete;
 		const events::event<configuration_service, configuration_saved_event_args>& get_saved_event() const;
 		std::unordered_map<std::string, std::string> get_all_raw();
-		void set_many(const std::unordered_map<std::string, std::string>& values);
 		int import_from_json_file(const std::filesystem::path& path);
 		template<configuration_gettable T>
 		T get(const std::string& name, T default_value)
@@ -54,12 +54,19 @@ namespace desktop::app
 			}
 			else
 			{
-				std::vector<std::unordered_map<std::string, std::string>> rows{ m_db->select_from_table("configuration", "name", name) };
-				if (!rows.empty() && rows[0].contains("value"))
+				std::vector<std::vector<database_value>> rows{ m_db->select_from_table("configuration", { "name", name }) };
+				if (!rows.empty())
 				{
-					raw = rows[0].at("value");
-					m_cache[name] = raw;
-					found = true;
+					for (const database_value& col : rows[0])
+					{
+						if (col.get_column_name() == "value")
+						{
+							raw = col.str();
+							m_cache[name] = raw;
+							found = true;
+							break;
+						}
+					}
 				}
 			}
 			if (!found)
@@ -114,13 +121,26 @@ namespace desktop::app
 			}
 			else
 			{
-				std::vector<std::unordered_map<std::string, std::string>> rows{ m_db->select_from_table("configuration", "name", name) };
-				if (rows.empty() || !rows[0].contains("value"))
+				std::vector<std::vector<database_value>> rows{ m_db->select_from_table("configuration", database_value{ "name", name }) };
+				if (rows.empty())
 				{
 					return default_value;
 				}
-				raw = rows[0].at("value");
-				m_cache[name] = raw;
+				bool value_found{ false };
+				for (const database_value& col : rows[0])
+				{
+					if (col.get_column_name() == "value")
+					{
+						raw = col.str();
+						m_cache[name] = raw;
+						value_found = true;
+						break;
+					}
+				}
+				if (!value_found)
+				{
+					return default_value;
+				}
 			}
 			try
 			{
@@ -134,73 +154,33 @@ namespace desktop::app
 		template<configuration_settable T>
 		void set(const std::string& name, T value)
 		{
-			std::string str_value;
-			database_value event_value{ nullptr };
-			if constexpr (std::is_same_v<T, bool>)
-			{
-				str_value = value ? "true" : "false";
-				event_value = database_value{ static_cast<int64_t>(value ? 1 : 0) };
-			}
-			else if constexpr (std::is_same_v<T, int>)
-			{
-				str_value = std::to_string(value);
-				event_value = database_value{ static_cast<int64_t>(value) };
-			}
-			else if constexpr (std::is_same_v<T, int64_t>)
-			{
-				str_value = std::to_string(value);
-				event_value = database_value{ value };
-			}
-			else if constexpr (std::is_same_v<T, float>)
-			{
-				str_value = std::to_string(value);
-				event_value = database_value{ static_cast<double>(value) };
-			}
-			else if constexpr (std::is_same_v<T, double>)
-			{
-				str_value = std::to_string(value);
-				event_value = database_value{ value };
-			}
-			else if constexpr (std::is_same_v<T, std::string>)
-			{
-				str_value = value;
-				event_value = database_value{ value };
-			}
-			else if constexpr (std::is_same_v<T, const char*> || std::is_same_v<T, std::string_view>)
-			{
-				str_value = std::string(value);
-				event_value = database_value{ value };
-			}
-			else
-			{
-				str_value = std::to_string(static_cast<int64_t>(value));
-				event_value = database_value{ static_cast<int64_t>(value) };
-			}
+			database_value db_value{ "value", value };
 			ensure_table();
 			std::unique_lock<std::mutex> lock{ m_mutex };
-			m_cache[name] = str_value;
+			m_cache[name] = db_value.str();
 			m_db->replace_into_table("configuration",
-			{ 
+			{
 				{ "name", name },
-				{ "value", str_value }
+				db_value
 			});
 			lock.unlock();
-			m_saved_event.invoke(*this, { name, event_value });
+			m_saved_event.invoke(*this, { name, db_value });
 		}
 		template<configuration_object T>
 		void set(const std::string& name, const T& value)
 		{
 			std::string json_str{ nlohmann::json(value).dump() };
+			database_value db_value{ "value", json_str };
 			ensure_table();
 			std::unique_lock<std::mutex> lock{ m_mutex };
-			m_cache[name] = json_str;
+			m_cache[name] = db_value.str();
 			m_db->replace_into_table("configuration",
-			{ 
+			{
 				{ "name", name },
-				{ "value", json_str }
+				db_value
 			});
 			lock.unlock();
-			m_saved_event.invoke(*this, { name, json_str });
+			m_saved_event.invoke(*this, { name, db_value });
 		}
 		configuration_service& operator=(const configuration_service&) = delete;
 		configuration_service& operator=(configuration_service&&) = delete;
@@ -209,7 +189,7 @@ namespace desktop::app
 		void ensure_table();
 		mutable std::mutex m_mutex;
 		std::shared_ptr<database_service> m_db;
-		bool m_table_ensured;
+		std::atomic<bool> m_table_ensured;
 		std::unordered_map<std::string, std::string> m_cache;
 		events::event<configuration_service, configuration_saved_event_args> m_saved_event;
 	};

@@ -10,7 +10,7 @@
 namespace desktop::helpers::string_manip
 {
 	template<typename T>
-	concept StringImplicitlyConstructible = std::is_constructible_v<T, std::string>&& std::is_convertible_v<std::string, T>;
+	concept implicitly_constructable_string = std::is_constructible_v<T, std::string>&& std::is_convertible_v<std::string, T>;
 
 	std::vector<std::byte> base64_decode(const std::string& input);
 	std::string base64_encode(const std::vector<std::byte>& input);
@@ -26,7 +26,7 @@ namespace desktop::helpers::string_manip
 	std::string upper(const std::string& str);
 	std::wstring wstr(const std::string& str);
 
-    template<StringImplicitlyConstructible T = std::string>
+    template<implicitly_constructable_string T = std::string>
     std::vector<T> split(const std::string& s, const std::string& delimiter, bool includeEmpty = true) noexcept
     {
         std::vector<T> splits;
@@ -50,7 +50,7 @@ namespace desktop::helpers::string_manip
         return splits;
     }
 
-    template<StringImplicitlyConstructible T = std::string>
+    template<implicitly_constructable_string T = std::string>
     std::vector<T> split(const std::string& s, char delimiter, bool includeEmpty = true) noexcept
     {
         return split<T>(s, std::string(1, delimiter), includeEmpty);

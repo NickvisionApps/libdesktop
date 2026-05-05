@@ -27,17 +27,18 @@ namespace desktop::app
 		bool rollback_transaction();
 		bool clear_table(const std::string& table_name);
 		int count_in_table(const std::string& table_name);
-		bool contains_in_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value);
-		bool delete_from_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value);
+		bool contains_in_table(const std::string& table_name, const database_value& matching_value);
+		bool delete_from_table(const std::string& table_name, const database_value& matching_value);
 		bool drop_table(const std::string& table_name);
 		bool ensure_table_exists(const std::string& table_name, const std::string& layout);
-		int execute_non_query(const std::string& sql, const std::unordered_map<std::string, database_value>& parameters = {});
-		bool insert_into_table(const std::string& table_name, const std::unordered_map<std::string, database_value>& data);
-		bool replace_into_table(const std::string& table_name, const std::unordered_map<std::string, database_value>& data);
-		std::vector<std::unordered_map<std::string, std::string>> select_from_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value);
-		std::vector<std::unordered_map<std::string, std::string>> select_all_from_table(const std::string& table_name);
+		int execute_non_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters = {});
+		std::vector<std::vector<database_value>> execute_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters = {});
+		bool insert_into_table(const std::string& table_name, const std::vector<database_value>& data);
+		bool replace_into_table(const std::string& table_name, const std::vector<database_value>& data);
+		std::vector<std::vector<database_value>> select_from_table(const std::string& table_name, const database_value& matching_value);
+		std::vector<std::vector<database_value>> select_all_from_table(const std::string& table_name);
 		bool table_exists(const std::string& table_name);
-		bool update_in_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value, const std::unordered_map<std::string, database_value>& new_data);
+		bool update_in_table(const std::string& table_name, const database_value& matching_value, const std::vector<database_value>& new_data);
 		database_service& operator=(const database_service&) = delete;
 		database_service& operator=(database_service&&) = delete;
 

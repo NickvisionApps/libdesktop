@@ -10,7 +10,6 @@ namespace desktop::app
 	{
 
 	}
-
 	const events::event<configuration_service, configuration_saved_event_args>& configuration_service::get_saved_event() const
 	{
 		return m_saved_event;
@@ -21,33 +20,30 @@ namespace desktop::app
 		ensure_table();
 		std::lock_guard<std::mutex> lock{ m_mutex };
 		std::unordered_map<std::string, std::string> result;
-		for (const std::unordered_map<std::string, std::string>& row : m_db->select_all_from_table("configuration"))
+		for (const std::vector<database_value>& row : m_db->select_all_from_table("configuration"))
 		{
-			if (row.contains("name") && row.contains("value"))
+			std::string name;
+			std::string value;
+			bool name_found{ false };
+			for (const database_value& col : row)
 			{
-				result[row.at("name")] = row.at("value");
+				if (col.get_column_name() == "name")
+				{
+					name = col.str();
+					name_found = true;
+				}
+				else if (col.get_column_name() == "value")
+				{
+					value = col.str();
+				}
+			}
+			if (name_found)
+			{
+				result[name] = value;
+				m_cache[name] = value;
 			}
 		}
 		return result;
-	}
-
-	void configuration_service::set_many(const std::unordered_map<std::string, std::string>& values)
-	{
-		ensure_table();
-		std::unique_lock<std::mutex> lock{ m_mutex };
-		m_db->begin_transaction();
-		for (const std::pair<const std::string, std::string>& pair : values)
-		{
-			m_cache[pair.first] = pair.second;
-			m_db->replace_into_table("configuration",
-			{ 
-				{ "name", pair.first },
-				{ "value", pair.second }
-			});
-		}
-		m_db->commit_transaction();
-		lock.unlock();
-		m_saved_event.invoke(*this, { std::string(), "" });
 	}
 
 	int configuration_service::import_from_json_file(const std::filesystem::path& path)
@@ -81,20 +77,24 @@ namespace desktop::app
 			std::string val{ it.value().is_string() ? it.value().get<std::string>() : it.value().dump() };
 			m_cache[it.key()] = val;
 			m_db->replace_into_table("configuration",
-			{ 
+			{
 				{ "name", it.key() },
 				{ "value", val }
 			});
-			++imported;
+			imported++;
 		}
 		m_db->commit_transaction();
 		lock.unlock();
-		m_saved_event.invoke(*this, { std::string(), "" });
+		m_saved_event.invoke(*this, {});
 		return imported;
 	}
 
 	void configuration_service::ensure_table()
 	{
+		if (m_table_ensured)
+		{
+			return;
+		}
 		std::lock_guard<std::mutex> lock{ m_mutex };
 		if (m_table_ensured)
 		{

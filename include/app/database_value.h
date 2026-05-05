@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -7,25 +8,39 @@
 
 namespace desktop::app
 {
+	template<typename T>
+	concept enum_like = std::is_enum_v<T>;
+
 	class database_value
 	{
 	public:
+		database_value(const std::string& name, bool v);
+		database_value(const std::string& name, int v);
+		database_value(const std::string& name, int64_t v);
+		database_value(const std::string& name, double v);
+		database_value(const std::string& name, float v);
+		database_value(const std::string& name, const std::string& v);
+		database_value(const std::string& name, std::string_view v);
+		database_value(const std::string& name, const char* v);
+		database_value(const std::string& name, std::nullptr_t);
+		template <enum_like T>
+		database_value(const std::string& name, T v)
+			: m_column_name{ name },
+			m_value{ static_cast<int64_t>(v) }
+		{
+
+		}
 		~database_value() = default;
 		database_value(const database_value&) = default;
 		database_value(database_value&&) noexcept = default;
-		database_value(int v);
-		database_value(int64_t v);
-		database_value(double v);
-		database_value(float v);
-		database_value(const std::string& v);
-		database_value(std::string_view v);
-		database_value(const char* v);
-		database_value(std::nullptr_t);
-		const std::variant<int64_t, double, std::string, std::nullptr_t>& value() const;
+		const std::variant<int64_t, double, std::string, std::nullptr_t>& get_value() const;
+		const std::string& get_column_name() const;
+		std::string str() const;
 		database_value& operator=(const database_value&) = default;
 		database_value& operator=(database_value&&) noexcept = default;
 
 	private:
+		std::string m_column_name;
 		std::variant<int64_t, double, std::string, std::nullptr_t> m_value;
 	};
 }

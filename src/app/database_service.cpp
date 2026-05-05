@@ -31,25 +31,60 @@ namespace desktop::app
 			{
 				sqlite3_bind_null(stmt, index);
 			}
-		}, value.value());
+		}, value.get_value());
 	}
 
-	static std::vector<std::unordered_map<std::string, std::string>> fetch_rows(sqlite3_stmt* stmt)
+	static std::vector<std::vector<database_value>> fetch_rows(sqlite3_stmt* stmt)
 	{
-		std::vector<std::unordered_map<std::string, std::string>> rows;
+		std::vector<std::vector<database_value>> rows;
 		int col_count{ sqlite3_column_count(stmt) };
 		while (sqlite3_step(stmt) == SQLITE_ROW)
 		{
-			std::unordered_map<std::string, std::string> row;
+			std::vector<database_value> row;
 			for (int i = 0; i < col_count; ++i)
 			{
 				std::string col_name{ sqlite3_column_name(stmt, i) };
-				const unsigned char* text{ sqlite3_column_text(stmt, i) };
-				row[col_name] = text ? reinterpret_cast<const char*>(text) : "";
+				database_value val{ col_name, nullptr };
+				switch (sqlite3_column_type(stmt, i))
+				{
+				case SQLITE_INTEGER:
+					val = { col_name, sqlite3_column_int64(stmt, i) };
+					break;
+				case SQLITE_FLOAT:
+					val = { col_name, sqlite3_column_double(stmt, i) };
+					break;
+				case SQLITE_TEXT:
+				{
+					const char* text{ reinterpret_cast<const char*>(sqlite3_column_text(stmt, i)) };
+					val = { col_name, text ? std::string{ text } : std::string{} };
+					break;
+				}
+				default:
+					break;
+				}
+				row.push_back(std::move(val));
 			}
 			rows.push_back(std::move(row));
 		}
 		return rows;
+	}
+
+	static std::string quote(const std::string& name)
+	{
+		std::string result{ "\"" };
+		for (char c : name)
+		{
+			if (c == '"')
+			{
+				result += "\"\"";
+			}
+			else
+			{
+				result += c;
+			}
+		}
+		result += '"';
+		return result;
 	}
 
 	database_service::database_service(std::shared_ptr<app_info> info, std::shared_ptr<secrets::secret_service> secret_service)
@@ -111,7 +146,7 @@ namespace desktop::app
 		{
 			return false;
 		}
-		std::string sql{ "DELETE FROM " + table_name + ";" };
+		std::string sql{ "DELETE FROM " + quote(table_name) + ";" };
 		return sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
 	}
 
@@ -122,7 +157,7 @@ namespace desktop::app
 		{
 			return -1;
 		}
-		std::string sql{ "SELECT COUNT(*) FROM " + table_name + ";" };
+		std::string sql{ "SELECT COUNT(*) FROM " + quote(table_name) + ";" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
@@ -137,14 +172,14 @@ namespace desktop::app
 		return count;
 	}
 
-	bool database_service::contains_in_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value)
+	bool database_service::contains_in_table(const std::string& table_name, const database_value& matching_value)
 	{
 		ensure_database();
 		if (!m_db)
 		{
 			return false;
 		}
-		std::string sql{ "SELECT COUNT(*) FROM " + table_name + " WHERE " + column_name + " = ?1;" };
+		std::string sql{ "SELECT COUNT(*) FROM " + quote(table_name) + " WHERE " + quote(matching_value.get_column_name()) + " = ?1;" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
@@ -160,14 +195,14 @@ namespace desktop::app
 		return result;
 	}
 
-	bool database_service::delete_from_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value)
+	bool database_service::delete_from_table(const std::string& table_name, const database_value& matching_value)
 	{
 		ensure_database();
 		if (!m_db)
 		{
 			return false;
 		}
-		std::string sql{ "DELETE FROM " + table_name + " WHERE " + column_name + " = ?1;" };
+		std::string sql{ "DELETE FROM " + quote(table_name) + " WHERE " + quote(matching_value.get_column_name()) + " = ?1;" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
@@ -186,7 +221,7 @@ namespace desktop::app
 		{
 			return false;
 		}
-		std::string sql{ "DROP TABLE IF EXISTS " + table_name + ";" };
+		std::string sql{ "DROP TABLE IF EXISTS " + quote(table_name) + ";" };
 		return sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
 	}
 
@@ -197,11 +232,11 @@ namespace desktop::app
 		{
 			return false;
 		}
-		std::string sql{ "CREATE TABLE IF NOT EXISTS " + table_name + " (" + layout + ");" };
+		std::string sql{ "CREATE TABLE IF NOT EXISTS " + quote(table_name) + " (" + layout + ");" };
 		return sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
 	}
 
-	int database_service::execute_non_query(const std::string& sql, const std::unordered_map<std::string, database_value>& parameters)
+	int database_service::execute_non_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters)
 	{
 		ensure_database();
 		if (!m_db)
@@ -213,12 +248,12 @@ namespace desktop::app
 		{
 			return -1;
 		}
-		for (const std::pair<const std::string, database_value>& pair : parameters)
+		for (const std::pair<const std::string, std::string>& pair : parameters)
 		{
-			const int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
+			int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
 			if (idx > 0)
 			{
-				bind_value(stmt, idx, pair.second);
+				bind_value(stmt, idx, { "", pair.second });
 			}
 		}
 		int rc{ sqlite3_step(stmt) };
@@ -230,119 +265,132 @@ namespace desktop::app
 		return sqlite3_changes(m_db);
 	}
 
-	bool database_service::insert_into_table(const std::string& table_name, const std::unordered_map<std::string, database_value>& data)
+	std::vector<std::vector<database_value>> database_service::execute_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters)
+	{
+		ensure_database();
+		if (!m_db)
+		{
+			return {};
+		}
+		sqlite3_stmt* stmt{ nullptr };
+		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+		{
+			return {};
+		}
+		for (const std::pair<const std::string, std::string>& pair : parameters)
+		{
+			int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
+			if (idx > 0)
+			{
+				bind_value(stmt, idx, { "", pair.second });
+			}
+		}
+		std::vector<std::vector<database_value>> rows{ fetch_rows(stmt) };
+		sqlite3_finalize(stmt);
+		return rows;
+	}
+
+	bool database_service::insert_into_table(const std::string& table_name, const std::vector<database_value>& data)
 	{
 		ensure_database();
 		if (!m_db || data.empty())
 		{
 			return false;
 		}
-		std::vector<std::string> keys;
-		keys.reserve(data.size());
-		for (const std::pair<const std::string, database_value>& pair : data)
-		{
-			keys.push_back(pair.first);
-		}
 		std::ostringstream cols;
 		std::ostringstream vals;
-		for (size_t i{ 0 }; i < keys.size(); ++i)
+		for (size_t i{ 0 }; i < data.size(); ++i)
 		{
 			if (i > 0)
 			{
 				cols << ", ";
 				vals << ", ";
 			}
-			cols << keys[i];
+			cols << quote(data[i].get_column_name());
 			vals << "?" << (i + 1);
 		}
-		std::string sql{ "INSERT INTO " + table_name + " (" + cols.str() + ") VALUES (" + vals.str() + ");" };
+		std::string sql{ "INSERT INTO " + quote(table_name) + " (" + cols.str() + ") VALUES (" + vals.str() + ");" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
 			return false;
 		}
-		for (size_t i{ 0 }; i < keys.size(); ++i)
+		for (size_t i{ 0 }; i < data.size(); ++i)
 		{
-			bind_value(stmt, static_cast<int>(i + 1), data.at(keys[i]));
+			bind_value(stmt, static_cast<int>(i + 1), data[i]);
 		}
 		const bool result{ sqlite3_step(stmt) == SQLITE_DONE };
 		sqlite3_finalize(stmt);
 		return result;
 	}
 
-	bool database_service::replace_into_table(const std::string& table_name, const std::unordered_map<std::string, database_value>& data)
+	bool database_service::replace_into_table(const std::string& table_name, const std::vector<database_value>& data)
 	{
 		ensure_database();
 		if (!m_db || data.empty())
 		{
 			return false;
 		}
-		std::vector<std::string> keys;
-		keys.reserve(data.size());
-		for (const std::pair<const std::string, database_value>& pair : data)
-		{
-			keys.push_back(pair.first);
-		}
 		std::ostringstream cols;
 		std::ostringstream vals;
-		for (size_t i{ 0 }; i < keys.size(); ++i)
+		for (size_t i{ 0 }; i < data.size(); ++i)
 		{
 			if (i > 0)
 			{
 				cols << ", ";
 				vals << ", ";
 			}
-			cols << keys[i];
+			cols << quote(data[i].get_column_name());
 			vals << "?" << (i + 1);
 		}
-		std::string sql{ "INSERT OR REPLACE INTO " + table_name + " (" + cols.str() + ") VALUES (" + vals.str() + ");" };
+		std::string sql{ "INSERT OR REPLACE INTO " + quote(table_name) + " (" + cols.str() + ") VALUES (" + vals.str() + ");" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
 			return false;
 		}
-		for (size_t i{ 0 }; i < keys.size(); ++i)
+		for (size_t i{ 0 }; i < data.size(); ++i)
 		{
-			bind_value(stmt, static_cast<int>(i + 1), data.at(keys[i]));
+			bind_value(stmt, static_cast<int>(i + 1), data[i]);
 		}
 		bool result{ sqlite3_step(stmt) == SQLITE_DONE };
 		sqlite3_finalize(stmt);
 		return result;
 	}
 
-	std::vector<std::unordered_map<std::string, std::string>> database_service::select_from_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value)
+	std::vector<std::vector<database_value>> database_service::select_from_table(const std::string& table_name, const database_value& matching_value)
 	{
 		ensure_database();
 		if (!m_db)
 		{
 			return {};
 		}
-		std::string sql{ "SELECT * FROM " + table_name + " WHERE " + column_name + " = ?1;" };
+		std::string sql{ "SELECT * FROM " + quote(table_name) + " WHERE " + quote(matching_value.get_column_name()) + " = ?1;" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
 			return {};
 		}
 		bind_value(stmt, 1, matching_value);
-		std::vector<std::unordered_map<std::string, std::string>> rows{ fetch_rows(stmt) };
+		std::vector<std::vector<database_value>> rows{ fetch_rows(stmt) };
 		sqlite3_finalize(stmt);
 		return rows;
 	}
 
-	std::vector<std::unordered_map<std::string, std::string>> database_service::select_all_from_table(const std::string& table_name)
+	std::vector<std::vector<database_value>> database_service::select_all_from_table(const std::string& table_name)
 	{
 		ensure_database();
 		if (!m_db)
 		{
 			return {};
 		}
-		std::string sql{ "SELECT * FROM " + table_name + ";" };
+		std::string sql{ "SELECT * FROM " + quote(table_name) + ";" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
 			return {};
 		}
-		std::vector<std::unordered_map<std::string, std::string>> rows{ fetch_rows(stmt) };
+		std::vector<std::vector<database_value>> rows{ fetch_rows(stmt) };
 		sqlite3_finalize(stmt);
 		return rows;
 	}
@@ -369,41 +417,35 @@ namespace desktop::app
 		return result;
 	}
 
-	bool database_service::update_in_table(const std::string& table_name, const std::string& column_name, const database_value& matching_value, const std::unordered_map<std::string, database_value>& new_data)
+	bool database_service::update_in_table(const std::string& table_name, const database_value& matching_value, const std::vector<database_value>& new_data)
 	{
 		ensure_database();
 		if (!m_db || new_data.empty())
 		{
 			return false;
 		}
-		std::vector<std::string> keys;
-		keys.reserve(new_data.size());
-		for (const std::pair<const std::string, database_value>& pair : new_data)
-		{
-			keys.push_back(pair.first);
-		}
 		std::ostringstream assignments;
-		for (size_t i{ 0 }; i < keys.size(); ++i)
+		for (size_t i{ 0 }; i < new_data.size(); ++i)
 		{
 			if (i > 0)
 			{
 				assignments << ", ";
 			}
-			assignments << keys[i] << " = ?" << (i + 1);
+			assignments << quote(new_data[i].get_column_name()) << " = ?" << (i + 1);
 		}
-		const int where_idx{ static_cast<int>(keys.size() + 1) };
-		const std::string sql{ "UPDATE " + table_name + " SET " + assignments.str() + " WHERE " + column_name + " = ?" + std::to_string(where_idx) + ";" };
+		int where_idx{ static_cast<int>(new_data.size() + 1) };
+		std::string sql{ "UPDATE " + quote(table_name) + " SET " + assignments.str() + " WHERE " + quote(matching_value.get_column_name()) + " = ?" + std::to_string(where_idx) + ";" };
 		sqlite3_stmt* stmt{ nullptr };
 		if (sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
 		{
 			return false;
 		}
-		for (size_t i{ 0 }; i < keys.size(); ++i)
+		for (size_t i{ 0 }; i < new_data.size(); ++i)
 		{
-			bind_value(stmt, static_cast<int>(i + 1), new_data.at(keys[i]));
+			bind_value(stmt, static_cast<int>(i + 1), new_data[i]);
 		}
 		bind_value(stmt, where_idx, matching_value);
-		const bool result{ sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(m_db) > 0 };
+		bool result{ sqlite3_step(stmt) == SQLITE_DONE && sqlite3_changes(m_db) > 0 };
 		sqlite3_finalize(stmt);
 		return result;
 	}

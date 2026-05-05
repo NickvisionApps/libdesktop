@@ -83,7 +83,10 @@ bool DatabaseService_Test::m_removed = false;
 
 inline void to_json(nlohmann::json& j, const ConfigurationService_TestWindow& w)
 {
-	j = { {"width", w.width}, {"height", w.height} };
+	j = {
+		{"width", w.width},
+		{"height", w.height}
+	};
 }
 
 inline void from_json(const nlohmann::json& j, ConfigurationService_TestWindow& w)
@@ -338,8 +341,8 @@ TEST_F(DatabaseService_Test, DatabaseService_containsInTable)
 	{ 
 		{ "name", "Bob" }
 	});
-	EXPECT_TRUE(m_svc.contains_in_table("containsInTable", "name", "Bob"));
-	EXPECT_FALSE(m_svc.contains_in_table("containsInTable", "name", "Charlie"));
+	EXPECT_TRUE(m_svc.contains_in_table("containsInTable", { "name", "Bob" }));
+	EXPECT_FALSE(m_svc.contains_in_table("containsInTable", { "name", "Charlie" }));
 	m_svc.drop_table("containsInTable");
 }
 
@@ -349,11 +352,11 @@ TEST_F(DatabaseService_Test, DatabaseService_countInTable)
 	EXPECT_EQ(m_svc.count_in_table("countInTable"), 0);
 	m_svc.insert_into_table("countInTable",
 	{ 
-		{ "name", "Alice" } 
+		{ "name", "Alice" }
 	});
 	m_svc.insert_into_table("countInTable",
 	{ 
-		{ "name", "Bob" } 
+		{ "name", "Bob" }
 	});
 	EXPECT_EQ(m_svc.count_in_table("countInTable"), 2);
 	m_svc.drop_table("countInTable");
@@ -364,9 +367,9 @@ TEST_F(DatabaseService_Test, DatabaseService_deleteFromTable)
 	m_svc.ensure_table_exists("deleteFromTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("deleteFromTable",
 	{ 
-		{ "name", "Alice" } 
+		{ "name", "Alice" }
 	});
-	EXPECT_TRUE(m_svc.delete_from_table("deleteFromTable", "name", "Alice"));
+	EXPECT_TRUE(m_svc.delete_from_table("deleteFromTable", { "name", "Alice" }));
 	EXPECT_EQ(m_svc.count_in_table("deleteFromTable"), 0);
 	m_svc.drop_table("deleteFromTable");
 }
@@ -402,7 +405,7 @@ TEST_F(DatabaseService_Test, DatabaseService_insertIntoTable)
 	m_svc.ensure_table_exists("insertIntoTable", "id INTEGER PRIMARY KEY, name TEXT");
 	EXPECT_TRUE(m_svc.insert_into_table("insertIntoTable",
 	{ 
-		{ "name", "Alice" } 
+		{ "name", "Alice" }
 	}));
 	EXPECT_EQ(m_svc.count_in_table("insertIntoTable"), 1);
 	m_svc.drop_table("insertIntoTable");
@@ -418,7 +421,7 @@ TEST_F(DatabaseService_Test, DatabaseService_replaceIntoTable)
 	m_svc.ensure_table_exists("replaceIntoTable", "id INTEGER PRIMARY KEY, name TEXT UNIQUE");
 	m_svc.insert_into_table("replaceIntoTable",
 	{ 
-		{ "name", "Alice" } 
+		{ "name", "Alice" }
 	});
 	EXPECT_TRUE(m_svc.replace_into_table("replaceIntoTable",
 	{ 
@@ -433,13 +436,13 @@ TEST_F(DatabaseService_Test, DatabaseService_selectAllFromTable)
 	m_svc.ensure_table_exists("selectAllFromTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("selectAllFromTable",
 	{ 
-		{ "name", "Alice" } 
+		{ "name", "Alice" }
 	});
 	m_svc.insert_into_table("selectAllFromTable",
 	{ 
-		{ "name", "Bob" } 
+		{ "name", "Bob" }
 	});
-	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_all_from_table("selectAllFromTable") };
+	std::vector<std::vector<database_value>> rows{ m_svc.select_all_from_table("selectAllFromTable") };
 	EXPECT_EQ(rows.size(), 2u);
 	m_svc.drop_table("selectAllFromTable");
 }
@@ -449,15 +452,24 @@ TEST_F(DatabaseService_Test, DatabaseService_selectFromTable)
 	m_svc.ensure_table_exists("selectFromTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("selectFromTable",
 	{ 
-		{ "name", "Alice" } 
+		{ "name", "Alice" }
 	});
 	m_svc.insert_into_table("selectFromTable",
 	{ 
-		{ "name", "Bob" } 
+		{ "name", "Bob" }
 	});
-	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("selectFromTable", "name", "Alice") };
+	std::vector<std::vector<database_value>> rows{ m_svc.select_from_table("selectFromTable", { "name", "Alice" }) };
 	ASSERT_EQ(rows.size(), 1u);
-	EXPECT_EQ(rows[0].at("name"), "Alice");
+	std::string name_val;
+	for (const database_value& col : rows[0])
+	{
+		if (col.get_column_name() == "name")
+		{
+			name_val = col.str();
+			break;
+		}
+	}
+	EXPECT_EQ(name_val, "Alice");
 	m_svc.drop_table("selectFromTable");
 }
 
@@ -474,15 +486,24 @@ TEST_F(DatabaseService_Test, DatabaseService_updateInTable)
 	m_svc.ensure_table_exists("updateInTable", "id INTEGER PRIMARY KEY, name TEXT");
 	m_svc.insert_into_table("updateInTable",
 	{ 
-		{ "name", "Alice" } 
+		{ "name", "Alice" }
 	});
-	EXPECT_TRUE(m_svc.update_in_table("updateInTable", "name", "Alice",
+	EXPECT_TRUE(m_svc.update_in_table("updateInTable", { "name", "Alice" },
 	{ 
-		{ "name", "Alicia" } }
-	));
-	std::vector<std::unordered_map<std::string, std::string>> rows{ m_svc.select_from_table("updateInTable", "name", "Alicia") };
+		{ "name", "Alicia" }
+	}));
+	std::vector<std::vector<database_value>> rows{ m_svc.select_from_table("updateInTable", { "name", "Alicia" }) };
 	ASSERT_EQ(rows.size(), 1u);
-	EXPECT_EQ(rows[0].at("name"), "Alicia");
+	std::string name_val;
+	for (const database_value& col : rows[0])
+	{
+		if (col.get_column_name() == "name")
+		{
+			name_val = col.str();
+			break;
+		}
+	}
+	EXPECT_EQ(name_val, "Alicia");
 	m_svc.drop_table("updateInTable");
 }
 
@@ -552,13 +573,6 @@ TEST_F(ConfigurationService_Test, ConfigurationService_setAndGetObject)
 	ConfigurationService_TestWindow result{ m_svc.get<ConfigurationService_TestWindow>("cfg_object", {}) };
 	EXPECT_EQ(result.width, 1920);
 	EXPECT_EQ(result.height, 1080);
-}
-
-TEST_F(ConfigurationService_Test, ConfigurationService_setMany)
-{
-	m_svc.set_many({ {"cfg_many_a", "alpha"}, {"cfg_many_b", "beta"} });
-	EXPECT_EQ(m_svc.get<std::string>("cfg_many_a", ""), "alpha");
-	EXPECT_EQ(m_svc.get<std::string>("cfg_many_b", ""), "beta");
 }
 
 TEST_F(ConfigurationService_Test, ConfigurationService_getAllRaw)
