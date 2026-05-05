@@ -40,12 +40,12 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
-		if(s.value().empty())
+		if(s.get_value().empty())
 		{
 			return false;
 		}
-		CFStringRef name_ref{ CFStringCreateWithCString(nullptr, s.name().c_str(), kCFStringEncodingUTF8) };
-		CFDataRef value_data{ CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(s.value().c_str()), static_cast<CFIndex>(s.value().size())) };
+		CFStringRef name_ref{ CFStringCreateWithCString(nullptr, s.get_name().c_str(), kCFStringEncodingUTF8) };
+		CFDataRef value_data{ CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(s.get_value().c_str()), static_cast<CFIndex>(s.get_value().size())) };
 		CFMutableDictionaryRef query{ CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) };
 		CFDictionaryAddValue(query, kSecClass, kSecClassGenericPassword);
 		CFDictionaryAddValue(query, kSecAttrService, name_ref);
@@ -60,15 +60,15 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
-		if(s.value().empty())
+		if(s.get_value().empty())
 		{
 			return false;
 		}
-		CFStringRef name_ref{ CFStringCreateWithCString(nullptr, s.name().c_str(), kCFStringEncodingUTF8) };
+		CFStringRef name_ref{ CFStringCreateWithCString(nullptr, s.get_name().c_str(), kCFStringEncodingUTF8) };
 		CFMutableDictionaryRef query{ CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) };
 		CFDictionaryAddValue(query, kSecClass, kSecClassGenericPassword);
 		CFDictionaryAddValue(query, kSecAttrService, name_ref);
-		CFDataRef value_data{ CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(s.value().c_str()), static_cast<CFIndex>(s.value().size())) };
+		CFDataRef value_data{ CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(s.get_value().c_str()), static_cast<CFIndex>(s.get_value().size())) };
 		CFMutableDictionaryRef attrs{ CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) };
 		CFDictionaryAddValue(attrs, kSecValueData, value_data);
 		OSStatus status{ SecItemUpdate(query, attrs) };

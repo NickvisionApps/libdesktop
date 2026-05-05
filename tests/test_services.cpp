@@ -98,31 +98,31 @@ TEST_F(Services_Test, ServiceCollection_addServiceWithArgs)
 
 TEST_F(Services_Test, ServiceCollection_getRequiredService)
 {
-	std::shared_ptr<notification_service> svc{ m_host.services()->get_required_service<notification_service>() };
+	std::shared_ptr<notification_service> svc{ m_host.get_services()->get_required_service<notification_service>() };
 	EXPECT_NE(svc, nullptr);
 }
 
 TEST_F(Services_Test, ServiceCollection_getRequiredServiceNotRegistered)
 {
-	EXPECT_THROW(m_host.services()->get_required_service<lifetime_service>(), std::runtime_error);
+	EXPECT_THROW(m_host.get_services()->get_required_service<lifetime_service>(), std::runtime_error);
 }
 
 TEST_F(Services_Test, ServiceCollection_getService)
 {
-	std::shared_ptr<notification_service> svc{ m_host.services()->get_service<notification_service>() };
+	std::shared_ptr<notification_service> svc{ m_host.get_services()->get_service<notification_service>() };
 	EXPECT_NE(svc, nullptr);
 }
 
 TEST_F(Services_Test, ServiceCollection_getServiceNotRegistered)
 {
-	std::shared_ptr<lifetime_service> svc{ m_host.services()->get_service<lifetime_service>() };
+	std::shared_ptr<lifetime_service> svc{ m_host.get_services()->get_service<lifetime_service>() };
 	EXPECT_EQ(svc, nullptr);
 }
 
 TEST_F(Services_Test, ServiceCollection_removeService)
 {
-	m_host.services()->remove_service<notification_service>();
-	EXPECT_FALSE(m_host.services()->contains<notification_service>());
+	m_host.get_services()->remove_service<notification_service>();
+	EXPECT_FALSE(m_host.get_services()->contains<notification_service>());
 }
 
 TEST_F(Services_Test, ServiceCollection_transientScopeCreatesNewInstances)

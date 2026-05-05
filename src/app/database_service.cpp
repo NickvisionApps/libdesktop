@@ -225,14 +225,23 @@ namespace desktop::app
 		return sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
 	}
 
-	bool database_service::ensure_table_exists(const std::string& table_name, const std::string& layout)
+	bool database_service::ensure_table_exists(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns)
 	{
 		ensure_database();
-		if (!m_db)
+		if (!m_db || columns.empty())
 		{
 			return false;
 		}
-		std::string sql{ "CREATE TABLE IF NOT EXISTS " + quote(table_name) + " (" + layout + ");" };
+		std::ostringstream defs;
+		for (size_t i{ 0 }; i < columns.size(); ++i)
+		{
+			if (i > 0)
+			{
+				defs << ", ";
+			}
+			defs << quote(columns[i].first) << " " << columns[i].second;
+		}
+		std::string sql{ "CREATE TABLE IF NOT EXISTS " + quote(table_name) + " (" + defs.str() + ");" };
 		return sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
 	}
 
@@ -478,7 +487,7 @@ namespace desktop::app
 				}
 				if (s && !s->empty())
 				{
-					password = s->value();
+					password = s->get_value();
 				}
 			}
 			catch (...) {}

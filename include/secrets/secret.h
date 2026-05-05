@@ -11,8 +11,8 @@ namespace desktop::secrets
 		~secret() = default;
 		secret(const secret& other) = default;
 		secret(secret&& other) noexcept = default;
-		const std::string& name() const;
-		const std::string& value() const;
+		const std::string& get_name() const;
+		const std::string& get_value() const;
 		bool empty() const;
 		secret& operator=(const secret& other) = default;
 		secret& operator=(secret&& other) noexcept = default;

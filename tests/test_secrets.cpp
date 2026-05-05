@@ -66,26 +66,26 @@ TEST_F(Secrets_Test, PasswordContent_xorAssign)
 TEST_F(Secrets_Test, PasswordGenerator_contentFlags)
 {
 	password_generator gen{ password_content::numeric };
-	EXPECT_EQ(gen.content_flags(), password_content::numeric);
+	EXPECT_EQ(gen.get_content_flags(), password_content::numeric);
 }
 
 TEST_F(Secrets_Test, PasswordGenerator_next)
 {
 	password_generator gen;
-	EXPECT_EQ(gen.next(16).length(), 16u);
+	EXPECT_EQ(gen.generate(16).length(), 16u);
 }
 
 TEST_F(Secrets_Test, PasswordGenerator_nextUniqueValues)
 {
 	password_generator gen;
-	EXPECT_NE(gen.next(), gen.next());
+	EXPECT_NE(gen.generate(), gen.generate());
 }
 
 TEST_F(Secrets_Test, PasswordGenerator_setContentFlags)
 {
 	password_generator gen;
 	gen.set_content_flags(password_content::numeric);
-	EXPECT_EQ(gen.content_flags(), password_content::numeric);
+	EXPECT_EQ(gen.get_content_flags(), password_content::numeric);
 }
 
 TEST_F(Secrets_Test, Secret_empty)
@@ -97,7 +97,7 @@ TEST_F(Secrets_Test, Secret_empty)
 TEST_F(Secrets_Test, Secret_name)
 {
 	secret s{ "myKey", "myValue" };
-	EXPECT_EQ(s.name(), "myKey");
+	EXPECT_EQ(s.get_name(), "myKey");
 }
 
 TEST_F(Secrets_Test, Secret_operatorBool)
@@ -109,7 +109,7 @@ TEST_F(Secrets_Test, Secret_operatorBool)
 TEST_F(Secrets_Test, Secret_value)
 {
 	secret s{ "myKey", "myValue" };
-	EXPECT_EQ(s.value(), "myValue");
+	EXPECT_EQ(s.get_value(), "myValue");
 }
 
 TEST_F(Secrets_Test, SecretService_add)
@@ -118,14 +118,14 @@ TEST_F(Secrets_Test, SecretService_add)
 	ASSERT_TRUE(m_svc.add(s));
 	std::optional<secret> fetched{ m_svc.get(m_name) };
 	ASSERT_TRUE(fetched.has_value());
-	EXPECT_EQ(fetched->value(), "preset_value");
+	EXPECT_EQ(fetched->get_value(), "preset_value");
 }
 
 TEST_F(Secrets_Test, SecretService_create)
 {
 	std::optional<secret> s{ m_svc.create(m_name) };
 	ASSERT_TRUE(s.has_value());
-	EXPECT_FALSE(s->value().empty());
+	EXPECT_FALSE(s->get_value().empty());
 }
 
 TEST_F(Secrets_Test, SecretService_get)
@@ -134,7 +134,7 @@ TEST_F(Secrets_Test, SecretService_get)
 	ASSERT_TRUE(created.has_value());
 	std::optional<secret> fetched{ m_svc.get(m_name) };
 	ASSERT_TRUE(fetched.has_value());
-	EXPECT_EQ(fetched->value(), created->value());
+	EXPECT_EQ(fetched->get_value(), created->get_value());
 }
 
 TEST_F(Secrets_Test, SecretService_remove)
@@ -150,5 +150,5 @@ TEST_F(Secrets_Test, SecretService_update)
 	ASSERT_TRUE(m_svc.update({ m_name, "new_value" }));
 	std::optional<secret> fetched{ m_svc.get(m_name) };
 	ASSERT_TRUE(fetched.has_value());
-	EXPECT_EQ(fetched->value(), "new_value");
+	EXPECT_EQ(fetched->get_value(), "new_value");
 }

@@ -30,7 +30,7 @@ namespace desktop::secrets
 	std::optional<secret> secret_service::create(const std::string& name)
 	{
 		password_generator gen;
-		secret s{ name, gen.next(64) };
+		secret s{ name, gen.generate(64) };
 		if(add(s))
 		{
 			return s;
@@ -40,12 +40,12 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
-		if(s.value().empty())
+		if(s.get_value().empty())
 		{
 			return false;
 		}
-		std::wstring wname{ string_manip::wstr(s.name()) };
-		std::wstring wvalue{ string_manip::wstr(s.value()) };
+		std::wstring wname{ string_manip::wstr(s.get_name()) };
+		std::wstring wvalue{ string_manip::wstr(s.get_value()) };
 		CREDENTIALW cred{ 0 };
 		cred.Type = CRED_TYPE_GENERIC;
 		cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
@@ -57,17 +57,17 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
-		if(s.value().empty())
+		if(s.get_value().empty())
 		{
 			return false;
 		}
-		std::wstring wname{ string_manip::wstr(s.name()) };
+		std::wstring wname{ string_manip::wstr(s.get_name()) };
 		CREDENTIALW* existing{ nullptr };
 		if(!CredReadW(wname.c_str(), CRED_TYPE_GENERIC, 0, &existing))
 		{
 			return false;
 		}
-		std::wstring wvalue{ string_manip::wstr(s.value()) };
+		std::wstring wvalue{ string_manip::wstr(s.get_value()) };
 		existing->CredentialBlobSize = static_cast<DWORD>(wvalue.size() * sizeof(wchar_t));
 		existing->CredentialBlob = LPBYTE(wvalue.c_str());
 		bool res{ static_cast<bool>(CredWriteW(existing, 0)) };

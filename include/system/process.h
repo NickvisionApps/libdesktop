@@ -18,7 +18,7 @@ namespace desktop::system
         ~process();
         process(const process&) = delete;
         process(process&&) noexcept = default;
-        const events::event<process, events::param_event_args<int>>& exited_event() const;
+        const events::event<process, events::param_event_args<int>>& get_exited_event() const;
         const std::vector<std::string>& get_arguments() const;
         int get_exit_code() const;
         const std::filesystem::path& get_path() const;
@@ -26,8 +26,8 @@ namespace desktop::system
         const std::string& get_standard_output() const;
         process_status get_status() const;
         const std::filesystem::path& get_working_directory() const;
-        bool input(std::string_view data) const;
-        bool input_line(const std::string& data) const;
+        bool write(std::string_view data) const;
+        bool write_line(const std::string& data) const;
         bool kill();
         bool pause();
         bool resume();

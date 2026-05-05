@@ -241,7 +241,7 @@ TEST_F(System_Test, Process_input)
 	process proc{ "sh", { "-c", "read line; echo \"$line\"" } };
 #endif
 	ASSERT_TRUE(proc.start());
-	EXPECT_TRUE(proc.input("hello\n"));
+	EXPECT_TRUE(proc.write("hello\n"));
 	proc.wait_for_exit();
 	EXPECT_NE(proc.get_standard_output().find("hello"), std::string::npos);
 }
@@ -254,7 +254,7 @@ TEST_F(System_Test, Process_inputLine)
 	process proc{ "sh", { "-c", "read line; echo \"$line\"" } };
 #endif
 	ASSERT_TRUE(proc.start());
-	EXPECT_TRUE(proc.input_line("hello"));
+	EXPECT_TRUE(proc.write_line("hello"));
 	proc.wait_for_exit();
 	EXPECT_NE(proc.get_standard_output().find("hello"), std::string::npos);
 }
@@ -279,7 +279,7 @@ TEST_F(System_Test, Process_exitedEvent)
 	process proc{ "/bin/echo", { "Hello" } };
 #endif
 	bool eventFired{ false };
-	proc.exited_event().add_handler([&eventFired](const process&, const param_event_args<int>&)
+	proc.get_exited_event().add_handler([&eventFired](const process&, const param_event_args<int>&)
 	{
 		eventFired = true;
 	});

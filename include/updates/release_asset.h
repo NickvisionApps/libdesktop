@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <nlohmann/json.hpp>
 
@@ -17,8 +18,8 @@ namespace desktop::updates
 		void set_url(const std::string& url);
 		const std::string& get_name() const;
 		void set_name(const std::string& name);
-		long get_size() const;
-		void set_size(long size);
+		int64_t get_size() const;
+		void set_size(int64_t size);
 		const std::string& get_digest() const;
 		void set_digest(const std::string& digest);
 		const std::string& get_browser_download_url() const;
@@ -31,7 +32,7 @@ namespace desktop::updates
 	private:
 		std::string m_url;
 		std::string m_name;
-		long m_size;
+		int64_t m_size;
 		std::string m_digest;
 		std::string m_browser_download_url;
 	};

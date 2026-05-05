@@ -32,32 +32,32 @@ protected:
 
 TEST_F(Hosting_Test, Host_servicesContainsDatabaseService)
 {
-	EXPECT_TRUE(m_host.services()->contains<database_service>());
+	EXPECT_TRUE(m_host.get_services()->contains<database_service>());
 }
 
 TEST_F(Hosting_Test, Host_servicesContainsConfigurationService)
 {
-	EXPECT_TRUE(m_host.services()->contains<configuration_service>());
+	EXPECT_TRUE(m_host.get_services()->contains<configuration_service>());
 }
 
 TEST_F(Hosting_Test, Host_servicesContainsNotificationService)
 {
-	EXPECT_TRUE(m_host.services()->contains<notification_service>());
+	EXPECT_TRUE(m_host.get_services()->contains<notification_service>());
 }
 
 TEST_F(Hosting_Test, Host_servicesContainsPowerService)
 {
-	EXPECT_TRUE(m_host.services()->contains<power_service>());
+	EXPECT_TRUE(m_host.get_services()->contains<power_service>());
 }
 
 TEST_F(Hosting_Test, Host_servicesContainsSecretService)
 {
-	EXPECT_TRUE(m_host.services()->contains<secret_service>());
+	EXPECT_TRUE(m_host.get_services()->contains<secret_service>());
 }
 
 TEST_F(Hosting_Test, Host_servicesNotNull)
 {
-	EXPECT_NE(m_host.services(), nullptr);
+	EXPECT_NE(m_host.get_services(), nullptr);
 }
 
 TEST_F(Hosting_Test, HostOptions_defaultLogPath)
@@ -74,7 +74,7 @@ TEST_F(Hosting_Test, Host_servicesContainsAppInfo)
 	host_options opts{ argc, nullptr };
 	opts.set_app_info(info);
 	host h{ opts };
-	EXPECT_TRUE(h.services()->contains<app_info>());
+	EXPECT_TRUE(h.get_services()->contains<app_info>());
 }
 
 TEST_F(Hosting_Test, HostOptions_getSetAppInfo)

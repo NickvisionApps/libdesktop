@@ -400,7 +400,7 @@ namespace desktop::system
 
     process::~process() = default;
 
-    const events::event<process, events::param_event_args<int>>& process::exited_event() const
+    const events::event<process, events::param_event_args<int>>& process::get_exited_event() const
     {
 		return m_exited_event;
     }
@@ -440,12 +440,12 @@ namespace desktop::system
         return m_working_directory;
     }
 
-    bool process::input(std::string_view data) const
+    bool process::write(std::string_view data) const
     {
         return m_impl->input(data);
     }
 
-    bool process::input_line(const std::string& data) const
+    bool process::write_line(const std::string& data) const
     {
         return m_impl->input(data + "\n");
     }

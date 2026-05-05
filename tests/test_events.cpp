@@ -83,5 +83,5 @@ TEST(Events_Test, Event_removeNonExistentHandler)
 TEST(Events_Test, ParamEventArgs_value)
 {
 	param_event_args<int> args{ 42 };
-	EXPECT_EQ(args.value(), 42);
+	EXPECT_EQ(args.get_value(), 42);
 }

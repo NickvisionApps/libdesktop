@@ -5,7 +5,7 @@ namespace desktop::updates
 	release_asset::release_asset(const nlohmann::json& json)
 		: m_url{ json.value("url", "") },
 		m_name{ json.value("name", "") },
-		m_size{ json.value("size", 0L) },
+		m_size{ json.value("size", int64_t{0}) },
 		m_digest{ json.value("digest", "") },
 		m_browser_download_url{ json.value("browser_download_url", "") }
 	{
@@ -32,12 +32,12 @@ namespace desktop::updates
 		m_name = name;
 	}
 
-	long release_asset::get_size() const
+	int64_t release_asset::get_size() const
 	{
 		return m_size;
 	}
 
-	void release_asset::set_size(long size)
+	void release_asset::set_size(int64_t size)
 	{
 		m_size = size;
 	}

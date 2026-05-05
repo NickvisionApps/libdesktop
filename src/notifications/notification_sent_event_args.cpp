@@ -9,7 +9,7 @@ namespace desktop::notifications
 
 	}
 
-	std::shared_ptr<notification> notification_sent_event_args::get_notification() const
+	const std::shared_ptr<notification>& notification_sent_event_args::get_notification() const
 	{
 		return m_notification;
 	}

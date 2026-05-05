@@ -29,7 +29,7 @@ namespace desktop::secrets
 
 	}
 
-	password_content password_generator::content_flags() const noexcept
+	password_content password_generator::get_content_flags() const noexcept
 	{
 		return m_content_flags;
 	}
@@ -39,7 +39,7 @@ namespace desktop::secrets
 		m_content_flags = content_flags;
 	}
 
-	std::string password_generator::next(std::size_t length) noexcept
+	std::string password_generator::generate(std::size_t length) noexcept
 	{
 		static std::uniform_int_distribution<int> type_dist{ 0, 4 };
 		static std::uniform_int_distribution<std::size_t> numeric_dist{ 0, s_numeric.size() - 1 };

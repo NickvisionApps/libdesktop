@@ -9,12 +9,12 @@ namespace desktop::secrets
 
 	}
 
-	const std::string& secret::name() const
+	const std::string& secret::get_name() const
 	{
 		return m_name;
 	}
 
-	const std::string& secret::value() const
+	const std::string& secret::get_value() const
 	{
 		return m_value;
 	}

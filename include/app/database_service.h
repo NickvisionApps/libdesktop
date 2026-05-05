@@ -4,6 +4,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <sqlite3.h>
 #include "app/app_info.h"
@@ -30,7 +31,7 @@ namespace desktop::app
 		bool contains_in_table(const std::string& table_name, const database_value& matching_value);
 		bool delete_from_table(const std::string& table_name, const database_value& matching_value);
 		bool drop_table(const std::string& table_name);
-		bool ensure_table_exists(const std::string& table_name, const std::string& layout);
+		bool ensure_table_exists(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns);
 		int execute_non_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters = {});
 		std::vector<std::vector<database_value>> execute_query(const std::string& sql, const std::unordered_map<std::string, std::string>& parameters = {});
 		bool insert_into_table(const std::string& table_name, const std::vector<database_value>& data);

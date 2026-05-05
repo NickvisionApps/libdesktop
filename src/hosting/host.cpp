@@ -32,7 +32,7 @@ namespace desktop::hosting
 		m_services->add_service<logger>(service_scope::singleton, options.get_log_path());
 	}
 
-	std::shared_ptr<service_collection> host::services()
+	std::shared_ptr<service_collection> host::get_services()
 	{
 		return m_services;
 	}

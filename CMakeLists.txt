@@ -109,6 +109,7 @@ add_library(${PROJECT_NAME}
     "src/notifications/shell_notification.cpp"
     "src/secrets/password_generator.cpp"
     "src/secrets/secret.cpp"
+    "src/services/service_collection.cpp"
     "src/updates/release.cpp"
     "src/updates/release_asset.cpp"
     "src/updates/version.cpp")

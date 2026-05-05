@@ -100,7 +100,7 @@ namespace desktop::app
 		{
 			return;
 		}
-		m_db->ensure_table_exists("configuration", "name TEXT PRIMARY KEY, value TEXT");
+		m_db->ensure_table_exists("configuration", { { "name", "TEXT PRIMARY KEY" }, { "value", "TEXT" } });
 		m_table_ensured = true;
 	}
 }

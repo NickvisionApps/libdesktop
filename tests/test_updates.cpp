@@ -88,7 +88,7 @@ TEST(Updates_Test, ReleaseAsset_constructFromJson)
 	release_asset asset{ json };
 	EXPECT_EQ(asset.get_url(), "https://api.example.com/assets/1");
 	EXPECT_EQ(asset.get_name(), "app.tar.gz");
-	EXPECT_EQ(asset.get_size(), 1024L);
+	EXPECT_EQ(asset.get_size(), 1024);
 	EXPECT_EQ(asset.get_digest(), "sha256:abc123");
 	EXPECT_EQ(asset.get_browser_download_url(), "https://download/app.tar.gz");
 	EXPECT_FALSE(asset.empty());

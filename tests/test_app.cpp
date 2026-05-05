@@ -324,7 +324,7 @@ TEST_F(DatabaseService_Test, DatabaseService_beginRollbackTransaction)
 
 TEST_F(DatabaseService_Test, DatabaseService_clearTable)
 {
-	m_svc.ensure_table_exists("clearTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("clearTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	m_svc.insert_into_table("clearTable",
 	{ 
 		{ "name", "Alice" }
@@ -336,7 +336,7 @@ TEST_F(DatabaseService_Test, DatabaseService_clearTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_containsInTable)
 {
-	m_svc.ensure_table_exists("containsInTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("containsInTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	m_svc.insert_into_table("containsInTable",
 	{ 
 		{ "name", "Bob" }
@@ -348,7 +348,7 @@ TEST_F(DatabaseService_Test, DatabaseService_containsInTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_countInTable)
 {
-	m_svc.ensure_table_exists("countInTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("countInTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	EXPECT_EQ(m_svc.count_in_table("countInTable"), 0);
 	m_svc.insert_into_table("countInTable",
 	{ 
@@ -364,7 +364,7 @@ TEST_F(DatabaseService_Test, DatabaseService_countInTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_deleteFromTable)
 {
-	m_svc.ensure_table_exists("deleteFromTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("deleteFromTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	m_svc.insert_into_table("deleteFromTable",
 	{ 
 		{ "name", "Alice" }
@@ -376,7 +376,7 @@ TEST_F(DatabaseService_Test, DatabaseService_deleteFromTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_dropTable)
 {
-	m_svc.ensure_table_exists("dropTable", "id INTEGER PRIMARY KEY");
+	m_svc.ensure_table_exists("dropTable", { { "id", "INTEGER PRIMARY KEY" } });
 	EXPECT_TRUE(m_svc.table_exists("dropTable"));
 	EXPECT_TRUE(m_svc.drop_table("dropTable"));
 	EXPECT_FALSE(m_svc.table_exists("dropTable"));
@@ -384,14 +384,14 @@ TEST_F(DatabaseService_Test, DatabaseService_dropTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_ensureTableExists)
 {
-	EXPECT_TRUE(m_svc.ensure_table_exists("ensureTableExists", "id INTEGER PRIMARY KEY, val TEXT"));
+	EXPECT_TRUE(m_svc.ensure_table_exists("ensureTableExists", { { "id", "INTEGER PRIMARY KEY" }, { "val", "TEXT" } }));
 	EXPECT_TRUE(m_svc.table_exists("ensureTableExists"));
 	m_svc.drop_table("ensureTableExists");
 }
 
 TEST_F(DatabaseService_Test, DatabaseService_executeNonQuery)
 {
-	m_svc.ensure_table_exists("executeNonQuery", "id INTEGER PRIMARY KEY, val TEXT");
+	m_svc.ensure_table_exists("executeNonQuery", { { "id", "INTEGER PRIMARY KEY" }, { "val", "TEXT" } });
 	int affected{ m_svc.execute_non_query("INSERT INTO executeNonQuery (val) VALUES ($val);",
 	{ 
 		{ "val", "hello" } 
@@ -402,7 +402,7 @@ TEST_F(DatabaseService_Test, DatabaseService_executeNonQuery)
 
 TEST_F(DatabaseService_Test, DatabaseService_executeQuery)
 {
-	m_svc.ensure_table_exists("executeQuery", "id INTEGER PRIMARY KEY, val TEXT");
+	m_svc.ensure_table_exists("executeQuery", { { "id", "INTEGER PRIMARY KEY" }, { "val", "TEXT" } });
 	m_svc.insert_into_table("executeQuery", { { "val", "alpha" } });
 	m_svc.insert_into_table("executeQuery", { { "val", "beta" } });
 	std::vector<std::vector<database_value>> rows{ m_svc.execute_query("SELECT * FROM executeQuery WHERE val = $val;", { { "val", "alpha" } }) };
@@ -422,7 +422,7 @@ TEST_F(DatabaseService_Test, DatabaseService_executeQuery)
 
 TEST_F(DatabaseService_Test, DatabaseService_insertIntoTable)
 {
-	m_svc.ensure_table_exists("insertIntoTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("insertIntoTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	EXPECT_TRUE(m_svc.insert_into_table("insertIntoTable",
 	{ 
 		{ "name", "Alice" }
@@ -438,7 +438,7 @@ TEST_F(DatabaseService_Test, DatabaseService_isEncrypted)
 
 TEST_F(DatabaseService_Test, DatabaseService_replaceIntoTable)
 {
-	m_svc.ensure_table_exists("replaceIntoTable", "id INTEGER PRIMARY KEY, name TEXT UNIQUE");
+	m_svc.ensure_table_exists("replaceIntoTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT UNIQUE" } });
 	m_svc.insert_into_table("replaceIntoTable",
 	{ 
 		{ "name", "Alice" }
@@ -453,7 +453,7 @@ TEST_F(DatabaseService_Test, DatabaseService_replaceIntoTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_selectAllFromTable)
 {
-	m_svc.ensure_table_exists("selectAllFromTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("selectAllFromTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	m_svc.insert_into_table("selectAllFromTable",
 	{ 
 		{ "name", "Alice" }
@@ -469,7 +469,7 @@ TEST_F(DatabaseService_Test, DatabaseService_selectAllFromTable)
 
 TEST_F(DatabaseService_Test, DatabaseService_selectFromTable)
 {
-	m_svc.ensure_table_exists("selectFromTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("selectFromTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	m_svc.insert_into_table("selectFromTable",
 	{ 
 		{ "name", "Alice" }
@@ -496,14 +496,14 @@ TEST_F(DatabaseService_Test, DatabaseService_selectFromTable)
 TEST_F(DatabaseService_Test, DatabaseService_tableExists)
 {
 	EXPECT_FALSE(m_svc.table_exists("tableExists"));
-	m_svc.ensure_table_exists("tableExists", "id INTEGER PRIMARY KEY");
+	m_svc.ensure_table_exists("tableExists", { { "id", "INTEGER PRIMARY KEY" } });
 	EXPECT_TRUE(m_svc.table_exists("tableExists"));
 	m_svc.drop_table("tableExists");
 }
 
 TEST_F(DatabaseService_Test, DatabaseService_updateInTable)
 {
-	m_svc.ensure_table_exists("updateInTable", "id INTEGER PRIMARY KEY, name TEXT");
+	m_svc.ensure_table_exists("updateInTable", { { "id", "INTEGER PRIMARY KEY" }, { "name", "TEXT" } });
 	m_svc.insert_into_table("updateInTable",
 	{ 
 		{ "name", "Alice" }
