@@ -16,8 +16,8 @@ namespace desktop::system::environment
 	std::filesystem::path get_executable_path();
 	std::string get_locale();
 	std::vector<std::filesystem::path> get_path_variable();
-	std::string get_variable(std::string_view name);
-	bool has_variable(std::string_view name);
-	bool set_variable(std::string_view name, std::string_view value);
-	bool test_variable(std::string_view name);
+	std::string get_variable(const std::string& name);
+	bool has_variable(const std::string& name);
+	bool set_variable(const std::string& name, const std::string& value);
+	bool test_variable(const std::string& name);
 }

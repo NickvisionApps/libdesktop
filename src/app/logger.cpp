@@ -76,7 +76,11 @@ namespace desktop::app
 	{
 		if (m_file.is_open())
 		{
-			m_file.flush();
+			try
+			{
+				m_file.flush();
+			}
+			catch (...) {}
 		}
 	}
 

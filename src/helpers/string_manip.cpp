@@ -54,16 +54,16 @@ namespace desktop::helpers
 		}
 		static const char lookup[65]{ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 		size_t missing{ 0 };
-		size_t paddedSize{ input.size() };
-		while (paddedSize % 3 != 0)
+		size_t padded_size{ input.size() };
+		while (padded_size % 3 != 0)
 		{
-			paddedSize++;
+			padded_size++;
 			missing++;
 		}
-		size_t stringSize{ 4 * paddedSize / 3 };
+		size_t string_size{ 4 * padded_size / 3 };
 		std::string result;
-		result.reserve(stringSize);
-		for (size_t i = 0; i < stringSize / 4; i++)
+		result.reserve(string_size);
+		for (size_t i = 0; i < string_size / 4; i++)
 		{
 			size_t idx{ i * 3 };
 			unsigned char b1{ idx < input.size() ? static_cast<unsigned char>(input[idx]) : static_cast<unsigned char>(0) };
@@ -76,7 +76,7 @@ namespace desktop::helpers
 		}
 		for (size_t i = 0; i < missing; i++)
 		{
-			result[stringSize - i - 1] = '=';
+			result[string_size - i - 1] = '=';
 		}
 		return result;
 	}

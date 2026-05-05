@@ -14,20 +14,20 @@ namespace desktop::app
 	{
 		std::visit([&](auto&& v)
 		{
-			using T = std::decay_t<decltype(v)>;
-			if constexpr (std::is_same_v<T, int64_t>)
+			using value_t = std::decay_t<decltype(v)>;
+			if constexpr (std::is_same_v<value_t, int64_t>)
 			{
 				sqlite3_bind_int64(stmt, index, v);
 			}
-			else if constexpr (std::is_same_v<T, double>)
+			else if constexpr (std::is_same_v<value_t, double>)
 			{
 				sqlite3_bind_double(stmt, index, v);
 			}
-			else if constexpr (std::is_same_v<T, std::string>)
+			else if constexpr (std::is_same_v<value_t, std::string>)
 			{
 				sqlite3_bind_text(stmt, index, v.c_str(), -1, SQLITE_TRANSIENT);
 			}
-			else if constexpr (std::is_same_v<T, std::nullptr_t>)
+			else if constexpr (std::is_same_v<value_t, std::nullptr_t>)
 			{
 				sqlite3_bind_null(stmt, index);
 			}

@@ -143,23 +143,23 @@ namespace desktop::system
 		return {};
 	}
 
-	std::string environment::get_variable(std::string_view name)
+	std::string environment::get_variable(const std::string& name)
 	{
-		char* res{ std::getenv(name.data()) };
-		return res ? std::string{ res } : std::string{};
+		char* res{ std::getenv(name.c_str()) };
+		return res != nullptr ? std::string{ res } : std::string{};
 	}
 
-	bool environment::has_variable(std::string_view name)
+	bool environment::has_variable(const std::string& name)
 	{
-		return std::getenv(name.data());
+		return std::getenv(name.c_str()) != nullptr;
 	}
 
-	bool environment::set_variable(std::string_view name, std::string_view value)
+	bool environment::set_variable(const std::string& name, const std::string& value)
 	{
-		return setenv(name.data(), value.data(), true) == 0;
+		return setenv(name.c_str(), value.c_str(), true) == 0;
 	}
 
-	bool environment::test_variable(std::string_view name)
+	bool environment::test_variable(const std::string& name)
 	{
 		std::string value{ string_manip::lower(get_variable(name)) };
 		if (value.empty())

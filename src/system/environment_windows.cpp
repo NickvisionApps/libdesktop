@@ -27,7 +27,7 @@ static bool search_in(const std::filesystem::path& dep, std::filesystem::path& r
 
 namespace desktop::system
 {
-	static std::unordered_map<std::string, std::filesystem::path> dependencies;
+	static std::unordered_map<std::string, std::filesystem::path> dependencies; // NOLINT(bugprone-throwing-static-initialization,cppcoreguidelines-avoid-non-const-global-variables)
 
 	std::string environment::execute(const std::string& command)
 	{
@@ -132,23 +132,23 @@ namespace desktop::system
 		return {};
 	}
 
-	std::string environment::get_variable(std::string_view name)
+	std::string environment::get_variable(const std::string& name)
 	{
-		char* res{ std::getenv(name.data()) };
-		return res ? std::string{ res } : std::string{};
+		char* res{ std::getenv(name.c_str()) };
+		return res != nullptr ? std::string{ res } : std::string{};
 	}
 
-	bool environment::has_variable(std::string_view name)
+	bool environment::has_variable(const std::string& name)
 	{
-		return std::getenv(name.data());
+		return std::getenv(name.c_str()) != nullptr;
 	}
 
-	bool environment::set_variable(std::string_view name, std::string_view value)
+	bool environment::set_variable(const std::string& name, const std::string& value)
 	{
-		return _putenv_s(name.data(), value.data()) == 0;
+		return _putenv_s(name.c_str(), value.c_str()) == 0;
 	}
 
-	bool environment::test_variable(std::string_view name)
+	bool environment::test_variable(const std::string& name)
 	{
 		std::string value{ string_manip::lower(get_variable(name)) };
 		if (value.empty())

@@ -448,40 +448,44 @@ namespace desktop::system
 
 	void process::impl::watch() noexcept
 	{
-		DWORD wait_result{ WAIT_TIMEOUT };
-		DWORD process_exit_code{ STILL_ACTIVE };
-		while (true)
+		try
 		{
-			wait_result = WaitForSingleObject(m_process_information.hProcess, static_cast<DWORD>(process_wait_timeout.count()));
+			DWORD wait_result{ WAIT_TIMEOUT };
+			DWORD process_exit_code{ STILL_ACTIVE };
+			while (true)
+			{
+				wait_result = WaitForSingleObject(m_process_information.hProcess, static_cast<DWORD>(process_wait_timeout.count()));
+				append_pipe_output(m_standard_output, m_stdout_read);
+				append_pipe_output(m_standard_error, m_stderr_read);
+				if (wait_result == WAIT_OBJECT_0)
+				{
+					break;
+				}
+				if (wait_result == WAIT_FAILED)
+				{
+					process_exit_code = static_cast<DWORD>(-1);
+					break;
+				}
+			}
 			append_pipe_output(m_standard_output, m_stdout_read);
 			append_pipe_output(m_standard_error, m_stderr_read);
-			if (wait_result == WAIT_OBJECT_0)
+			int exit_code;
 			{
-				break;
+				std::scoped_lock lock{ m_mutex };
+				if (process_exit_code == STILL_ACTIVE && !GetExitCodeProcess(m_process_information.hProcess, &process_exit_code))
+				{
+					process_exit_code = static_cast<DWORD>(-1);
+				}
+				m_exit_code = static_cast<int>(process_exit_code);
+				if (m_status != process_status::killed)
+				{
+					m_status = process_status::completed;
+				}
+				exit_code = m_exit_code;
 			}
-			if (wait_result == WAIT_FAILED)
-			{
-				process_exit_code = static_cast<DWORD>(-1);
-				break;
-			}
+			m_process.m_exited_event.invoke(m_process, { exit_code });
 		}
-		append_pipe_output(m_standard_output, m_stdout_read);
-		append_pipe_output(m_standard_error, m_stderr_read);
-		int exit_code;
-		{
-			std::scoped_lock lock{ m_mutex };
-			if (process_exit_code == STILL_ACTIVE && !GetExitCodeProcess(m_process_information.hProcess, &process_exit_code))
-			{
-				process_exit_code = static_cast<DWORD>(-1);
-			}
-			m_exit_code = static_cast<int>(process_exit_code);
-			if (m_status != process_status::killed)
-			{
-				m_status = process_status::completed;
-			}
-			exit_code = m_exit_code;
-		}
-		m_process.m_exited_event.invoke(m_process, { exit_code });
+		catch (...) {}
 	}
 
 	process::process(const std::filesystem::path& path, const std::vector<std::string>& arguments)

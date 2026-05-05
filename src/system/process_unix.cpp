@@ -342,50 +342,56 @@ namespace desktop::system
 
 	void process::impl::watch() noexcept
 	{
-		int status_value{ 0 };
-		bool exited{ false };
-		while (!exited)
+		try
 		{
-			const pid_t result{ waitpid(m_pid, &status_value, WNOHANG | WUNTRACED | WCONTINUED) };
-			if (result == m_pid)
+			int status_value{ 0 };
+			bool exited{ false };
+			while (!exited)
 			{
-				std::scoped_lock lock{ m_mutex };
-				if (WIFSTOPPED(status_value))
+				const pid_t result{ waitpid(m_pid, &status_value, WNOHANG | WUNTRACED | WCONTINUED) };
+				if (result == m_pid)
 				{
-					m_status = process_status::paused;
-				}
-				else if (WIFCONTINUED(status_value))
-				{
-					if (m_status != process_status::killed)
+					std::scoped_lock lock{ m_mutex };
+					if (WIFSTOPPED(status_value))
 					{
-						m_status = process_status::running;
+						m_status = process_status::paused;
+					}
+					else if (WIFCONTINUED(status_value))
+					{
+						if (m_status != process_status::killed)
+						{
+							m_status = process_status::running;
+						}
+					}
+					else if (WIFEXITED(status_value) || WIFSIGNALED(status_value))
+					{
+						exited = true;
 					}
 				}
-				else if (WIFEXITED(status_value) || WIFSIGNALED(status_value))
+				read_available(m_stdout_pipe[0], m_standard_output);
+				read_available(m_stderr_pipe[0], m_standard_error);
+				if (!exited)
 				{
-					exited = true;
+					std::this_thread::sleep_for(process_wait_timeout);
 				}
 			}
 			read_available(m_stdout_pipe[0], m_standard_output);
 			read_available(m_stderr_pipe[0], m_standard_error);
-			if (!exited)
+			int exit_code;
 			{
-				std::this_thread::sleep_for(process_wait_timeout);
+				std::scoped_lock lock{ m_mutex };
+				m_exit_code = WIFEXITED(status_value) ? WEXITSTATUS(status_value) : -1;
+				if (m_status != process_status::killed)
+				{
+					m_status = process_status::completed;
+				}
+				exit_code = m_exit_code;
 			}
+			m_process.m_exited_event.invoke(m_process, { exit_code });
 		}
-		read_available(m_stdout_pipe[0], m_standard_output);
-		read_available(m_stderr_pipe[0], m_standard_error);
-		int exit_code;
+		catch (...)
 		{
-			std::scoped_lock lock{ m_mutex };
-			m_exit_code = WIFEXITED(status_value) ? WEXITSTATUS(status_value) : -1;
-			if (m_status != process_status::killed)
-			{
-				m_status = process_status::completed;
-			}
-			exit_code = m_exit_code;
 		}
-		m_process.m_exited_event.invoke(m_process, { exit_code });
 	}
 
 	process::process(const std::filesystem::path& path, const std::vector<std::string>& arguments)
