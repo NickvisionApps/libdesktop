@@ -8,9 +8,6 @@
 
 namespace desktop::app
 {
-	template<typename T>
-	concept enum_like = std::is_enum_v<T>;
-
 	class database_value
 	{
 	public:
@@ -23,7 +20,8 @@ namespace desktop::app
 		database_value(const std::string& name, std::string_view v);
 		database_value(const std::string& name, const char* v);
 		database_value(const std::string& name, std::nullptr_t);
-		template <enum_like T>
+		template<typename T>
+			requires std::is_enum_v<T>
 		database_value(const std::string& name, T v)
 			: m_column_name{ name },
 			m_value{ static_cast<int64_t>(v) }
