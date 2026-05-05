@@ -11,7 +11,7 @@ static constexpr std::chrono::milliseconds process_wait_timeout{ 50 };
 
 static void close_handle(HANDLE& handle) noexcept
 {
-	if (handle)
+	if (handle != nullptr)
 	{
 		CloseHandle(handle);
 		handle = nullptr;
@@ -23,7 +23,7 @@ static std::vector<DWORD> get_job_processes(HANDLE job)
 	std::vector<DWORD> process_ids;
 	std::size_t buffer_size{ sizeof(JOBOBJECT_BASIC_PROCESS_ID_LIST) + 255 * sizeof(ULONG_PTR) };
 	JOBOBJECT_BASIC_PROCESS_ID_LIST* buffer{ reinterpret_cast<JOBOBJECT_BASIC_PROCESS_ID_LIST*>(std::malloc(buffer_size)) };
-	if (!buffer)
+	if (buffer == nullptr)
 	{
 		return process_ids;
 	}
@@ -111,7 +111,7 @@ static bool update_threads(HANDLE job, bool resume)
 					continue;
 				}
 				HANDLE thread{ OpenThread(THREAD_SUSPEND_RESUME, FALSE, entry.th32ThreadID) };
-				if (!thread)
+				if (thread == nullptr)
 				{
 					continue;
 				}
@@ -367,7 +367,7 @@ namespace desktop::system
 				return false;
 			}
 			m_job = CreateJobObjectW(nullptr, nullptr);
-			if (!m_job)
+			if (m_job == nullptr)
 			{
 				cleanup();
 				return false;
@@ -417,7 +417,7 @@ namespace desktop::system
 		}
 		catch (...)
 		{
-			if (m_process_information.hProcess)
+			if (m_process_information.hProcess != nullptr)
 			{
 				TerminateProcess(m_process_information.hProcess, 1);
 			}
@@ -469,7 +469,7 @@ namespace desktop::system
 			}
 			append_pipe_output(m_standard_output, m_stdout_read);
 			append_pipe_output(m_standard_error, m_stderr_read);
-			int exit_code;
+			int exit_code{ -1 };
 			{
 				std::scoped_lock lock{ m_mutex };
 				if (process_exit_code == STILL_ACTIVE && !GetExitCodeProcess(m_process_information.hProcess, &process_exit_code))
@@ -485,7 +485,9 @@ namespace desktop::system
 			}
 			m_process.m_exited_event.invoke(m_process, { exit_code });
 		}
-		catch (...) {}
+		catch (...)
+		{
+		}
 	}
 
 	process::process(const std::filesystem::path& path, const std::vector<std::string>& arguments)

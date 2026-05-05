@@ -14,7 +14,10 @@ namespace desktop::events
 	class event
 	{
 	public:
-		event() = default;
+		event()
+		    : m_next{ 0 }
+		{
+		}
 		~event() = default;
 		event(const event&) = delete;
 		event(event&&) = delete;

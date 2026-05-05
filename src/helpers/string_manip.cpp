@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cwchar>
 #include <limits>
 #include <ranges>
@@ -16,20 +17,21 @@ namespace desktop::helpers
 		{
 			return {};
 		}
-		static const unsigned char lookup[128]{ 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-			                                    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62,
-			                                    255, 62,  255, 63,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  255, 255, 255, 255, 255, 255, 255, 0,
-			                                    1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,
-			                                    23,  24,  25,  255, 255, 255, 255, 63,  255, 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,
-			                                    39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  255, 255, 255, 255, 255 };
+		static const std::array<unsigned char, 128> lookup{ 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			                                                255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			                                                255, 255, 255, 255, 255, 62,  255, 62,  255, 63,  52,  53,  54,  55,  56,  57,  58,  59,  60,
+			                                                61,  255, 255, 255, 255, 255, 255, 255, 0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,
+			                                                11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  255, 255, 255, 255,
+			                                                63,  255, 26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,
+			                                                43,  44,  45,  46,  47,  48,  49,  50,  51,  255, 255, 255, 255, 255 };
 		std::vector<std::byte> bytes;
 		bytes.reserve(3 * input.size() / 4);
 		for (size_t i = 0; i < input.size(); i += 4)
 		{
-			unsigned char b641{ input[i] <= 122 ? lookup[static_cast<unsigned char>(input[i])] : static_cast<unsigned char>(0xff) };
-			unsigned char b642{ input[i + 1] <= 122 ? lookup[static_cast<unsigned char>(input[i + 1])] : static_cast<unsigned char>(0xff) };
-			unsigned char b643{ input[i + 2] <= 122 ? lookup[static_cast<unsigned char>(input[i + 2])] : static_cast<unsigned char>(0xff) };
-			unsigned char b644{ input[i + 3] <= 122 ? lookup[static_cast<unsigned char>(input[i + 3])] : static_cast<unsigned char>(0xff) };
+			unsigned char b641{ input[i] <= 122 ? lookup.at(static_cast<unsigned char>(input[i])) : static_cast<unsigned char>(0xff) };
+			unsigned char b642{ input[i + 1] <= 122 ? lookup.at(static_cast<unsigned char>(input[i + 1])) : static_cast<unsigned char>(0xff) };
+			unsigned char b643{ input[i + 2] <= 122 ? lookup.at(static_cast<unsigned char>(input[i + 2])) : static_cast<unsigned char>(0xff) };
+			unsigned char b644{ input[i + 3] <= 122 ? lookup.at(static_cast<unsigned char>(input[i + 3])) : static_cast<unsigned char>(0xff) };
 			if (b642 != 0xff)
 			{
 				bytes.push_back(static_cast<std::byte>(((b641 & 0x3f) << 2) + ((b642 & 0x30) >> 4)));
@@ -52,7 +54,7 @@ namespace desktop::helpers
 		{
 			return "";
 		}
-		static const char lookup[65]{ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
+		static const std::array<char, 65> lookup{ "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 		size_t missing{ 0 };
 		size_t padded_size{ input.size() };
 		while (padded_size % 3 != 0)
@@ -66,13 +68,13 @@ namespace desktop::helpers
 		for (size_t i = 0; i < string_size / 4; i++)
 		{
 			size_t idx{ i * 3 };
-			unsigned char b1{ idx < input.size() ? static_cast<unsigned char>(input[idx]) : static_cast<unsigned char>(0) };
-			unsigned char b2{ idx + 1 < input.size() ? static_cast<unsigned char>(input[idx + 1]) : static_cast<unsigned char>(0) };
-			unsigned char b3{ idx + 2 < input.size() ? static_cast<unsigned char>(input[idx + 2]) : static_cast<unsigned char>(0) };
-			result.push_back(lookup[(b1 & 0xfc) >> 2]);
-			result.push_back(lookup[((b1 & 0x03) << 4) + ((b2 & 0xf0) >> 4)]);
-			result.push_back(lookup[((b2 & 0x0f) << 2) + ((b3 & 0xc0) >> 6)]);
-			result.push_back(lookup[b3 & 0x3f]);
+			unsigned char b1{ idx < input.size() ? static_cast<unsigned char>(input.at(idx)) : static_cast<unsigned char>(0) };
+			unsigned char b2{ idx + 1 < input.size() ? static_cast<unsigned char>(input.at(idx + 1)) : static_cast<unsigned char>(0) };
+			unsigned char b3{ idx + 2 < input.size() ? static_cast<unsigned char>(input.at(idx + 2)) : static_cast<unsigned char>(0) };
+			result.push_back(lookup.at((b1 & 0xfc) >> 2));
+			result.push_back(lookup.at(((b1 & 0x03) << 4) + ((b2 & 0xf0) >> 4)));
+			result.push_back(lookup.at(((b2 & 0x0f) << 2) + ((b3 & 0xc0) >> 6)));
+			result.push_back(lookup.at(b3 & 0x3f));
 		}
 		for (size_t i = 0; i < missing; i++)
 		{

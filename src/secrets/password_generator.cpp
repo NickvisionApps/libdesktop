@@ -56,19 +56,19 @@ namespace desktop::secrets
 				password_content random_type{ static_cast<int>(std::pow(2, type_dist(m_random_engine))) };
 				if ((m_content_flags & random_type) == password_content::numeric)
 				{
-					password += s_numeric[numeric_dist(m_random_engine)];
+					password += s_numeric.at(numeric_dist(m_random_engine));
 				}
 				else if ((m_content_flags & random_type) == password_content::uppercase)
 				{
-					password += s_uppercase[upper_dist(m_random_engine)];
+					password += s_uppercase.at(upper_dist(m_random_engine));
 				}
 				else if ((m_content_flags & random_type) == password_content::lowercase)
 				{
-					password += s_lowercase[lower_dist(m_random_engine)];
+					password += s_lowercase.at(lower_dist(m_random_engine));
 				}
 				else if ((m_content_flags & random_type) == password_content::special)
 				{
-					password += s_special[special_dist(m_random_engine)];
+					password += s_special.at(special_dist(m_random_engine));
 				}
 				else if ((m_content_flags & random_type) == password_content::space)
 				{

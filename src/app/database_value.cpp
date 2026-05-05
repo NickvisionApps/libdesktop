@@ -46,7 +46,7 @@ namespace desktop::app
 
 	database_value::database_value(std::string name, const char* v)
 	    : m_column_name{ std::move(name) },
-	      m_value{ std::string{ v ? v : "" } }
+	      m_value{ std::string{ v != nullptr ? v : "" } }
 	{
 	}
 

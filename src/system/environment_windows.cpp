@@ -1,5 +1,6 @@
 #include "system/environment.h"
 #include <windows.h>
+#include <array>
 #include <cstdlib>
 #include <sstream>
 #include <unordered_map>
@@ -12,7 +13,7 @@ using namespace desktop::helpers;
 
 static bool search_in(const std::filesystem::path& dep, std::filesystem::path& result, const std::filesystem::path& dir)
 {
-	if (dir.string().find("AppData\\Local\\Microsoft\\WindowsApps") != std::string::npos)
+	if (dir.string().find(R"(AppData\Local\Microsoft\WindowsApps)") != std::string::npos)
 	{
 		return false;
 	}
@@ -27,7 +28,7 @@ static bool search_in(const std::filesystem::path& dep, std::filesystem::path& r
 
 namespace desktop::system
 {
-	static std::unordered_map<std::string, std::filesystem::path> dependencies; // NOLINT(bugprone-throwing-static-initialization,cppcoreguidelines-avoid-non-const-global-variables)
+	static std::unordered_map<std::string, std::filesystem::path> dependencies;
 
 	std::string environment::execute(const std::string& command)
 	{
@@ -102,11 +103,11 @@ namespace desktop::system
 
 	std::filesystem::path environment::get_executable_path()
 	{
-		wchar_t path[MAX_PATH];
-		DWORD len{ GetModuleFileNameW(nullptr, path, MAX_PATH) };
+		std::array<wchar_t, MAX_PATH> path{};
+		DWORD len{ GetModuleFileNameW(nullptr, path.data(), MAX_PATH) };
 		if (len > 0)
 		{
-			return std::filesystem::path{ std::wstring(path, len) };
+			return std::filesystem::path{ std::wstring(path.data(), len) };
 		}
 		return {};
 	}
@@ -114,10 +115,10 @@ namespace desktop::system
 	std::string environment::get_locale()
 	{
 		LCID lcid{ GetThreadLocale() };
-		wchar_t name[LOCALE_NAME_MAX_LENGTH];
-		if (LCIDToLocaleName(lcid, name, LOCALE_NAME_MAX_LENGTH, 0) > 0)
+		std::array<wchar_t, LOCALE_NAME_MAX_LENGTH> name{};
+		if (LCIDToLocaleName(lcid, name.data(), LOCALE_NAME_MAX_LENGTH, 0) > 0)
 		{
-			return string_manip::str(name);
+			return string_manip::str(std::wstring(name.data()));
 		}
 		return {};
 	}

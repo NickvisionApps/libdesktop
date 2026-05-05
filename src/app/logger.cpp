@@ -80,7 +80,9 @@ namespace desktop::app
 			{
 				m_file.flush();
 			}
-			catch (...) {}
+			catch (...)
+			{
+			}
 		}
 	}
 

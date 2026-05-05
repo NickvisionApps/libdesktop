@@ -56,7 +56,7 @@ namespace desktop::app
 				case SQLITE_TEXT:
 				{
 					const char* text{ reinterpret_cast<const char*>(sqlite3_column_text(stmt, i)) };
-					val = { col_name, text ? std::string{ text } : std::string{} };
+					val = { col_name, text != nullptr ? std::string{ text } : std::string{} };
 					break;
 				}
 				default:
@@ -500,7 +500,7 @@ namespace desktop::app
 		sqlite3* db{ nullptr };
 		if (sqlite3_open_v2(path.string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		{
-			if (db)
+			if (db != nullptr)
 			{
 				sqlite3_close(db);
 			}
