@@ -1,15 +1,16 @@
+#include <array>
 #include <cmath>
 #include "secrets/password_generator.h"
 
 namespace desktop::secrets
 {
-	static const std::vector<char> s_numeric{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-	static const std::vector<char> s_uppercase{ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		                                        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
-	static const std::vector<char> s_lowercase{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-		                                        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
-	static const std::vector<char> s_special{ '!', '"', '#', '$', '%', '&', '\'', '(',  ')', '*', '+', ',', '-', '.', '/', ':',
-		                                      ';', '<', '=', '>', '?', '@', '[',  '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
+	static const std::array<char, 10> s_numeric{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+	static const std::array<char, 26> s_uppercase{ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		                                           'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+	static const std::array<char, 26> s_lowercase{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+		                                           'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
+	static const std::array<char, 32> s_special{ '!', '"', '#', '$', '%', '&', '\'', '(',  ')', '*', '+', ',', '-', '.', '/', ':',
+		                                         ';', '<', '=', '>', '?', '@', '[',  '\\', ']', '^', '_', '`', '{', '|', '}', '~' };
 
 	password_generator::password_generator(password_content content_flags) noexcept
 	    : m_content_flags{ content_flags },
@@ -24,8 +25,8 @@ namespace desktop::secrets
 	}
 
 	password_generator::password_generator(password_generator&& other) noexcept
-	    : m_content_flags{ std::move(other.m_content_flags) },
-	      m_random_engine{ std::move(other.m_random_engine) }
+	    : m_content_flags{ other.m_content_flags },
+	      m_random_engine{ other.m_random_engine }
 	{
 	}
 
@@ -97,8 +98,8 @@ namespace desktop::secrets
 	{
 		if (this != &other)
 		{
-			m_content_flags = std::move(other.m_content_flags);
-			m_random_engine = std::move(other.m_random_engine);
+			m_content_flags = other.m_content_flags;
+			m_random_engine = other.m_random_engine;
 		}
 		return *this;
 	}

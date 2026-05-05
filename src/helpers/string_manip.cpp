@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cwchar>
 #include <limits>
+#include <ranges>
 #include <sstream>
 #include "helpers/string_manip.h"
 #ifdef _WIN32
@@ -119,7 +120,7 @@ namespace desktop::helpers
 	std::string string_manip::lower(const std::string& str)
 	{
 		std::string result{ str };
-		std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c)
+		std::ranges::transform(result, result.begin(), [](unsigned char c)
 		{
 			return std::tolower(c);
 		});
@@ -168,7 +169,7 @@ namespace desktop::helpers
 	std::string string_manip::replace_all(const std::string& str, char from, char to)
 	{
 		std::string result{ str };
-		std::replace(result.begin(), result.end(), from, to);
+		std::ranges::replace(result, from, to);
 		return result;
 	}
 
@@ -204,13 +205,13 @@ namespace desktop::helpers
 			return str;
 		}
 		std::string result{ str };
-		result.erase(std::find_if(result.rbegin(), result.rend(),
-		                          [](unsigned char ch)
+		result.erase(std::ranges::find_if(std::views::reverse(result),
+		                                  [](unsigned char ch)
 		{
 			return !std::isspace(ch);
 		}).base(),
 		             result.end());
-		result.erase(result.begin(), std::find_if(result.begin(), result.end(), [](unsigned char ch)
+		result.erase(result.begin(), std::ranges::find_if(result, [](unsigned char ch)
 		{
 			return !std::isspace(ch);
 		}));
@@ -224,13 +225,13 @@ namespace desktop::helpers
 			return str;
 		}
 		std::string result{ str };
-		result.erase(std::find_if(result.rbegin(), result.rend(),
-		                          [delimiter](char ch)
+		result.erase(std::ranges::find_if(std::views::reverse(result),
+		                                  [delimiter](char ch)
 		{
 			return ch != delimiter;
 		}).base(),
 		             result.end());
-		result.erase(result.begin(), std::find_if(result.begin(), result.end(), [delimiter](char ch)
+		result.erase(result.begin(), std::ranges::find_if(result, [delimiter](char ch)
 		{
 			return ch != delimiter;
 		}));
@@ -240,7 +241,7 @@ namespace desktop::helpers
 	std::string string_manip::upper(const std::string& str)
 	{
 		std::string result{ str };
-		std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c)
+		std::ranges::transform(result, result.begin(), [](unsigned char c)
 		{
 			return std::toupper(c);
 		});

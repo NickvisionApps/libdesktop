@@ -2,9 +2,9 @@
 
 namespace desktop::secrets
 {
-	secret::secret(const std::string& name, const std::string& value)
-	    : m_name{ name },
-	      m_value{ value }
+	secret::secret(std::string name, std::string value)
+	    : m_name{ std::move(name) },
+	      m_value{ std::move(value) }
 	{
 	}
 

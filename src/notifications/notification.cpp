@@ -2,8 +2,8 @@
 
 namespace desktop::notifications
 {
-	notification::notification(const std::string& message, notification_severity severity)
-	    : m_message{ message },
+	notification::notification(std::string message, notification_severity severity)
+	    : m_message{ std::move(message) },
 	      m_severity{ severity }
 	{
 	}

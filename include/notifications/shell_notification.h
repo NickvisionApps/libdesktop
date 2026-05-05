@@ -8,7 +8,7 @@ namespace desktop::notifications
 	class shell_notification : public notification
 	{
 	public:
-		shell_notification(const std::string& title, const std::string& message, notification_severity severity);
+		shell_notification(std::string title, std::string message, notification_severity severity);
 		~shell_notification() override = default;
 		shell_notification(const shell_notification&) = default;
 		shell_notification(shell_notification&&) noexcept = default;

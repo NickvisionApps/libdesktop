@@ -227,7 +227,7 @@ namespace desktop::app
 	bool database_service::ensure_table_exists(const std::string& table_name, const std::vector<std::pair<std::string, std::string>>& columns)
 	{
 		ensure_database();
-		if (!m_db || columns.empty())
+		if (m_db == nullptr || columns.empty())
 		{
 			return false;
 		}
@@ -302,7 +302,7 @@ namespace desktop::app
 	bool database_service::insert_into_table(const std::string& table_name, const std::vector<database_value>& data)
 	{
 		ensure_database();
-		if (!m_db || data.empty())
+		if (m_db == nullptr || data.empty())
 		{
 			return false;
 		}
@@ -336,7 +336,7 @@ namespace desktop::app
 	bool database_service::replace_into_table(const std::string& table_name, const std::vector<database_value>& data)
 	{
 		ensure_database();
-		if (!m_db || data.empty())
+		if (m_db == nullptr || data.empty())
 		{
 			return false;
 		}
@@ -429,7 +429,7 @@ namespace desktop::app
 	bool database_service::update_in_table(const std::string& table_name, const database_value& matching_value, const std::vector<database_value>& new_data)
 	{
 		ensure_database();
-		if (!m_db || new_data.empty())
+		if (m_db == nullptr || new_data.empty())
 		{
 			return false;
 		}

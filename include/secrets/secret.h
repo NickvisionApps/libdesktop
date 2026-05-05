@@ -7,7 +7,7 @@ namespace desktop::secrets
 	class secret
 	{
 	public:
-		secret(const std::string& name, const std::string& value);
+		secret(std::string name, std::string value);
 		~secret() = default;
 		secret(const secret& other) = default;
 		secret(secret&& other) noexcept = default;

@@ -76,10 +76,10 @@ namespace desktop::app
 				return v;
 			}
 			else if constexpr (std::is_same_v<value_t, int64_t>)
-			{
+			{ // NOLINT(bugprone-branch-clone)
 				return std::to_string(v);
 			}
-			else if constexpr (std::is_same_v<value_t, double>) // NOLINT(bugprone-branch-clone)
+			else if constexpr (std::is_same_v<value_t, double>)
 			{
 				return std::to_string(v);
 			}

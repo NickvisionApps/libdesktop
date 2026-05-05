@@ -8,7 +8,7 @@ namespace desktop::notifications
 	class notification
 	{
 	public:
-		notification(const std::string& message, notification_severity severity);
+		notification(std::string message, notification_severity severity);
 		virtual ~notification() = default;
 		notification(const notification&) = default;
 		notification(notification&&) noexcept = default;
