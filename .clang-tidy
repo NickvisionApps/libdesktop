@@ -1,4 +1,38 @@
 ---
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: lower_case
+  - key: readability-identifier-naming.EnumCase
+    value: lower_case
+  - key: readability-identifier-naming.EnumConstantCase
+    value: lower_case
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.LocalVariableCase
+    value: lower_case
+  - key: readability-identifier-naming.MethodCase
+    value: lower_case
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: m_
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: m_
+  - key: readability-identifier-naming.PublicMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.StructCase
+    value: lower_case
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeAliasCase
+    value: lower_case
+
 Checks: >
   -*,
   bugprone-*,
@@ -8,72 +42,19 @@ Checks: >
   portability-*,
   readability-*,
   -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-vararg,
-  -cppcoreguidelines-owning-memory,
   -modernize-use-trailing-return-type,
-  -readability-magic-numbers,
-  -readability-identifier-length
+  -readability-identifier-length,
+  -readability-magic-numbers
+
+HeaderFilterRegex: 'include/.*\.h'
 
 WarningsAsErrors: >
   bugprone-*,
   performance-*,
   portability-*,
   readability-identifier-naming
-
-HeaderFilterRegex: 'include/.*\.h'
-
-CheckOptions:
-  # Class names: snake_case (e.g. service_collection, database_service)
-  - key: readability-identifier-naming.ClassCase
-    value: lower_case
-  - key: readability-identifier-naming.StructCase
-    value: lower_case
-
-  # Private member variables: m_ prefix + snake_case
-  - key: readability-identifier-naming.PrivateMemberCase
-    value: lower_case
-  - key: readability-identifier-naming.PrivateMemberPrefix
-    value: m_
-
-  # Protected member variables: m_ prefix + snake_case
-  - key: readability-identifier-naming.ProtectedMemberCase
-    value: lower_case
-  - key: readability-identifier-naming.ProtectedMemberPrefix
-    value: m_
-
-  # Public member variables: snake_case (no prefix)
-  - key: readability-identifier-naming.PublicMemberCase
-    value: lower_case
-
-  # Methods and free functions: snake_case
-  - key: readability-identifier-naming.MethodCase
-    value: lower_case
-  - key: readability-identifier-naming.FunctionCase
-    value: lower_case
-
-  # Parameters and local variables: snake_case
-  - key: readability-identifier-naming.ParameterCase
-    value: lower_case
-  - key: readability-identifier-naming.LocalVariableCase
-    value: lower_case
-
-  # Enum types and constants: snake_case (e.g. service_scope::singleton)
-  - key: readability-identifier-naming.EnumCase
-    value: lower_case
-  - key: readability-identifier-naming.EnumConstantCase
-    value: lower_case
-
-  # Namespaces: snake_case (e.g. desktop::services)
-  - key: readability-identifier-naming.NamespaceCase
-    value: lower_case
-
-  # Type aliases / typedefs: snake_case
-  - key: readability-identifier-naming.TypeAliasCase
-    value: lower_case
-
-  # Template parameters are exempt (often T, TService etc.)
-  - key: readability-identifier-naming.TemplateParameterCase
-    value: CamelCase

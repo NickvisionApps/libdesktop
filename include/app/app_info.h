@@ -10,7 +10,7 @@ namespace desktop::app
 	class app_info : public services::service
 	{
 	public:
-		app_info(const std::string& id, const std::string& name, const std::string english_short_name);
+		app_info(const std::string& id, const std::string& name, const std::string& english_short_name);
 		~app_info() override = default;
 		app_info(const app_info&) = delete;
 		app_info(app_info&&) = delete;

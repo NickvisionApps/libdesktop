@@ -3,16 +3,13 @@ Language: Cpp
 Standard: c++20
 BasedOnStyle: LLVM
 
-# Indentation
-IndentWidth: 4
-TabWidth: 4
-UseTab: ForIndentation
 AccessModifierOffset: -4
-IndentCaseLabels: false
-NamespaceIndentation: All
-
-# Braces — Allman style (braces on their own line)
-BreakBeforeBraces: Allman
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
 BraceWrapping:
   AfterClass: true
   AfterControlStatement: Always
@@ -23,55 +20,38 @@ BraceWrapping:
   AfterUnion: true
   BeforeCatch: true
   BeforeElse: true
-
-# Line length
+BreakBeforeBraces: Allman
+BreakConstructorInitializers: BeforeColon
 ColumnLimit: 160
-
-# Pointer and reference alignment — attach to type (const std::string&)
-PointerAlignment: Left
-ReferenceAlignment: Left
-
-# Includes — sort within groups, preserve group separation
-SortIncludes: CaseSensitive
+ConstructorInitializerIndentWidth: 4
+Cpp11BracedListStyle: false
+FixNamespaceComments: false
 IncludeBlocks: Merge
-IncludeIsMainRegex: '([-_]|(/.*/)?)[A-Za-z0-9_]+$'
 IncludeCategories:
-  # <windows.h> must always precede other Win32 headers
   - Regex: '^<windows\.h>'
     Priority: 1
-  # System/third-party angle-bracket headers
   - Regex: '^<'
     Priority: 2
-  # Other project headers
   - Regex: '^"'
     Priority: 3
-
-# Spacing
-SpaceBeforeParens: ControlStatements
+IncludeIsMainRegex: '([-_]|(/.*/)?)[A-Za-z0-9_]+$'
+IndentCaseLabels: false
+IndentRequiresClause: true
+IndentWidth: 4
+LambdaBodyIndentation: OuterScope
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: All
+PackConstructorInitializers: Never
+PointerAlignment: Left
+ReferenceAlignment: Left
+RequiresClausePosition: OwnLine
+SortIncludes: CaseSensitive
+SortUsingDeclarations: Lexicographic
 SpaceAfterCStyleCast: false
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyBlock: true
 SpacesInAngles: Never
 SpacesInParens: Never
-SpaceBeforeCpp11BracedList: false
-SpaceInEmptyBlock: true
-Cpp11BracedListStyle: false
-
-# Short constructs — keep inline only for truly trivial cases
-AllowShortFunctionsOnASingleLine: Empty
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
-AllowShortBlocksOnASingleLine: Empty
-AllowShortLambdasOnASingleLine: None
-LambdaBodyIndentation: OuterScope
-
-# Constructor initializer lists
-BreakConstructorInitializers: BeforeColon
-ConstructorInitializerIndentWidth: 4
-PackConstructorInitializers: Never
-
-# Misc
-MaxEmptyLinesToKeep: 1
-FixNamespaceComments: false
-SortUsingDeclarations: Lexicographic
-AlwaysBreakTemplateDeclarations: Yes
-RequiresClausePosition: OwnLine
-IndentRequiresClause: true
+TabWidth: 4
+UseTab: ForIndentation
