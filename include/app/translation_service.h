@@ -24,24 +24,24 @@ namespace desktop::app
 		bool set_language(std::string_view language);
 		const std::vector<std::string>& get_available_languages() const;
 		const char* _(const char* msgid) const noexcept;
+		const char* _n(const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;
+		const char* _p(const char* context, const char* msgid) const noexcept;
+		const char* _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;
 		template <typename... Args>
 		std::string _(const char* msgid, Args&&... args) const noexcept
 		{
 			return std::vformat(_(msgid), std::make_format_args(args...));
 		}
-		const char* _n(const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;
 		template <typename... Args>
 		std::string _n(const char* msgid, const char* msgid_plural, unsigned long n, Args&&... args) const noexcept
 		{
 			return std::vformat(_n(msgid, msgid_plural, n), std::make_format_args(args...));
 		}
-		const char* _p(const char* context, const char* msgid) const noexcept;
 		template <typename... Args>
 		std::string _p(const char* context, const char* msgid, Args&&... args) const noexcept
 		{
 			return std::vformat(_p(context, msgid), std::make_format_args(args...));
 		}
-		const char* _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;
 		template <typename... Args>
 		std::string _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n, Args&&... args) const noexcept
 		{
@@ -54,7 +54,7 @@ namespace desktop::app
 		std::string m_domain_name;
 		std::string m_language;
 		bool m_translations_off;
-		mutable std::mutex m_languages_mutex;
+		mutable std::mutex m_mutex;
 		mutable std::vector<std::string> m_available_languages;
 	};
 }

@@ -59,7 +59,7 @@ namespace desktop::app
 
 	const std::vector<std::string>& translation_service::get_available_languages() const
 	{
-		std::scoped_lock lock{ m_languages_mutex };
+		std::scoped_lock lock{ m_mutex };
 		if (m_available_languages.empty())
 		{
 			for (const std::filesystem::directory_entry& e : std::filesystem::directory_iterator(environment::get_executable_directory()))
