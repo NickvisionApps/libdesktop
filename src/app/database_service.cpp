@@ -25,7 +25,7 @@ namespace desktop::app
 			}
 			else if constexpr (std::is_same_v<value_t, std::string>)
 			{
-				sqlite3_bind_text(stmt, index, v.c_str(), -1, SQLITE_TRANSIENT);
+				sqlite3_bind_text(stmt, index, v.c_str(), -1, SQLITE_TRANSIENT); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 			}
 			else if constexpr (std::is_same_v<value_t, std::nullptr_t>)
 			{
@@ -261,7 +261,7 @@ namespace desktop::app
 			int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
 			if (idx > 0)
 			{
-				sqlite3_bind_text(stmt, idx, pair.second.c_str(), -1, SQLITE_TRANSIENT);
+				sqlite3_bind_text(stmt, idx, pair.second.c_str(), -1, SQLITE_TRANSIENT); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 			}
 		}
 		int rc{ sqlite3_step(stmt) };
@@ -291,7 +291,7 @@ namespace desktop::app
 			int idx{ sqlite3_bind_parameter_index(stmt, ("$" + pair.first).c_str()) };
 			if (idx > 0)
 			{
-				sqlite3_bind_text(stmt, idx, pair.second.c_str(), -1, SQLITE_TRANSIENT);
+				sqlite3_bind_text(stmt, idx, pair.second.c_str(), -1, SQLITE_TRANSIENT); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 			}
 		}
 		std::vector<std::vector<database_value>> rows{ fetch_rows(stmt) };
@@ -416,7 +416,7 @@ namespace desktop::app
 		{
 			return false;
 		}
-		sqlite3_bind_text(stmt, 1, table_name.c_str(), -1, SQLITE_TRANSIENT);
+		sqlite3_bind_text(stmt, 1, table_name.c_str(), -1, SQLITE_TRANSIENT); // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 		bool result{ false };
 		if (sqlite3_step(stmt) == SQLITE_ROW)
 		{

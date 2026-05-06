@@ -171,18 +171,18 @@ namespace desktop::system
 	private:
 		mutable std::mutex m_mutex;
 		process& m_process;
-		process_status m_status;
-		int m_exit_code;
+		process_status m_status{ process_status::created };
+		int m_exit_code{ -1 };
 		std::string m_standard_output;
 		std::string m_standard_error;
 		std::thread m_watch_thread;
-		HANDLE m_stdout_read;
-		HANDLE m_stdout_write;
-		HANDLE m_stderr_read;
-		HANDLE m_stderr_write;
-		HANDLE m_stdin_read;
-		HANDLE m_stdin_write;
-		HANDLE m_job;
+		HANDLE m_stdout_read{ nullptr };
+		HANDLE m_stdout_write{ nullptr };
+		HANDLE m_stderr_read{ nullptr };
+		HANDLE m_stderr_write{ nullptr };
+		HANDLE m_stdin_read{ nullptr };
+		HANDLE m_stdin_write{ nullptr };
+		HANDLE m_job{ nullptr };
 		PROCESS_INFORMATION m_process_information;
 		void append_pipe_output(std::string& buffer, HANDLE pipe);
 		void cleanup() noexcept;
@@ -191,15 +191,6 @@ namespace desktop::system
 
 	process::impl::impl(process& process)
 	    : m_process{ process },
-	      m_status{ process_status::created },
-	      m_exit_code{ -1 },
-	      m_stdout_read{ nullptr },
-	      m_stdout_write{ nullptr },
-	      m_stderr_read{ nullptr },
-	      m_stderr_write{ nullptr },
-	      m_stdin_read{ nullptr },
-	      m_stdin_write{ nullptr },
-	      m_job{ nullptr },
 	      m_process_information{}
 	{
 	}
