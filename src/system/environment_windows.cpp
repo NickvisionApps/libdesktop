@@ -28,8 +28,6 @@ static bool search_in(const std::filesystem::path& dep, std::filesystem::path& r
 
 namespace desktop::system
 {
-	static std::unordered_map<std::string, std::filesystem::path> dependencies;
-
 	std::string environment::execute(const std::string& command)
 	{
 		if (command.empty())
@@ -47,6 +45,7 @@ namespace desktop::system
 
 	const std::filesystem::path& environment::find_dependency(std::string_view name, dependency_search_option option)
 	{
+		static std::unordered_map<std::string, std::filesystem::path> dependencies;
 		std::filesystem::path dep{ name };
 		if (!dep.has_extension())
 		{
