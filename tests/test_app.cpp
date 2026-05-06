@@ -53,6 +53,20 @@ private:
 	static bool m_removed;
 };
 
+class TranslationService_Test : public ::testing::Test
+{
+public:
+	TranslationService_Test()
+	    : m_info{ std::make_shared<app_info>("com.example.test", "Test App", "testapp") },
+	      m_svc{ m_info }
+	{
+	}
+
+protected:
+	std::shared_ptr<app_info> m_info;
+	translation_service m_svc;
+};
+
 bool ConfigurationService_Test::m_removed = false;
 
 inline void to_json(nlohmann::json& j, const ConfigurationService_TestWindow& w)
@@ -382,4 +396,92 @@ TEST_F(ConfigurationService_Test, ConfigurationService_savedEventFires)
 	m_svc.set<std::string>("cfg_event_key", "event_value");
 	EXPECT_TRUE(fired);
 	EXPECT_EQ(last_name, "cfg_event_key");
+}
+
+TEST_F(TranslationService_Test, TranslationService_getLanguage)
+{
+	EXPECT_EQ(m_svc.get_language(), "C");
+}
+
+TEST_F(TranslationService_Test, TranslationService_setLanguage_translationsOff)
+{
+	EXPECT_TRUE(m_svc.set_language("C"));
+	EXPECT_EQ(m_svc.get_language(), "C");
+}
+
+TEST_F(TranslationService_Test, TranslationService_setLanguage_systemDefault)
+{
+	EXPECT_TRUE(m_svc.set_language(""));
+	EXPECT_EQ(m_svc.get_language(), "");
+}
+
+TEST_F(TranslationService_Test, TranslationService_setLanguage_invalid)
+{
+	EXPECT_FALSE(m_svc.set_language("xx_INVALID"));
+	EXPECT_EQ(m_svc.get_language(), "C");
+}
+
+TEST_F(TranslationService_Test, TranslationService_getAvailableLanguages)
+{
+	EXPECT_NO_THROW(m_svc.get_available_languages());
+}
+
+TEST_F(TranslationService_Test, TranslationService_translate)
+{
+	EXPECT_STREQ(m_svc._("Hello"), "Hello");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translateFormatted)
+{
+	EXPECT_EQ(m_svc._("Hello {}", "World"), "Hello World");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translatePlural_singular)
+{
+	EXPECT_STREQ(m_svc._n("file", "files", 1), "file");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translatePlural_plural)
+{
+	EXPECT_STREQ(m_svc._n("file", "files", 2), "files");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translatePluralFormatted_singular)
+{
+	EXPECT_EQ(m_svc._n("{} file", "{} files", 1, 1), "1 file");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translatePluralFormatted_plural)
+{
+	EXPECT_EQ(m_svc._n("{} file", "{} files", 3, 3), "3 files");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translateContext)
+{
+	EXPECT_STREQ(m_svc._p("menu", "File"), "File");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translateContextFormatted)
+{
+	EXPECT_EQ(m_svc._p("menu", "Open {}", "Document"), "Open Document");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translateContextPlural_singular)
+{
+	EXPECT_STREQ(m_svc._pn("ctx", "item", "items", 1), "item");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translateContextPlural_plural)
+{
+	EXPECT_STREQ(m_svc._pn("ctx", "item", "items", 5), "items");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translateContextPluralFormatted_singular)
+{
+	EXPECT_EQ(m_svc._pn("ctx", "{} item", "{} items", 1, 1), "1 item");
+}
+
+TEST_F(TranslationService_Test, TranslationService_translateContextPluralFormatted_plural)
+{
+	EXPECT_EQ(m_svc._pn("ctx", "{} item", "{} items", 4, 4), "4 items");
 }

@@ -132,6 +132,11 @@ namespace desktop::system
 		return {};
 	}
 
+	bool environment::clear_variable(const std::string& name)
+	{
+		return _putenv_s(name.c_str(), "") == 0;
+	}
+
 	std::string environment::get_variable(const std::string& name)
 	{
 		char* res{ std::getenv(name.c_str()) };

@@ -2,6 +2,7 @@
 #include "app/arguments_service.h"
 #include "app/configuration_service.h"
 #include "app/logger.h"
+#include "app/translation_service.h"
 #include "database/database_service.h"
 #include "hosting/lifetime_service.h"
 #include "notifications/notification_service.h"
@@ -25,6 +26,7 @@ namespace desktop::hosting
 		if (options.get_app_info())
 		{
 			m_services->add_service<app_info>(service_scope::singleton, options.get_app_info());
+			m_services->add_service<translation_service>(service_scope::singleton);
 		}
 		m_services->add_service<database_service>(service_scope::singleton);
 		m_services->add_service<configuration_service>(service_scope::singleton);
