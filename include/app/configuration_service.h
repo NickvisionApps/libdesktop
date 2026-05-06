@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <filesystem>
+#include <tuple>
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>

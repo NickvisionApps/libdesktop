@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <memory>
-#include <string>
 #include "events/event_args.h"
 #include "notification.h"
 

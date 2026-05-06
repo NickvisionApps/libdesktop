@@ -4,6 +4,7 @@
 #include <functional>
 #include <mutex>
 #include <unordered_map>
+#include <utility>
 #include "event_args.h"
 
 namespace desktop::events

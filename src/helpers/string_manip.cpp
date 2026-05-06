@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cwchar>
-#include <limits>
 #include <ranges>
 #include <sstream>
 #include "helpers/string_manip.h"

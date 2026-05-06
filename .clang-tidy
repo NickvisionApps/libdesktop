@@ -37,7 +37,6 @@ Checks: >
   -*,
   bugprone-*,
   cppcoreguidelines-*,
-  misc-include-cleaner,
   modernize-*,
   performance-*,
   portability-*,

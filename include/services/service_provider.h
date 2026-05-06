@@ -3,6 +3,7 @@
 #include <any>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <typeindex>
 #include "service.h"
 

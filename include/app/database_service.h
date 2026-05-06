@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <mutex>
+#include <tuple>
 #include <sqlite3.h>
 #include <string>
 #include <unordered_map>
