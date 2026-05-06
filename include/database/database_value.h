@@ -7,7 +7,7 @@
 #include <utility>
 #include <variant>
 
-namespace desktop::app
+namespace desktop::database
 {
 	class database_value
 	{

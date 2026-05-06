@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.h"
+#include "database.h"
 #include "events.h"
 #include "filesystem.h"
 #include "helpers.h"

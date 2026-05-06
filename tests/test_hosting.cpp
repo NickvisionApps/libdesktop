@@ -2,6 +2,7 @@
 #include <libdesktop.h>
 
 using namespace desktop::app;
+using namespace desktop::database;
 using namespace desktop::hosting;
 using namespace desktop::notifications;
 using namespace desktop::secrets;

@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <vector>
 #include "app/configuration_saved_event_args.h"
-#include "app/database_service.h"
+#include "database/database_service.h"
 #include "events/event.h"
 #include "services/service.h"
 
@@ -31,8 +31,8 @@ namespace desktop::app
 	class configuration_service : public services::service
 	{
 	public:
-		using dependencies = std::tuple<database_service>;
-		configuration_service(std::shared_ptr<database_service> db);
+		using dependencies = std::tuple<database::database_service>;
+		configuration_service(std::shared_ptr<database::database_service> db);
 		~configuration_service() override = default;
 		configuration_service(const configuration_service&) = delete;
 		configuration_service(configuration_service&&) = delete;
@@ -53,10 +53,10 @@ namespace desktop::app
 			}
 			else
 			{
-				std::vector<std::vector<database_value>> rows{ m_db->select_from_table("configuration", { "name", name }) };
+				std::vector<std::vector<database::database_value>> rows{ m_db->select_from_table("configuration", { "name", name }) };
 				if (!rows.empty())
 				{
-					for (const database_value& col : rows[0])
+					for (const database::database_value& col : rows[0])
 					{
 						if (col.get_column_name() == "value")
 						{
@@ -120,13 +120,13 @@ namespace desktop::app
 			}
 			else
 			{
-				std::vector<std::vector<database_value>> rows{ m_db->select_from_table("configuration", database_value{ "name", name }) };
+				std::vector<std::vector<database::database_value>> rows{ m_db->select_from_table("configuration", database::database_value{ "name", name }) };
 				if (rows.empty())
 				{
 					return default_value;
 				}
 				bool value_found{ false };
-				for (const database_value& col : rows[0])
+				for (const database::database_value& col : rows[0])
 				{
 					if (col.get_column_name() == "value")
 					{
@@ -153,7 +153,7 @@ namespace desktop::app
 		template <configuration_settable T>
 		void set(const std::string& name, T value)
 		{
-			database_value db_value{ "value", value };
+			database::database_value db_value{ "value", value };
 			ensure_table();
 			std::unique_lock<std::mutex> lock{ m_mutex };
 			m_cache[name] = db_value.str();
@@ -165,7 +165,7 @@ namespace desktop::app
 		void set(const std::string& name, const T& value)
 		{
 			std::string json_str{ nlohmann::json(value).dump() };
-			database_value db_value{ "value", json_str };
+			database::database_value db_value{ "value", json_str };
 			ensure_table();
 			std::unique_lock<std::mutex> lock{ m_mutex };
 			m_cache[name] = db_value.str();
@@ -179,7 +179,7 @@ namespace desktop::app
 	private:
 		void ensure_table();
 		mutable std::mutex m_mutex;
-		std::shared_ptr<database_service> m_db;
+		std::shared_ptr<database::database_service> m_db;
 		std::atomic<bool> m_table_ensured;
 		std::unordered_map<std::string, std::string> m_cache;
 		events::event<configuration_service, configuration_saved_event_args> m_saved_event;

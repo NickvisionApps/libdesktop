@@ -1,14 +1,15 @@
 #include "hosting/host.h"
 #include "app/arguments_service.h"
 #include "app/configuration_service.h"
-#include "app/database_service.h"
 #include "app/logger.h"
+#include "database/database_service.h"
 #include "hosting/lifetime_service.h"
 #include "notifications/notification_service.h"
 #include "secrets/secret_service.h"
 #include "system/power_service.h"
 
 using namespace desktop::app;
+using namespace desktop::database;
 using namespace desktop::notifications;
 using namespace desktop::secrets;
 using namespace desktop::services;

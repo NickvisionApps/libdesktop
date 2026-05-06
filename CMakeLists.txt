@@ -44,6 +44,7 @@ target_include_directories(sqlcipher PUBLIC
 
 add_library(${PROJECT_NAME}
     "include/app.h"
+    "include/database.h"
     "include/events.h"
     "include/filesystem.h"
     "include/helpers.h"
@@ -58,11 +59,12 @@ add_library(${PROJECT_NAME}
     "include/app/arguments_service.h"
     "include/app/configuration_saved_event_args.h"
     "include/app/configuration_service.h"
-    "include/app/database_value.h"
-    "include/app/database_service.h"
-    "include/app/logger.h"
     "include/app/log_type.h"
+    "include/app/logger.h"
+    "include/app/translation_service.h"
     "include/app/window_geometry.h"
+    "include/database/database_service.h"
+    "include/database/database_value.h"
     "include/events/event.h"
     "include/events/event_args.h"
     "include/events/param_event_args.h"
@@ -98,10 +100,11 @@ add_library(${PROJECT_NAME}
     "src/app/arguments_service.cpp"
     "src/app/configuration_saved_event_args.cpp"
     "src/app/configuration_service.cpp"
-    "src/app/database_value.cpp"
-    "src/app/database_service.cpp"
     "src/app/logger.cpp"
+    "src/app/translation_service.cpp"
     "src/app/window_geometry.cpp"
+    "src/database/database_service.cpp"
+    "src/database/database_value.cpp"
     "src/helpers/string_manip.cpp"
     "src/helpers/uuid.cpp"
     "src/hosting/host.cpp"
@@ -156,7 +159,7 @@ if(CLANG_TIDY)
 endif()
 
 if(CLANG_FORMAT)
-    file(GLOB_RECURSE FORMAT_SOURCE_FILES
+    file(GLOB_RECURSE FORMAT_SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/include/*.h"
         "${CMAKE_SOURCE_DIR}/src/*.cpp"
         "${CMAKE_SOURCE_DIR}/tests/*.cpp"
@@ -236,6 +239,7 @@ if (BUILD_TESTING)
     add_executable(${PROJECT_NAME}_tests
         "tests/main.cpp"
         "tests/test_app.cpp"
+        "tests/test_database.cpp"
         "tests/test_events.cpp"
         "tests/test_filesystem.cpp"
         "tests/test_helpers.cpp"

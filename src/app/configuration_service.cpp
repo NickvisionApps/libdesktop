@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 
+using namespace desktop::database;
+
 namespace desktop::app
 {
 	configuration_service::configuration_service(std::shared_ptr<database_service> db)

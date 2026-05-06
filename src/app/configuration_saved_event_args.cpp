@@ -1,5 +1,7 @@
 #include "app/configuration_saved_event_args.h"
 
+using namespace desktop::database;
+
 namespace desktop::app
 {
 	configuration_saved_event_args::configuration_saved_event_args()

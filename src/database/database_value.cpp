@@ -1,6 +1,6 @@
-#include "app/database_value.h"
+#include "database/database_value.h"
 
-namespace desktop::app
+namespace desktop::database
 {
 	database_value::database_value(std::string name, bool v)
 	    : m_column_name{ std::move(name) },

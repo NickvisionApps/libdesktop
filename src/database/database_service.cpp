@@ -1,4 +1,4 @@
-#include "app/database_service.h"
+#include "database/database_service.h"
 #include <filesystem>
 #include <sstream>
 #include "filesystem/user_directories.h"
@@ -8,7 +8,7 @@ using namespace desktop::filesystem;
 using namespace desktop::secrets;
 using namespace desktop::system;
 
-namespace desktop::app
+namespace desktop::database
 {
 	static void bind_value(sqlite3_stmt* stmt, int index, const database_value& value)
 	{
@@ -87,7 +87,7 @@ namespace desktop::app
 		return result;
 	}
 
-	database_service::database_service(std::shared_ptr<app_info> info, std::shared_ptr<secrets::secret_service> secret_service)
+	database_service::database_service(std::shared_ptr<desktop::app::app_info> info, std::shared_ptr<desktop::secrets::secret_service> secret_service)
 	    : m_db{ nullptr },
 	      m_is_encrypted{ false },
 	      m_info{ std::move(info) },
