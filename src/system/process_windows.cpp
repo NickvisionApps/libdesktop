@@ -1,8 +1,9 @@
 #include "system/process.h"
 #include <windows.h>
 #include <chrono>
-#include <cstdlib>
+#include <cstddef>
 #include <mutex>
+#include <span>
 #include <thread>
 #include <tlhelp32.h>
 #include <vector>
@@ -21,21 +22,18 @@ static void close_handle(HANDLE& handle) noexcept
 static std::vector<DWORD> get_job_processes(HANDLE job)
 {
 	std::vector<DWORD> process_ids;
-	std::size_t buffer_size{ sizeof(JOBOBJECT_BASIC_PROCESS_ID_LIST) + 255 * sizeof(ULONG_PTR) };
-	JOBOBJECT_BASIC_PROCESS_ID_LIST* buffer{ reinterpret_cast<JOBOBJECT_BASIC_PROCESS_ID_LIST*>(std::malloc(buffer_size)) };
-	if (buffer == nullptr)
-	{
-		return process_ids;
-	}
+	std::size_t buffer_size{ sizeof(JOBOBJECT_BASIC_PROCESS_ID_LIST) + (255 * sizeof(ULONG_PTR)) };
+	std::vector<std::byte> buffer_storage(buffer_size);
+	JOBOBJECT_BASIC_PROCESS_ID_LIST* buffer{ reinterpret_cast<JOBOBJECT_BASIC_PROCESS_ID_LIST*>(buffer_storage.data()) };
 	if (QueryInformationJobObject(job, JobObjectBasicProcessIdList, buffer, static_cast<DWORD>(buffer_size), nullptr))
 	{
-		process_ids.reserve(buffer->NumberOfProcessIdsInList);
-		for (DWORD i = 0; i < buffer->NumberOfProcessIdsInList; ++i)
+		std::span<const ULONG_PTR> process_list{ buffer->ProcessIdList, buffer->NumberOfProcessIdsInList };
+		process_ids.reserve(process_list.size());
+		for (ULONG_PTR pid : process_list)
 		{
-			process_ids.push_back(static_cast<DWORD>(buffer->ProcessIdList[i]));
+			process_ids.push_back(static_cast<DWORD>(pid));
 		}
 	}
-	std::free(buffer);
 	return process_ids;
 }
 
@@ -70,7 +68,7 @@ static std::wstring quote_argument(const std::wstring& value)
 		}
 		if (ch == L'"')
 		{
-			quoted.append(backslash_count * 2 + 1, L'\\');
+			quoted.append((backslash_count * 2) + 1, L'\\');
 			quoted.push_back(L'"');
 			backslash_count = 0;
 			continue;
@@ -100,33 +98,30 @@ static bool update_threads(HANDLE job, bool resume)
 	}
 	THREADENTRY32 entry{};
 	entry.dwSize = sizeof(THREADENTRY32);
-	if (Thread32First(snapshot, &entry))
+	for (bool has_entry{ Thread32First(snapshot, &entry) != FALSE }; has_entry; has_entry = (Thread32Next(snapshot, &entry) != FALSE))
 	{
-		do
+		for (DWORD process_id : process_ids)
 		{
-			for (DWORD process_id : process_ids)
+			if (entry.th32OwnerProcessID != process_id)
 			{
-				if (entry.th32OwnerProcessID != process_id)
-				{
-					continue;
-				}
-				HANDLE thread{ OpenThread(THREAD_SUSPEND_RESUME, FALSE, entry.th32ThreadID) };
-				if (thread == nullptr)
-				{
-					continue;
-				}
-				if (resume)
-				{
-					ResumeThread(thread);
-				}
-				else
-				{
-					SuspendThread(thread);
-				}
-				CloseHandle(thread);
-				break;
+				continue;
 			}
-		} while (Thread32Next(snapshot, &entry));
+			HANDLE thread{ OpenThread(THREAD_SUSPEND_RESUME, FALSE, entry.th32ThreadID) };
+			if (thread == nullptr)
+			{
+				continue;
+			}
+			if (resume)
+			{
+				ResumeThread(thread);
+			}
+			else
+			{
+				SuspendThread(thread);
+			}
+			CloseHandle(thread);
+			break;
+		}
 	}
 	CloseHandle(snapshot);
 	return true;

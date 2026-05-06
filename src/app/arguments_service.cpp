@@ -1,10 +1,11 @@
 #include <algorithm>
+#include <span>
 #include "app/arguments_service.h"
 
 namespace desktop::app
 {
-	arguments_service::arguments_service(int argc, char* argv[])
-	    : m_arguments{ argv, argv + argc }
+	arguments_service::arguments_service(std::span<char*> argv)
+	    : m_arguments{ argv.begin(), argv.end() }
 	{
 	}
 

@@ -49,9 +49,9 @@ namespace desktop::secrets
 		CREDENTIALW cred{ 0 };
 		cred.Type = CRED_TYPE_GENERIC;
 		cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
-		cred.TargetName = const_cast<LPWSTR>(wname.c_str());
+		cred.TargetName = wname.data();
 		cred.CredentialBlobSize = static_cast<DWORD>(wvalue.size() * sizeof(wchar_t));
-		cred.CredentialBlob = reinterpret_cast<LPBYTE>(const_cast<wchar_t*>(wvalue.c_str()));
+		cred.CredentialBlob = reinterpret_cast<LPBYTE>(wvalue.data());
 		return CredWriteW(&cred, 0);
 	}
 
@@ -69,7 +69,7 @@ namespace desktop::secrets
 		}
 		std::wstring wvalue{ string_manip::wstr(s.get_value()) };
 		existing->CredentialBlobSize = static_cast<DWORD>(wvalue.size() * sizeof(wchar_t));
-		existing->CredentialBlob = reinterpret_cast<LPBYTE>(const_cast<wchar_t*>(wvalue.c_str()));
+		existing->CredentialBlob = reinterpret_cast<LPBYTE>(wvalue.data());
 		bool res{ static_cast<bool>(CredWriteW(existing, 0)) };
 		CredFree(existing);
 		return res;

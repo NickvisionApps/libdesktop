@@ -1,21 +1,21 @@
 #include "hosting/host_options.h"
+#include <span>
 
 namespace desktop::hosting
 {
-	host_options::host_options(int argc, char* argv[])
-	    : m_argc{ argc },
-	      m_argv{ argv }
+	host_options::host_options(std::span<char*> argv)
+	    : m_argv{ argv }
 	{
 	}
 
 	int host_options::get_argc() const
 	{
-		return m_argc;
+		return static_cast<int>(m_argv.size());
 	}
 
 	char** host_options::get_argv() const
 	{
-		return m_argv;
+		return m_argv.data();
 	}
 
 	const std::shared_ptr<app::app_info>& host_options::get_app_info() const

@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -12,7 +13,7 @@ namespace desktop::app
 	class arguments_service : public services::service
 	{
 	public:
-		arguments_service(int argc, char* argv[]);
+		arguments_service(std::span<char*> argv);
 		~arguments_service() override = default;
 		arguments_service(const arguments_service&) = delete;
 		arguments_service(arguments_service&&) = delete;

@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <span>
 #include "app/app_info.h"
 
 namespace desktop::hosting
@@ -9,7 +10,7 @@ namespace desktop::hosting
 	class host_options
 	{
 	public:
-		host_options(int argc, char* argv[]);
+		host_options(std::span<char*> argv);
 		~host_options() = default;
 		host_options(const host_options&) = default;
 		host_options(host_options&&) noexcept = default;
@@ -23,8 +24,7 @@ namespace desktop::hosting
 		host_options& operator=(host_options&&) noexcept = default;
 
 	private:
-		int m_argc;
-		char** m_argv;
+		std::span<char*> m_argv;
 		std::shared_ptr<app::app_info> m_app_info;
 		std::filesystem::path m_log_path;
 	};

@@ -225,16 +225,14 @@ TEST(App_Test, AppInfo_isPortable)
 
 TEST(App_Test, ArgumentsService_add)
 {
-	int argc{ 0 };
-	arguments_service svc{ argc, nullptr };
+	arguments_service svc{ {} };
 	svc.add("--verbose");
 	EXPECT_TRUE(svc.contains("--verbose"));
 }
 
 TEST(App_Test, ArgumentsService_contains)
 {
-	int argc{ 0 };
-	arguments_service svc{ argc, nullptr };
+	arguments_service svc{ {} };
 	EXPECT_FALSE(svc.contains("--missing"));
 	svc.add("--present");
 	EXPECT_TRUE(svc.contains("--present"));
@@ -242,8 +240,7 @@ TEST(App_Test, ArgumentsService_contains)
 
 TEST(App_Test, ArgumentsService_getAll)
 {
-	int argc{ 0 };
-	arguments_service svc{ argc, nullptr };
+	arguments_service svc{ {} };
 	svc.add("--alpha");
 	svc.add("--beta");
 	EXPECT_EQ(svc.get_all().size(), 2u);
@@ -251,8 +248,7 @@ TEST(App_Test, ArgumentsService_getAll)
 
 TEST(App_Test, ArgumentsService_getCount)
 {
-	int argc{ 0 };
-	arguments_service svc{ argc, nullptr };
+	arguments_service svc{ {} };
 	EXPECT_EQ(svc.get_count(), 0u);
 	svc.add("--one");
 	EXPECT_EQ(svc.get_count(), 1u);
@@ -260,8 +256,7 @@ TEST(App_Test, ArgumentsService_getCount)
 
 TEST(App_Test, ArgumentsService_getNext)
 {
-	int argc{ 0 };
-	arguments_service svc{ argc, nullptr };
+	arguments_service svc{ {} };
 	svc.add("--output");
 	svc.add("file.txt");
 	std::optional<std::string> next{ svc.get_next("--output") };

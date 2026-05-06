@@ -54,7 +54,7 @@ class Services_Test : public ::testing::Test
 {
 protected:
 	int m_argc{ 0 };
-	host_options m_options{ m_argc, nullptr };
+	host_options m_options{ {} };
 	host m_host{ m_options };
 };
 

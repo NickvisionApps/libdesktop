@@ -19,7 +19,8 @@ namespace desktop::hosting
 	host::host(const host_options& options)
 	    : m_services{ std::make_shared<service_collection>() }
 	{
-		m_services->add_service<arguments_service>(service_scope::singleton, options.get_argc(), options.get_argv());
+		m_services->add_service<arguments_service>(service_scope::singleton,
+		                                           std::span<char*>{ options.get_argv(), static_cast<std::size_t>(options.get_argc()) });
 		if (options.get_app_info())
 		{
 			m_services->add_service<app_info>(service_scope::singleton, options.get_app_info());

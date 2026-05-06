@@ -164,9 +164,7 @@ if(CLANG_FORMAT)
     add_custom_target(format
         COMMAND ${CLANG_FORMAT} -i ${FORMAT_SOURCE_FILES}
         COMMENT "Running clang-format")
-    add_custom_target(format-check
-        COMMAND ${CLANG_FORMAT} --dry-run --Werror ${FORMAT_SOURCE_FILES}
-        COMMENT "Checking clang-format")
+    add_dependencies(${PROJECT_NAME} format)
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
