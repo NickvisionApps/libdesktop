@@ -394,9 +394,9 @@ namespace desktop::system
 		}
 	}
 
-	process::process(const std::filesystem::path& path, const std::vector<std::string>& arguments)
-	    : m_path{ path },
-	      m_arguments{ arguments },
+	process::process(std::filesystem::path path, std::vector<std::string> arguments)
+	    : m_path{ std::move(path) },
+	      m_arguments{ std::move(arguments) },
 	      m_impl{ std::make_unique<impl>(*this) }
 	{
 	}

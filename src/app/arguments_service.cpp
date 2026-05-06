@@ -1,6 +1,6 @@
+#include "app/arguments_service.h"
 #include <algorithm>
 #include <span>
-#include "app/arguments_service.h"
 
 namespace desktop::app
 {

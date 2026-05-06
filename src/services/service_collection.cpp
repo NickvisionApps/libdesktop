@@ -1,6 +1,6 @@
+#include "services/service_collection.h"
 #include <stdexcept>
 #include <unordered_set>
-#include "services/service_collection.h"
 
 namespace desktop::services
 {
@@ -15,7 +15,7 @@ namespace desktop::services
 		{
 			throw std::runtime_error("Circular dependency detected for service: " + std::string(type.name()));
 		}
-		service_scope scope;
+		service_scope scope{ service_scope::singleton };
 		std::function<std::any()> factory;
 		{
 			std::scoped_lock lock{ m_mutex };

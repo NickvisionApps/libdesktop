@@ -1,10 +1,10 @@
+#include "helpers/string_manip.h"
 #include <algorithm>
 #include <array>
 #include <cctype>
 #include <cwchar>
 #include <ranges>
 #include <sstream>
-#include "helpers/string_manip.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif

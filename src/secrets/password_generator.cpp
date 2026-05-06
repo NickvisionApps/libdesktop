@@ -1,6 +1,6 @@
+#include "secrets/password_generator.h"
 #include <array>
 #include <cmath>
-#include "secrets/password_generator.h"
 
 namespace desktop::secrets
 {

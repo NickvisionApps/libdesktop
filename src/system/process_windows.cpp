@@ -25,7 +25,7 @@ static std::vector<DWORD> get_job_processes(HANDLE job)
 	std::size_t buffer_size{ sizeof(JOBOBJECT_BASIC_PROCESS_ID_LIST) + (255 * sizeof(ULONG_PTR)) };
 	std::vector<std::byte> buffer_storage(buffer_size);
 	JOBOBJECT_BASIC_PROCESS_ID_LIST* buffer{ reinterpret_cast<JOBOBJECT_BASIC_PROCESS_ID_LIST*>(buffer_storage.data()) };
-	if (QueryInformationJobObject(job, JobObjectBasicProcessIdList, buffer, static_cast<DWORD>(buffer_size), nullptr))
+	if (QueryInformationJobObject(job, JobObjectBasicProcessIdList, buffer, static_cast<DWORD>(buffer_size), nullptr) != FALSE)
 	{
 		std::span<const ULONG_PTR> process_list{ buffer->ProcessIdList, buffer->NumberOfProcessIdsInList };
 		process_ids.reserve(process_list.size());
@@ -218,13 +218,13 @@ namespace desktop::system
 		while (true)
 		{
 			DWORD available{ 0 };
-			if (!PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) || available == 0)
+			if (PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) == FALSE || available == 0)
 			{
 				return;
 			}
 			std::vector<char> chunk(available);
 			DWORD read{ 0 };
-			if (!ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) || read == 0)
+			if (ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) == FALSE || read == 0)
 			{
 				return;
 			}
@@ -287,7 +287,7 @@ namespace desktop::system
 		{
 			DWORD written{ 0 };
 			const DWORD chunk_size{ remaining > static_cast<std::size_t>(MAXDWORD) ? MAXDWORD : static_cast<DWORD>(remaining) };
-			if (!WriteFile(stdin_write, current, chunk_size, &written, nullptr))
+			if (WriteFile(stdin_write, current, chunk_size, &written, nullptr) == FALSE)
 			{
 				return false;
 			}
@@ -304,7 +304,7 @@ namespace desktop::system
 		{
 			return false;
 		}
-		if (!TerminateJobObject(m_job, 1))
+		if (TerminateJobObject(m_job, 1) == FALSE)
 		{
 			return false;
 		}
@@ -350,13 +350,13 @@ namespace desktop::system
 		}
 		try
 		{
-			SECURITY_ATTRIBUTES security_attributes{};
-			security_attributes.nLength = sizeof(SECURITY_ATTRIBUTES);
-			security_attributes.bInheritHandle = TRUE;
-			security_attributes.lpSecurityDescriptor = nullptr;
-			if (!CreatePipe(&m_stdout_read, &m_stdout_write, &security_attributes, 0) || !SetHandleInformation(m_stdout_read, HANDLE_FLAG_INHERIT, 0) ||
-			    !CreatePipe(&m_stderr_read, &m_stderr_write, &security_attributes, 0) || !SetHandleInformation(m_stderr_read, HANDLE_FLAG_INHERIT, 0) ||
-			    !CreatePipe(&m_stdin_read, &m_stdin_write, &security_attributes, 0) || !SetHandleInformation(m_stdin_write, HANDLE_FLAG_INHERIT, 0))
+			SECURITY_ATTRIBUTES security_attributes{ .nLength = sizeof(SECURITY_ATTRIBUTES), .lpSecurityDescriptor = nullptr, .bInheritHandle = TRUE };
+			if (CreatePipe(&m_stdout_read, &m_stdout_write, &security_attributes, 0) == FALSE ||
+			    SetHandleInformation(m_stdout_read, HANDLE_FLAG_INHERIT, 0) == FALSE ||
+			    CreatePipe(&m_stderr_read, &m_stderr_write, &security_attributes, 0) == FALSE ||
+			    SetHandleInformation(m_stderr_read, HANDLE_FLAG_INHERIT, 0) == FALSE ||
+			    CreatePipe(&m_stdin_read, &m_stdin_write, &security_attributes, 0) == FALSE ||
+			    SetHandleInformation(m_stdin_write, HANDLE_FLAG_INHERIT, 0) == FALSE)
 			{
 				cleanup();
 				return false;
@@ -367,20 +367,19 @@ namespace desktop::system
 				cleanup();
 				return false;
 			}
-			JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};
-			limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
-			if (!SetInformationJobObject(m_job, JobObjectExtendedLimitInformation, &limits, sizeof(limits)))
+			JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{ .BasicLimitInformation = { .LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE |
+				                                                                                  JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION } };
+			if (SetInformationJobObject(m_job, JobObjectExtendedLimitInformation, &limits, sizeof(limits)) == FALSE)
 			{
 				cleanup();
 				return false;
 			}
-			STARTUPINFOW startup_info{};
-			startup_info.cb = sizeof(STARTUPINFOW);
-			startup_info.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-			startup_info.wShowWindow = SW_HIDE;
-			startup_info.hStdOutput = m_stdout_write;
-			startup_info.hStdError = m_stderr_write;
-			startup_info.hStdInput = m_stdin_read;
+			STARTUPINFOW startup_info{ .cb = sizeof(STARTUPINFOW),
+				                       .dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW,
+				                       .wShowWindow = SW_HIDE,
+				                       .hStdInput = m_stdin_read,
+				                       .hStdOutput = m_stdout_write,
+				                       .hStdError = m_stderr_write };
 			std::wstring command_line{ quote_argument(m_process.m_path.wstring()) };
 			for (const std::string& argument : m_process.m_arguments)
 			{
@@ -390,8 +389,8 @@ namespace desktop::system
 			std::vector<wchar_t> command_line_buffer(command_line.begin(), command_line.end());
 			command_line_buffer.push_back(L'\0');
 			const std::wstring working_directory_str{ m_process.m_working_directory.empty() ? std::wstring{} : m_process.m_working_directory.wstring() };
-			if (!CreateProcessW(nullptr, command_line_buffer.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP, nullptr,
-			                    working_directory_str.empty() ? nullptr : working_directory_str.c_str(), &startup_info, &m_process_information))
+			if (CreateProcessW(nullptr, command_line_buffer.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP, nullptr,
+			                   working_directory_str.empty() ? nullptr : working_directory_str.c_str(), &startup_info, &m_process_information) == FALSE)
 			{
 				cleanup();
 				return false;
@@ -399,7 +398,7 @@ namespace desktop::system
 			close_handle(m_stdout_write);
 			close_handle(m_stderr_write);
 			close_handle(m_stdin_read);
-			if (!AssignProcessToJobObject(m_job, m_process_information.hProcess))
+			if (AssignProcessToJobObject(m_job, m_process_information.hProcess) == FALSE)
 			{
 				TerminateProcess(m_process_information.hProcess, 1);
 				return false;
@@ -467,7 +466,7 @@ namespace desktop::system
 			int exit_code{ -1 };
 			{
 				std::scoped_lock lock{ m_mutex };
-				if (process_exit_code == STILL_ACTIVE && !GetExitCodeProcess(m_process_information.hProcess, &process_exit_code))
+				if (process_exit_code == STILL_ACTIVE && GetExitCodeProcess(m_process_information.hProcess, &process_exit_code) == FALSE)
 				{
 					process_exit_code = static_cast<DWORD>(-1);
 				}
@@ -485,9 +484,9 @@ namespace desktop::system
 		}
 	}
 
-	process::process(const std::filesystem::path& path, const std::vector<std::string>& arguments)
-	    : m_path{ path },
-	      m_arguments{ arguments },
+	process::process(std::filesystem::path path, std::vector<std::string> arguments)
+	    : m_path{ std::move(path) },
+	      m_arguments{ std::move(arguments) },
 	      m_impl{ std::make_unique<impl>(*this) }
 	{
 	}

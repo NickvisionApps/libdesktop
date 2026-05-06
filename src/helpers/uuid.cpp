@@ -1,6 +1,6 @@
+#include "helpers/uuid.h"
 #include <random>
 #include <sstream>
-#include "helpers/uuid.h"
 
 namespace desktop::helpers
 {

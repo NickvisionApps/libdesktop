@@ -1,6 +1,6 @@
+#include "app/logger.h"
 #include <format>
 #include <iostream>
-#include "app/logger.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif

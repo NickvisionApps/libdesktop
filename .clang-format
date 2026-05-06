@@ -34,7 +34,7 @@ IncludeCategories:
     Priority: 2
   - Regex: '^"'
     Priority: 3
-IncludeIsMainRegex: '([-_]|(/.*/)?)[A-Za-z0-9_]+$'
+IncludeIsMainRegex: '([-_]|(/.*/)?)[A-Za-z0-9_]*$'
 IndentCaseLabels: false
 IndentRequiresClause: true
 IndentWidth: 4

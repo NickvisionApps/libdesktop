@@ -1,6 +1,6 @@
+#include "app/database_service.h"
 #include <filesystem>
 #include <sstream>
-#include "app/database_service.h"
 #include "filesystem/user_directories.h"
 #include "system/environment.h"
 

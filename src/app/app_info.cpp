@@ -1,6 +1,6 @@
+#include "app/app_info.h"
 #include <maddy/parser.h>
 #include <sstream>
-#include "app/app_info.h"
 #include "helpers/string_manip.h"
 
 using namespace desktop::helpers;

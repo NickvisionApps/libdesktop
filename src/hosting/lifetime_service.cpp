@@ -1,5 +1,5 @@
-#include <format>
 #include "hosting/lifetime_service.h"
+#include <format>
 #ifdef _WIN32
 #include <windows.h>
 #endif

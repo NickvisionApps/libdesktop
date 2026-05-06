@@ -1,6 +1,6 @@
+#include "app/configuration_service.h"
 #include <fstream>
 #include <sstream>
-#include "app/configuration_service.h"
 
 namespace desktop::app
 {

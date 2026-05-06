@@ -1,5 +1,5 @@
-﻿#include <stdexcept>
-#include "updates/version.h"
+﻿#include "updates/version.h"
+#include <stdexcept>
 
 namespace desktop::updates
 {

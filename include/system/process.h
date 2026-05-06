@@ -14,7 +14,7 @@ namespace desktop::system
 	class process
 	{
 	public:
-		process(const std::filesystem::path& path, const std::vector<std::string>& arguments = {});
+		process(std::filesystem::path path, std::vector<std::string> arguments = {});
 		~process();
 		process(const process&) = delete;
 		process(process&&) noexcept = default;
