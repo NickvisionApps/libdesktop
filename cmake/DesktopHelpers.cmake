@@ -1,4 +1,5 @@
 # Runs xgettext, msgmerge, and msgfmt as POST_BUILD steps on a given target.
+# Source files are derived automatically from the target's SOURCES property.
 #
 # Usage:
 #   desktop_generate_translations(
@@ -10,7 +11,6 @@
 #   )
 #
 # Expected files under ROOT_DIRECTORY:
-#   resources/po/POTFILES          – source files to scan (one per line)
 #   resources/po/LINGUAS           – language codes to compile (one per line)
 #   resources/po/<SHORT_NAME>.pot  – template file (created/updated by xgettext)
 function(desktop_generate_translations)
@@ -39,15 +39,20 @@ function(desktop_generate_translations)
     set(_po_dir   "${ARG_ROOT_DIRECTORY}/resources/po")
     set(_template "${_po_dir}/${ARG_SHORT_NAME}.pot")
 
-    if(NOT EXISTS "${_po_dir}/POTFILES")
-        message(FATAL_ERROR "desktop_generate_translations: ${_po_dir}/POTFILES not found")
-    endif()
     if(NOT EXISTS "${_po_dir}/LINGUAS")
         message(FATAL_ERROR "desktop_generate_translations: ${_po_dir}/LINGUAS not found")
     endif()
 
-    file(STRINGS "${_po_dir}/POTFILES" _potfiles)
-    file(STRINGS "${_po_dir}/LINGUAS"  _linguas)
+    get_target_property(_target_source_dir ${ARG_TARGET} SOURCE_DIR)
+    get_target_property(_sources ${ARG_TARGET} SOURCES)
+    list(FILTER _sources EXCLUDE REGEX "^\\$<")
+    set(_abs_sources "")
+    foreach(_src IN LISTS _sources)
+        get_filename_component(_abs "${_src}" ABSOLUTE BASE_DIR "${_target_source_dir}")
+        list(APPEND _abs_sources "${_abs}")
+    endforeach()
+
+    file(STRINGS "${_po_dir}/LINGUAS" _linguas)
 
     add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
         COMMENT "Generating translations..."
@@ -63,7 +68,7 @@ function(desktop_generate_translations)
             --keyword=_pn:1c,2,3
             --keyword=C_:1c,2
             --width=80
-            ${_potfiles}
+            ${_abs_sources}
         VERBATIM)
 
     foreach(_lang IN LISTS _linguas)
@@ -204,7 +209,6 @@ function(desktop_linux_install)
         set(ARG_BIN_DIR "${CMAKE_INSTALL_FULL_BINDIR}")
     endif()
 
-    # Variables available to configure_file @ONLY templates
     set(APP_ID      "${ARG_APP_ID}")
     set(OUTPUT_NAME "${ARG_OUTPUT_NAME}")
     set(BIN_DIR     "${ARG_BIN_DIR}")
