@@ -28,6 +28,7 @@ namespace desktop::app
 
 	std::string_view translation_service::get_language() const
 	{
+		std::scoped_lock lock{ m_mutex };
 		return m_language;
 	}
 
@@ -36,12 +37,14 @@ namespace desktop::app
 		if (language.empty())
 		{
 			environment::clear_variable("LANGUAGE");
+			std::scoped_lock lock{ m_mutex };
 			m_translations_off = false;
 			m_language = language;
 			return true;
 		}
 		if (language == "C")
 		{
+			std::scoped_lock lock{ m_mutex };
 			m_translations_off = true;
 			m_language = language;
 			return true;
@@ -52,6 +55,7 @@ namespace desktop::app
 			return false;
 		}
 		environment::set_variable("LANGUAGE", std::string{ language });
+		std::scoped_lock lock{ m_mutex };
 		m_translations_off = false;
 		m_language = language;
 		return true;

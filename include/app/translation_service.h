@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <format>
 #include <memory>
 #include <mutex>
@@ -53,7 +54,7 @@ namespace desktop::app
 	private:
 		std::string m_domain_name;
 		std::string m_language;
-		bool m_translations_off;
+		std::atomic<bool> m_translations_off;
 		mutable std::mutex m_mutex;
 		mutable std::vector<std::string> m_available_languages;
 	};
