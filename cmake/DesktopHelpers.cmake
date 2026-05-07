@@ -1,14 +1,3 @@
-# DesktopHelpers
-# Reusable CMake helper functions for desktop application projects.
-#
-# Functions provided:
-#   desktop_generate_translations()    – xgettext / msgmerge / msgfmt
-#   desktop_compile_glib_resources()   – glib-compile-resources (GNOME only)
-#   desktop_compile_blueprints()       – blueprint-compiler    (GNOME only)
-
-# ------------------------------------------------------------------------------
-# desktop_generate_translations
-#
 # Runs xgettext, msgmerge, and msgfmt as POST_BUILD steps on a given target.
 #
 # Usage:
@@ -80,20 +69,17 @@ function(desktop_generate_translations)
     foreach(_lang IN LISTS _linguas)
         add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
             WORKING_DIRECTORY "${ARG_ROOT_DIRECTORY}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARG_OUTPUT_DIRECTORY}/${_lang}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES"
             COMMAND ${MSGMERGE} --backup=off --update
                 "${_po_dir}/${_lang}.po" "${_template}"
             COMMAND ${MSGFMT}
                 "${_po_dir}/${_lang}.po"
-                --output-file="${ARG_OUTPUT_DIRECTORY}/${_lang}/${ARG_SHORT_NAME}.mo"
+                --output-file="${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES/${ARG_SHORT_NAME}.mo"
             VERBATIM)
     endforeach()
 endfunction()
 
-# ------------------------------------------------------------------------------
-# desktop_compile_glib_resources
-#
-# Runs glib-compile-resources as a POST_BUILD step. GNOME/Linux projects only.
+# Runs glib-compile-resources as a POST_BUILD step.
 #
 # Usage:
 #   desktop_compile_glib_resources(
@@ -129,9 +115,6 @@ function(desktop_compile_glib_resources)
         VERBATIM)
 endfunction()
 
-# ------------------------------------------------------------------------------
-# desktop_compile_blueprints
-#
 # Runs blueprint-compiler batch-compile as a POST_BUILD step. GNOME projects only.
 #
 # On Windows the blueprint-compiler Python script is invoked via the python
@@ -180,4 +163,108 @@ function(desktop_compile_blueprints)
             "${ARG_BLUEPRINT_DIR}"
             ${_blp_files}
         VERBATIM)
+endfunction()
+
+# Installs Linux desktop integration files for an application. Each file type
+# is installed only if the corresponding file is found under SOURCE_DIR.
+#
+#   <APP_ID>.desktop.in    → configured via @APP_ID@/@OUTPUT_NAME@/@BIN_DIR@
+#                            and installed to share/applications/
+#   <APP_ID>.service.in    → configured via @APP_ID@/@OUTPUT_NAME@/@BIN_DIR@
+#                            and installed to share/dbus-1/services/
+#   <APP_ID>.metainfo.xml  → installed to share/metainfo/
+#   <APP_ID>.svg           → installed to share/icons/hicolor/scalable/apps/
+#   <APP_ID>-devel.svg     → installed to share/icons/hicolor/scalable/apps/
+#   <APP_ID>-symbolic.svg  → installed to share/icons/hicolor/symbolic/apps/
+#
+# Usage:
+#   desktop_linux_install(
+#       APP_ID      <app-id>
+#       OUTPUT_NAME <executable-name>
+#       [SOURCE_DIR <dir>]   # default: CMAKE_CURRENT_SOURCE_DIR
+#       [ICON_DIR   <dir>]   # default: SOURCE_DIR
+#       [BIN_DIR    <dir>]   # default: CMAKE_INSTALL_FULL_BINDIR
+#   )
+function(desktop_linux_install)
+    cmake_parse_arguments(ARG "" "APP_ID;OUTPUT_NAME;SOURCE_DIR;ICON_DIR;BIN_DIR" "" ${ARGN})
+
+    if(NOT ARG_APP_ID)
+        message(FATAL_ERROR "desktop_linux_install: APP_ID is required")
+    endif()
+    if(NOT ARG_OUTPUT_NAME)
+        message(FATAL_ERROR "desktop_linux_install: OUTPUT_NAME is required")
+    endif()
+    if(NOT ARG_SOURCE_DIR)
+        set(ARG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
+    if(NOT ARG_ICON_DIR)
+        set(ARG_ICON_DIR "${ARG_SOURCE_DIR}")
+    endif()
+    if(NOT ARG_BIN_DIR)
+        set(ARG_BIN_DIR "${CMAKE_INSTALL_FULL_BINDIR}")
+    endif()
+
+    # Variables available to configure_file @ONLY templates
+    set(APP_ID      "${ARG_APP_ID}")
+    set(OUTPUT_NAME "${ARG_OUTPUT_NAME}")
+    set(BIN_DIR     "${ARG_BIN_DIR}")
+
+    if(EXISTS "${ARG_SOURCE_DIR}/${ARG_APP_ID}.desktop.in")
+        configure_file("${ARG_SOURCE_DIR}/${ARG_APP_ID}.desktop.in"
+            "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.desktop" @ONLY)
+        install(FILES "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.desktop"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
+    endif()
+
+    if(EXISTS "${ARG_SOURCE_DIR}/${ARG_APP_ID}.service.in")
+        configure_file("${ARG_SOURCE_DIR}/${ARG_APP_ID}.service.in"
+            "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.service" @ONLY)
+        install(FILES "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.service"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services")
+    endif()
+
+    if(EXISTS "${ARG_SOURCE_DIR}/${ARG_APP_ID}.metainfo.xml")
+        install(FILES "${ARG_SOURCE_DIR}/${ARG_APP_ID}.metainfo.xml"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo")
+    endif()
+
+    if(EXISTS "${ARG_ICON_DIR}/${ARG_APP_ID}.svg")
+        install(FILES "${ARG_ICON_DIR}/${ARG_APP_ID}.svg"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps")
+    endif()
+    if(EXISTS "${ARG_ICON_DIR}/${ARG_APP_ID}-devel.svg")
+        install(FILES "${ARG_ICON_DIR}/${ARG_APP_ID}-devel.svg"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps")
+    endif()
+    if(EXISTS "${ARG_ICON_DIR}/${ARG_APP_ID}-symbolic.svg")
+        install(FILES "${ARG_ICON_DIR}/${ARG_APP_ID}-symbolic.svg"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/symbolic/apps")
+    endif()
+endfunction()
+
+# Runs gtk-update-icon-cache and update-desktop-database after install.
+# Each tool is skipped silently if not found on the system.
+#
+# Usage:
+#   desktop_linux_post_install()
+function(desktop_linux_post_install)
+    install(CODE "
+        find_program(_gtk_update_icon_cache gtk-update-icon-cache)
+        if(_gtk_update_icon_cache)
+            message(STATUS \"Updating GTK icon cache...\")
+            execute_process(
+                COMMAND \"\${_gtk_update_icon_cache}\" -f -t
+                    \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/icons/hicolor\"
+                ERROR_QUIET)
+        endif()
+
+        find_program(_update_desktop_database update-desktop-database)
+        if(_update_desktop_database)
+            message(STATUS \"Updating desktop database...\")
+            execute_process(
+                COMMAND \"\${_update_desktop_database}\"
+                    \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/applications\"
+                ERROR_QUIET)
+        endif()
+    ")
 endfunction()
