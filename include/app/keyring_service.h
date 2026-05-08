@@ -20,7 +20,7 @@ namespace desktop::app
 		keyring_service(keyring_service&&) = delete;
 		bool add_credential(const secrets::credential& credential);
 		bool delete_credential(const secrets::credential& credential);
-		const std::vector<secrets::credential>& get_all_credentials();
+		std::vector<secrets::credential> get_all_credentials();
 		bool update_credential(const secrets::credential& credential);
 		keyring_service& operator=(const keyring_service&) = delete;
 		keyring_service& operator=(keyring_service&&) = delete;

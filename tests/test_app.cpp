@@ -53,6 +53,41 @@ private:
 	static bool m_removed;
 };
 
+class KeyringService_Test : public ::testing::Test
+{
+public:
+	KeyringService_Test()
+	    : m_info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") },
+	      m_secret_svc{ std::make_shared<secret_service>() },
+	      m_db_svc{ std::make_shared<database_service>(m_info, m_secret_svc) },
+	      m_svc{ m_db_svc },
+	      m_baseline{ m_svc.get_all_credentials().size() }
+	{
+		if (!m_removed)
+		{
+			try
+			{
+				std::filesystem::remove(user_directories::get_config() / m_info->get_name() / "app.db");
+			}
+			catch (...)
+			{
+			}
+			m_removed = true;
+			m_baseline = 0;
+		}
+	}
+
+protected:
+	std::shared_ptr<app_info> m_info;
+	std::shared_ptr<secret_service> m_secret_svc;
+	std::shared_ptr<database_service> m_db_svc;
+	keyring_service m_svc;
+	std::size_t m_baseline;
+
+private:
+	static bool m_removed;
+};
+
 class TranslationService_Test : public ::testing::Test
 {
 public:
@@ -68,6 +103,7 @@ protected:
 };
 
 bool ConfigurationService_Test::m_removed = false;
+bool KeyringService_Test::m_removed = false;
 
 inline void to_json(nlohmann::json& j, const ConfigurationService_TestWindow& w)
 {
@@ -396,6 +432,137 @@ TEST_F(ConfigurationService_Test, ConfigurationService_savedEventFires)
 	m_svc.set<std::string>("cfg_event_key", "event_value");
 	EXPECT_TRUE(fired);
 	EXPECT_EQ(last_name, "cfg_event_key");
+}
+
+TEST_F(KeyringService_Test, AddCredential_returnsTrue_onNewCredential)
+{
+	credential cred{ "TestService", "alice", "s3cr3t", "https://example.com" };
+	EXPECT_TRUE(m_svc.add_credential(cred));
+}
+
+TEST_F(KeyringService_Test, AddCredential_returnsFalse_onDuplicate)
+{
+	credential cred{ "DupService", "bob", "pass", "https://dup.example.com" };
+	m_svc.add_credential(cred);
+	EXPECT_FALSE(m_svc.add_credential(cred));
+}
+
+TEST_F(KeyringService_Test, AddCredential_appearsInGetAll)
+{
+	credential cred{ "ListService", "carol", "pw", "https://list.example.com" };
+	m_svc.add_credential(cred);
+	const std::vector<credential> all{ m_svc.get_all_credentials() };
+	EXPECT_NE(std::ranges::find(all, cred), all.end());
+}
+
+TEST_F(KeyringService_Test, AddCredential_multipleDistinct_allPresent)
+{
+	credential a{ "SvcA", "user_a", "pw_a", "https://a.example.com" };
+	credential b{ "SvcB", "user_b", "pw_b", "https://b.example.com" };
+	EXPECT_TRUE(m_svc.add_credential(a));
+	EXPECT_TRUE(m_svc.add_credential(b));
+	const std::vector<credential> all{ m_svc.get_all_credentials() };
+	EXPECT_NE(std::ranges::find(all, a), all.end());
+	EXPECT_NE(std::ranges::find(all, b), all.end());
+}
+
+TEST_F(KeyringService_Test, DeleteCredential_returnsTrue_onExisting)
+{
+	credential cred{ "DelService", "dave", "pw", "https://del.example.com" };
+	m_svc.add_credential(cred);
+	EXPECT_TRUE(m_svc.delete_credential(cred));
+}
+
+TEST_F(KeyringService_Test, DeleteCredential_removedFromGetAll)
+{
+	credential cred{ "GoneService", "eve", "pw", "https://gone.example.com" };
+	m_svc.add_credential(cred);
+	m_svc.delete_credential(cred);
+	const std::vector<credential> all{ m_svc.get_all_credentials() };
+	EXPECT_EQ(std::ranges::find(all, cred), all.end());
+}
+
+TEST_F(KeyringService_Test, DeleteCredential_returnsFalse_onNonExistent)
+{
+	credential cred{ "PhantomService", "frank", "pw", "https://phantom.example.com" };
+	EXPECT_FALSE(m_svc.delete_credential(cred));
+}
+
+TEST_F(KeyringService_Test, DeleteCredential_onlyRemovesTargetCredential)
+{
+	credential keep{ "KeepService", "grace", "pw1", "https://keep.example.com" };
+	credential remove{ "RemoveService", "heidi", "pw2", "https://remove.example.com" };
+	m_svc.add_credential(keep);
+	m_svc.add_credential(remove);
+	m_svc.delete_credential(remove);
+	const std::vector<credential> all{ m_svc.get_all_credentials() };
+	EXPECT_NE(std::ranges::find(all, keep), all.end());
+	EXPECT_EQ(std::ranges::find(all, remove), all.end());
+}
+
+TEST_F(KeyringService_Test, UpdateCredential_returnsTrue_onExisting)
+{
+	credential original{ "UpdService", "ivan", "old_pw", "https://upd.example.com" };
+	m_svc.add_credential(original);
+	credential updated{ "UpdService", "ivan", "new_pw", "https://upd.example.com" };
+	EXPECT_TRUE(m_svc.update_credential(updated));
+}
+
+TEST_F(KeyringService_Test, UpdateCredential_returnsFalse_onNonExistent)
+{
+	credential cred{ "NoSuchService", "judy", "pw", "https://nosuch.example.com" };
+	EXPECT_FALSE(m_svc.update_credential(cred));
+}
+
+TEST_F(KeyringService_Test, UpdateCredential_newValuesReflectedInGetAll)
+{
+	credential original{ "MutService", "karl", "pw_old", "https://mut.example.com" };
+	m_svc.add_credential(original);
+	credential updated{ "MutService", "karl_new", "pw_new", "https://mut-new.example.com" };
+	m_svc.update_credential(updated);
+	const std::vector<credential> all{ m_svc.get_all_credentials() };
+	const auto it{ std::ranges::find(all, updated) };
+	ASSERT_NE(it, all.end());
+	EXPECT_EQ(it->get_username(), "karl_new");
+	EXPECT_EQ(it->get_password(), "pw_new");
+	EXPECT_EQ(it->get_url(), "https://mut-new.example.com");
+}
+
+TEST_F(KeyringService_Test, GetAllCredentials_countMatchesAdded)
+{
+	m_svc.add_credential({ "Count1", "u1", "p1", "https://c1.example.com" });
+	m_svc.add_credential({ "Count2", "u2", "p2", "https://c2.example.com" });
+	m_svc.add_credential({ "Count3", "u3", "p3", "https://c3.example.com" });
+	EXPECT_EQ(m_svc.get_all_credentials().size(), m_baseline + 3u);
+}
+
+TEST_F(KeyringService_Test, GetAllCredentials_countDecrementsAfterDelete)
+{
+	credential cred{ "DecService", "liam", "pw", "https://dec.example.com" };
+	m_svc.add_credential(cred);
+	m_svc.delete_credential(cred);
+	EXPECT_EQ(m_svc.get_all_credentials().size(), m_baseline);
+}
+
+TEST_F(KeyringService_Test, Credential_allFieldsPreservedAfterAdd)
+{
+	credential cred{ "FieldService", "mia_user", "mia_pass", "https://field.example.com" };
+	m_svc.add_credential(cred);
+	const std::vector<credential> all{ m_svc.get_all_credentials() };
+	const auto it{ std::ranges::find(all, cred) };
+	ASSERT_NE(it, all.end());
+	EXPECT_EQ(it->get_name(), "FieldService");
+	EXPECT_EQ(it->get_username(), "mia_user");
+	EXPECT_EQ(it->get_password(), "mia_pass");
+	EXPECT_EQ(it->get_url(), "https://field.example.com");
+}
+
+TEST_F(KeyringService_Test, Credential_emptyOptionalFields_addAndRetrieve)
+{
+	credential cred{ "MinimalService", "", "", "" };
+	EXPECT_TRUE(m_svc.add_credential(cred));
+	const std::vector<credential> all{ m_svc.get_all_credentials() };
+	EXPECT_NE(std::ranges::find(all, cred), all.end());
 }
 
 TEST_F(TranslationService_Test, TranslationService_getLanguage)

@@ -44,9 +44,10 @@ namespace desktop::app
 		return false;
 	}
 
-	const std::vector<credential>& keyring_service::get_all_credentials()
+	std::vector<credential> keyring_service::get_all_credentials()
 	{
 		ensure_table();
+		std::scoped_lock lock{ m_mutex };
 		return m_credentials;
 	}
 
@@ -54,7 +55,7 @@ namespace desktop::app
 	{
 		ensure_table();
 		std::scoped_lock lock{ m_mutex };
-		std::vector<secrets::credential>::const_iterator it{ std::ranges::find(m_credentials, credential) };
+		std::vector<secrets::credential>::iterator it{ std::ranges::find(m_credentials, credential) };
 		if (it == m_credentials.end())
 		{
 			return false;
@@ -62,7 +63,7 @@ namespace desktop::app
 		if (m_db->update_in_table("credentials", { "name", credential.get_name() },
 		                          { { "username", credential.get_username() }, { "password", credential.get_password() }, { "uri", credential.get_url() } }))
 		{
-			m_credentials[std::distance(m_credentials.cbegin(), it)] = credential;
+			*it = credential;
 			return true;
 		}
 		return false;
@@ -80,6 +81,7 @@ namespace desktop::app
 			return;
 		}
 		m_db->ensure_table_exists("credentials", { { "name", "TEXT PRIMARY KEY" }, { "uri", "TEXT" }, { "username", "TEXT" }, { "password", "TEXT" } });
+		m_credentials.clear();
 		for (const std::vector<database_value>& row : m_db->select_all_from_table("credentials"))
 		{
 			std::string name;
