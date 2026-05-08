@@ -1,5 +1,6 @@
 #pragma once
 
+#include "secrets/credential.h"
 #include "secrets/password_content.h"
 #include "secrets/password_generator.h"
 #include "secrets/secret.h"

@@ -3,8 +3,9 @@
 
 namespace desktop::hosting
 {
-	host_options::host_options(std::span<char*> argv)
-	    : m_argv{ argv }
+	host_options::host_options(std::shared_ptr<app::app_info> app_info, std::span<char*> argv)
+	    : m_app_info{ std::move(app_info) },
+	      m_argv{ argv }
 	{
 	}
 
@@ -21,11 +22,6 @@ namespace desktop::hosting
 	const std::shared_ptr<app::app_info>& host_options::get_app_info() const
 	{
 		return m_app_info;
-	}
-
-	void host_options::set_app_info(const std::shared_ptr<app::app_info>& app_info)
-	{
-		m_app_info = app_info;
 	}
 
 	const std::filesystem::path& host_options::get_log_path() const

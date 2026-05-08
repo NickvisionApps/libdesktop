@@ -11,6 +11,7 @@ namespace desktop::app
 	      m_table_ensured{ false }
 	{
 	}
+
 	const events::event<configuration_service, configuration_saved_event_args>& configuration_service::get_saved_event() const
 	{
 		return m_saved_event;

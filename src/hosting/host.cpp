@@ -1,6 +1,7 @@
 #include "hosting/host.h"
 #include "app/arguments_service.h"
 #include "app/configuration_service.h"
+#include "app/keyring_service.h"
 #include "app/logger.h"
 #include "app/translation_service.h"
 #include "database/database_service.h"
@@ -21,19 +22,17 @@ namespace desktop::hosting
 	host::host(const host_options& options)
 	    : m_services{ std::make_shared<service_collection>() }
 	{
+		m_services->add_service<app_info>(service_scope::singleton, options.get_app_info());
+		m_services->add_service<logger>(service_scope::singleton, options.get_log_path());
 		m_services->add_service<arguments_service>(service_scope::singleton,
 		                                           std::span<char*>{ options.get_argv(), static_cast<std::size_t>(options.get_argc()) });
-		if (options.get_app_info())
-		{
-			m_services->add_service<app_info>(service_scope::singleton, options.get_app_info());
-			m_services->add_service<translation_service>(service_scope::singleton);
-		}
-		m_services->add_service<database_service>(service_scope::singleton);
 		m_services->add_service<configuration_service>(service_scope::singleton);
+		m_services->add_service<database_service>(service_scope::singleton);
+		m_services->add_service<keyring_service>(service_scope::singleton);
 		m_services->add_service<notification_service>(service_scope::singleton);
 		m_services->add_service<secret_service>(service_scope::singleton);
+		m_services->add_service<translation_service>(service_scope::singleton);
 		m_services->add_service<power_service>(service_scope::singleton);
-		m_services->add_service<logger>(service_scope::singleton, options.get_log_path());
 	}
 
 	std::shared_ptr<service_collection> host::get_services()

@@ -11,7 +11,7 @@ using namespace desktop::system;
 class Hosting_Test : public ::testing::Test
 {
 protected:
-	host_options m_options{ {} };
+	host_options m_options{ nullptr, {} };
 	host m_host{ m_options };
 };
 
@@ -61,15 +61,14 @@ TEST_F(Hosting_Test, Host_servicesNotNull)
 
 TEST_F(Hosting_Test, HostOptions_defaultLogPath)
 {
-	host_options opts{ {} };
+	host_options opts{ nullptr, {} };
 	EXPECT_TRUE(opts.get_log_path().empty());
 }
 
 TEST_F(Hosting_Test, Host_servicesContainsAppInfo)
 {
 	std::shared_ptr<app_info> info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") };
-	host_options opts{ {} };
-	opts.set_app_info(info);
+	host_options opts{ info, {} };
 	host h{ opts };
 	EXPECT_TRUE(h.get_services()->contains<app_info>());
 }
@@ -77,9 +76,7 @@ TEST_F(Hosting_Test, Host_servicesContainsAppInfo)
 TEST_F(Hosting_Test, HostOptions_getSetAppInfo)
 {
 	std::shared_ptr<app_info> info{ std::make_shared<app_info>("com.example.test", "TestApp", "testapp") };
-	host_options opts{ {} };
-	EXPECT_EQ(opts.get_app_info(), nullptr);
-	opts.set_app_info(info);
+	host_options opts{ info, {} };
 	EXPECT_EQ(opts.get_app_info(), info);
 }
 
@@ -88,7 +85,7 @@ TEST_F(Hosting_Test, HostOptions_getArgc)
 	int argc{ 1 };
 	char arg0[]{ "test" };
 	char* argv[]{ arg0 };
-	host_options opts{ { argv, static_cast<std::size_t>(argc) } };
+	host_options opts{ nullptr, { argv, static_cast<std::size_t>(argc) } };
 	EXPECT_EQ(opts.get_argc(), 1);
 }
 
@@ -97,13 +94,13 @@ TEST_F(Hosting_Test, HostOptions_getArgv)
 	int argc{ 1 };
 	char arg0[]{ "test" };
 	char* argv[]{ arg0 };
-	host_options opts{ { argv, static_cast<std::size_t>(argc) } };
+	host_options opts{ nullptr, { argv, static_cast<std::size_t>(argc) } };
 	EXPECT_EQ(opts.get_argv(), argv);
 }
 
 TEST_F(Hosting_Test, HostOptions_setLogPath)
 {
-	host_options opts{ {} };
+	host_options opts{ nullptr, {} };
 	opts.set_log_path("test.log");
 	EXPECT_EQ(opts.get_log_path(), "test.log");
 }
