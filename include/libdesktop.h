@@ -6,6 +6,7 @@
 #include "filesystem.h"
 #include "helpers.h"
 #include "hosting.h"
+#include "network.h"
 #include "notifications.h"
 #include "secrets.h"
 #include "services.h"

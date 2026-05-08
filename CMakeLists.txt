@@ -50,6 +50,7 @@ add_library(${PROJECT_NAME}
     "include/helpers.h"
     "include/hosting.h"
     "include/libdesktop.h"
+    "include/network.h"
     "include/notifications.h"
     "include/secrets.h"
     "include/services.h"
@@ -75,6 +76,7 @@ add_library(${PROJECT_NAME}
     "include/hosting/host.h"
     "include/hosting/host_options.h"
     "include/hosting/lifetime_service.h"
+    "include/network/web.h"
     "include/notifications/notification.h"
     "include/notifications/notification_sent_event_args.h"
     "include/notifications/notification_service.h"
@@ -113,6 +115,7 @@ add_library(${PROJECT_NAME}
     "src/hosting/host.cpp"
     "src/hosting/host_options.cpp"
     "src/hosting/lifetime_service.cpp"
+    "Src/network/web.cpp"
     "src/notifications/notification.cpp"
     "src/notifications/notification_sent_event_args.cpp"
     "src/notifications/notification_service.cpp"
@@ -190,27 +193,27 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-find_package(CURL REQUIRED)
+find_package(cpr CONFIG REQUIRED)
 find_package(Intl REQUIRED)
 find_package(maddy CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json sqlcipher)
+target_link_libraries(${PROJECT_NAME} PUBLIC cpr::cpr Intl::Intl maddy::maddy nlohmann_json::nlohmann_json sqlcipher)
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32 Shell32)
 else()
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
-endif()
-if(LINUX)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(glib REQUIRED IMPORTED_TARGET glib-2.0)
     pkg_check_modules(gio REQUIRED IMPORTED_TARGET gio-2.0)
     pkg_check_modules(gmodule REQUIRED IMPORTED_TARGET gmodule-2.0)
     pkg_check_modules(gobject REQUIRED IMPORTED_TARGET gobject-2.0)
     pkg_check_modules(gthread REQUIRED IMPORTED_TARGET gthread-2.0)
+    target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads PkgConfig::glib PkgConfig::gio PkgConfig::gmodule PkgConfig::gobject PkgConfig::gthread)
+endif()
+if(LINUX)
     pkg_check_modules(libsecret REQUIRED IMPORTED_TARGET libsecret-1)
-    target_link_libraries(${PROJECT_NAME} PUBLIC PkgConfig::glib PkgConfig::gio PkgConfig::gmodule PkgConfig::gobject PkgConfig::gthread PkgConfig::libsecret)
+    target_link_libraries(${PROJECT_NAME} PUBLIC  PkgConfig::libsecret)
 endif()
 if(APPLE)
     find_library(CF_LIBRARY CoreFoundation)
