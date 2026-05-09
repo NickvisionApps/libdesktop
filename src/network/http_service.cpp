@@ -20,6 +20,7 @@ static const std::string& get_user_agent()
 namespace desktop::network
 {
 	http_service::http_service()
+	    : m_ssl_verification{ true }
 	{
 		CURLcode result{ curl_global_init(CURL_GLOBAL_ALL) };
 		if (result != CURLE_OK)
@@ -33,7 +34,7 @@ namespace desktop::network
 		curl_global_cleanup();
 	}
 
-	http_response http_service::del(const std::string& url)
+	http_response http_service::del(const std::string& url) const
 	{
 		if (url.empty())
 		{
@@ -46,6 +47,11 @@ namespace desktop::network
 		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -65,8 +71,13 @@ namespace desktop::network
 		return response;
 	}
 
+	void http_service::disable_ssl_verification()
+	{
+		m_ssl_verification = false;
+	}
+
 	bool http_service::download_file(const std::string& url, const std::filesystem::path& destination, bool overwrite,
-	                                 const std::function<void(download_progress)>& progress)
+	                                 const std::function<void(download_progress)>& progress) const
 	{
 		if (url.empty())
 		{
@@ -89,6 +100,11 @@ namespace desktop::network
 			return false;
 		}
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		if (progress)
@@ -130,7 +146,12 @@ namespace desktop::network
 		return false;
 	}
 
-	http_response http_service::get(const std::string& url)
+	void http_service::enable_ssl_verification()
+	{
+		m_ssl_verification = true;
+	}
+
+	http_response http_service::get(const std::string& url) const
 	{
 		if (url.empty())
 		{
@@ -143,6 +164,11 @@ namespace desktop::network
 		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -161,7 +187,12 @@ namespace desktop::network
 		return response;
 	}
 
-	bool http_service::is_valid_url(const std::string& url)
+	bool http_service::is_ssl_verification_enabled() const
+	{
+		return m_ssl_verification;
+	}
+
+	bool http_service::is_valid_url(const std::string& url) const
 	{
 		if (url.empty())
 		{
@@ -177,7 +208,7 @@ namespace desktop::network
 		return result == CURLUE_OK;
 	}
 
-	http_response http_service::post(const std::string& url, const nlohmann::json& json)
+	http_response http_service::post(const std::string& url, const nlohmann::json& json) const
 	{
 		if (url.empty())
 		{
@@ -193,6 +224,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/json");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -215,7 +251,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::post(const std::string& url, const std::vector<std::byte>& data)
+	http_response http_service::post(const std::string& url, const std::vector<std::byte>& data) const
 	{
 		if (url.empty())
 		{
@@ -230,6 +266,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -252,7 +293,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::post(const std::string& url, const std::filesystem::path& file_path)
+	http_response http_service::post(const std::string& url, const std::filesystem::path& file_path) const
 	{
 		if (url.empty() || !std::filesystem::exists(file_path))
 		{
@@ -273,6 +314,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -302,7 +348,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::post(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form)
+	http_response http_service::post(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
 	{
 		if (url.empty())
 		{
@@ -322,6 +368,11 @@ namespace desktop::network
 		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -342,7 +393,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::patch(const std::string& url, const nlohmann::json& json)
+	http_response http_service::patch(const std::string& url, const nlohmann::json& json) const
 	{
 		if (url.empty())
 		{
@@ -358,6 +409,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/json");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -381,7 +437,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::patch(const std::string& url, const std::vector<std::byte>& data)
+	http_response http_service::patch(const std::string& url, const std::vector<std::byte>& data) const
 	{
 		if (url.empty())
 		{
@@ -396,6 +452,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -419,7 +480,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::patch(const std::string& url, const std::filesystem::path& file_path)
+	http_response http_service::patch(const std::string& url, const std::filesystem::path& file_path) const
 	{
 		if (url.empty() || !std::filesystem::exists(file_path))
 		{
@@ -440,6 +501,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -470,7 +536,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::patch(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form)
+	http_response http_service::patch(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
 	{
 		if (url.empty())
 		{
@@ -490,6 +556,11 @@ namespace desktop::network
 		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -511,7 +582,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const nlohmann::json& json)
+	http_response http_service::put(const std::string& url, const nlohmann::json& json) const
 	{
 		if (url.empty())
 		{
@@ -527,6 +598,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/json");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -550,7 +626,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const std::vector<std::byte>& data)
+	http_response http_service::put(const std::string& url, const std::vector<std::byte>& data) const
 	{
 		if (url.empty())
 		{
@@ -565,6 +641,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -588,7 +669,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const std::filesystem::path& file_path)
+	http_response http_service::put(const std::string& url, const std::filesystem::path& file_path) const
 	{
 		if (url.empty() || !std::filesystem::exists(file_path))
 		{
@@ -609,6 +690,11 @@ namespace desktop::network
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
@@ -638,7 +724,7 @@ namespace desktop::network
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form)
+	http_response http_service::put(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
 	{
 		if (url.empty())
 		{
@@ -658,6 +744,11 @@ namespace desktop::network
 		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
