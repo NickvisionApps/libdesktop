@@ -26,13 +26,13 @@ namespace desktop::app
 		textdomain(m_domain_name.c_str());
 	}
 
-	std::string_view translation_service::get_language() const
+	const std::string& translation_service::get_language() const
 	{
 		std::scoped_lock lock{ m_mutex };
 		return m_language;
 	}
 
-	bool translation_service::set_language(std::string_view language)
+	bool translation_service::set_language(const std::string& language)
 	{
 		if (language.empty())
 		{
@@ -54,7 +54,7 @@ namespace desktop::app
 		{
 			return false;
 		}
-		environment::set_variable("LANGUAGE", std::string{ language });
+		environment::set_variable("LANGUAGE", language);
 		std::scoped_lock lock{ m_mutex };
 		m_translations_off = false;
 		m_language = language;

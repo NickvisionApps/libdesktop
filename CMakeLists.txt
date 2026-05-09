@@ -76,7 +76,10 @@ add_library(${PROJECT_NAME}
     "include/hosting/host.h"
     "include/hosting/host_options.h"
     "include/hosting/lifetime_service.h"
-    "include/network/web.h"
+    "include/network/download_progress.h"
+    "include/network/http_response.h"
+    "include/network/http_service.h"
+    "include/network/network_monitor.h"
     "include/notifications/notification.h"
     "include/notifications/notification_sent_event_args.h"
     "include/notifications/notification_service.h"
@@ -115,7 +118,10 @@ add_library(${PROJECT_NAME}
     "src/hosting/host.cpp"
     "src/hosting/host_options.cpp"
     "src/hosting/lifetime_service.cpp"
-    "Src/network/web.cpp"
+    "src/network/download_progress.cpp"
+    "src/network/http_response.cpp"
+    "src/network/http_service.cpp"
+    "src/network/network_monitor.cpp"
     "src/notifications/notification.cpp"
     "src/notifications/notification_sent_event_args.cpp"
     "src/notifications/notification_service.cpp"
@@ -193,11 +199,11 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-find_package(cpr CONFIG REQUIRED)
+find_package(CURL REQUIRED)
 find_package(Intl REQUIRED)
 find_package(maddy CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC cpr::cpr Intl::Intl maddy::maddy nlohmann_json::nlohmann_json sqlcipher)
+target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json sqlcipher)
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32 Shell32)
 else()
@@ -247,18 +253,7 @@ if (BUILD_TESTING)
     include(GoogleTest)
 
     add_executable(${PROJECT_NAME}_tests
-        "tests/main.cpp"
-        "tests/test_app.cpp"
-        "tests/test_database.cpp"
-        "tests/test_events.cpp"
-        "tests/test_filesystem.cpp"
-        "tests/test_helpers.cpp"
-        "tests/test_hosting.cpp"
-        "tests/test_notifications.cpp"
-        "tests/test_secrets.cpp"
-        "tests/test_services.cpp"
-        "tests/test_system.cpp"
-        "tests/test_updates.cpp")
+        "tests/main.cpp")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)
 

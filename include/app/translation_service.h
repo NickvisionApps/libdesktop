@@ -21,8 +21,8 @@ namespace desktop::app
 		~translation_service() override = default;
 		translation_service(const translation_service&) = delete;
 		translation_service(translation_service&&) = delete;
-		std::string_view get_language() const;
-		bool set_language(std::string_view language);
+		const std::string& get_language() const;
+		bool set_language(const std::string& language);
 		const std::vector<std::string>& get_available_languages() const;
 		const char* _(const char* msgid) const noexcept;
 		const char* _n(const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;

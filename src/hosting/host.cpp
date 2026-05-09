@@ -6,12 +6,14 @@
 #include "app/translation_service.h"
 #include "database/database_service.h"
 #include "hosting/lifetime_service.h"
+#include "network/http_service.h"
 #include "notifications/notification_service.h"
 #include "secrets/secret_service.h"
 #include "system/power_service.h"
 
 using namespace desktop::app;
 using namespace desktop::database;
+using namespace desktop::network;
 using namespace desktop::notifications;
 using namespace desktop::secrets;
 using namespace desktop::services;
@@ -28,6 +30,7 @@ namespace desktop::hosting
 		                                           std::span<char*>{ options.get_argv(), static_cast<std::size_t>(options.get_argc()) });
 		m_services->add_service<configuration_service>(service_scope::singleton);
 		m_services->add_service<database_service>(service_scope::singleton);
+		m_services->add_service<http_service>(service_scope::singleton);
 		m_services->add_service<keyring_service>(service_scope::singleton);
 		m_services->add_service<notification_service>(service_scope::singleton);
 		m_services->add_service<secret_service>(service_scope::singleton);
@@ -42,7 +45,6 @@ namespace desktop::hosting
 
 	void host::run()
 	{
-		std::shared_ptr<lifetime_service> lifetime = m_services->get_required_service<lifetime_service>();
-		lifetime->run();
+		m_services->get_required_service<lifetime_service>()->run();
 	}
 }

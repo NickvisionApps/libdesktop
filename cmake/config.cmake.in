@@ -10,7 +10,7 @@ if(DEFINED ENV{VCPKG_ROOT})
 endif()
 
 include(CMakeFindDependencyMacro)
-find_dependency(cpr CONFIG REQUIRED)
+find_dependency(CURL REQUIRED)
 find_dependency(Intl REQUIRED)
 find_dependency(maddy CONFIG REQUIRED)
 find_dependency(nlohmann_json CONFIG REQUIRED)
