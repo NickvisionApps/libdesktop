@@ -10,6 +10,7 @@ namespace desktop::secrets
 {
 	std::optional<secret> secret_service::get(const std::string& name) const
 	{
+		std::scoped_lock lock{ m_mutex };
 		std::wstring wname{ string_manip::wstr(name) };
 		CREDENTIALW* cred{ nullptr };
 		if (CredReadW(wname.c_str(), CRED_TYPE_GENERIC, 0, &cred) == FALSE)
@@ -40,6 +41,7 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
+		std::scoped_lock lock{ m_mutex };
 		if (s.get_value().empty())
 		{
 			return false;
@@ -56,6 +58,7 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
+		std::scoped_lock lock{ m_mutex };
 		if (s.get_value().empty())
 		{
 			return false;
@@ -76,6 +79,7 @@ namespace desktop::secrets
 
 	bool secret_service::remove(const std::string& name)
 	{
+		std::scoped_lock lock{ m_mutex };
 		std::wstring wname{ string_manip::wstr(name) };
 		return CredDeleteW(wname.c_str(), CRED_TYPE_GENERIC, 0) != FALSE;
 	}

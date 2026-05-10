@@ -1,32 +1,27 @@
 #include "hosting/lifetime_service.h"
-#include <format>
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 using namespace desktop::app;
-using namespace desktop::services;
 
 namespace desktop::hosting
 {
-	lifetime_service::lifetime_service(std::shared_ptr<logger> logger, bool graphical)
-	    : m_logger{ std::move(logger) },
-	      m_graphical{ graphical }
+	lifetime_service::lifetime_service(const std::shared_ptr<app_info>& info)
+	    : m_graphical{ info->is_graphical() },
+	      m_start_time{ std::chrono::steady_clock::now() },
+	      m_should_restart{ false },
+	      m_exception{ nullptr }
 	{
 	}
 
 	lifetime_service::~lifetime_service()
 	{
 		stop();
-		if (m_thread.joinable())
+		if (m_worker.joinable())
 		{
-			m_thread.join();
+			m_worker.join();
 		}
-	}
-
-	const std::stop_source& lifetime_service::get_stop_source() const
-	{
-		return m_stop_source;
 	}
 
 	std::chrono::seconds lifetime_service::get_uptime() const
@@ -34,71 +29,112 @@ namespace desktop::hosting
 		return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - m_start_time);
 	}
 
-	void lifetime_service::run()
+	void lifetime_service::invoke_restart() noexcept
 	{
-		m_logger->debug("Starting application.", __FILE__, __LINE__);
-		m_start_time = std::chrono::steady_clock::now();
-		std::stop_callback callback{ m_stop_source.get_token(), [this]()
+		try
 		{
-			m_logger->debug("Stop application requested.", __FILE__, __LINE__);
-			on_stop_requested();
-		} };
-		if (!m_graphical)
-		{
-			m_thread = std::thread(&lifetime_service::startup_and_run, this);
+			std::unique_lock lock{ m_mutex };
+			std::stop_source src{ m_stop_source };
+			m_should_restart = true;
+			lock.unlock();
+			src.request_stop();
 		}
-		else
+		catch (...)
+		{
+		}
+	}
+
+	std::exception_ptr lifetime_service::run()
+	{
+#ifdef __APPLE__
+		if (m_graphical)
+		{
+			while (true)
+			{
+				run_once();
+				std::scoped_lock lock{ m_mutex };
+				if (!m_should_restart || m_exception)
+				{
+					break;
+				}
+				m_should_restart = false;
+			}
+			on_shutdown();
+			return m_exception;
+		}
+#endif
+		m_worker = std::thread([this]()
 		{
 #ifdef _WIN32
-			m_thread = std::thread([this]()
+			if (m_graphical)
 			{
-				HRESULT hr{ CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED) };
-				if (SUCCEEDED(hr))
+				HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+				if (FAILED(hr))
 				{
-					startup_and_run();
-					CoUninitialize();
+					m_exception = std::make_exception_ptr(std::runtime_error("Failed to initialize COM"));
+					return;
 				}
-			});
-#elif defined(__APPLE__)
-			startup_and_run();
-#else
-			m_thread = std::thread(&lifetime_service::startup_and_run, this);
+			}
 #endif
-		}
-		if (m_thread.joinable())
+			while (true)
+			{
+				run_once();
+				std::scoped_lock lock{ m_mutex };
+				if (!m_should_restart || m_exception)
+				{
+					break;
+				}
+				m_should_restart = false;
+			}
+			on_shutdown();
+#ifdef _WIN32
+			if (m_graphical)
+			{
+				CoUninitialize();
+			}
+#endif
+		});
+		m_worker.join();
+		return m_exception;
+	}
+
+	void lifetime_service::stop() noexcept
+	{
+		try
 		{
-			m_thread.join();
+			std::unique_lock lock{ m_mutex };
+			std::stop_source src{ m_stop_source };
+			m_should_restart = false;
+			lock.unlock();
+			src.request_stop();
 		}
-		shutdown();
+		catch (...)
+		{
+		}
 	}
 
-	void lifetime_service::stop()
+	void lifetime_service::run_once()
 	{
-		m_stop_source.request_stop();
-	}
-
-	void lifetime_service::startup_and_run()
-	{
+		std::unique_lock lock{ m_mutex };
+		m_start_time = std::chrono::steady_clock::now();
+		m_stop_source = std::stop_source{};
+		std::stop_callback callback{ m_stop_source.get_token(), [this]()
+		{
+			on_stop_requested();
+		} };
+		lock.unlock();
 		try
 		{
 			on_startup_and_run();
 		}
-		catch (const std::exception& e)
-		{
-			m_logger->critical(e.what(), __FILE__, __LINE__);
-			stop();
-		}
 		catch (...)
 		{
-			m_logger->critical("An unknown exception occurred.", __FILE__, __LINE__);
-			stop();
+			lock.lock();
+			std::stop_source src{ m_stop_source };
+			m_exception = std::current_exception();
+			m_should_restart = false;
+			lock.unlock();
+			src.request_stop();
 		}
-	}
-
-	void lifetime_service::shutdown()
-	{
-		m_logger->debug("Shutting down application.", __FILE__, __LINE__);
-		on_shutdown();
-		m_logger->info(std::format("Application ran for {} seconds.", get_uptime().count()), __FILE__, __LINE__);
 	}
 }

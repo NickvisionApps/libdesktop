@@ -6,15 +6,14 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "services/service.h"
 
 namespace desktop::app
 {
-	class arguments_service : public services::service
+	class arguments_service
 	{
 	public:
 		arguments_service(std::span<char*> argv);
-		~arguments_service() override = default;
+		~arguments_service() = default;
 		arguments_service(const arguments_service&) = delete;
 		arguments_service(arguments_service&&) = delete;
 		void add(const std::string& argument);

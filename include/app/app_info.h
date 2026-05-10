@@ -2,16 +2,15 @@
 
 #include <string>
 #include <unordered_map>
-#include "services/service.h"
 #include "updates/version.h"
 
 namespace desktop::app
 {
-	class app_info : public services::service
+	class app_info
 	{
 	public:
-		app_info(std::string id, std::string name, std::string english_short_name);
-		~app_info() override = default;
+		app_info(std::string id, std::string name, std::string english_short_name, bool graphical);
+		~app_info() = default;
 		app_info(const app_info&) = delete;
 		app_info(app_info&&) = delete;
 		const std::unordered_map<std::string, std::string>& get_artists() const;
@@ -30,6 +29,7 @@ namespace desktop::app
 		const std::string& get_english_short_name() const;
 		const std::unordered_map<std::string, std::string>& get_extra_links() const;
 		void add_extra_link(const std::string& name, const std::string& url);
+		bool is_graphical() const;
 		const std::string& get_id() const;
 		const std::string& get_issues_url() const;
 		void set_issues_url(const std::string& issues_url);
@@ -57,6 +57,7 @@ namespace desktop::app
 		std::string m_discussions_url;
 		std::string m_english_short_name;
 		std::unordered_map<std::string, std::string> m_extra_links;
+		bool m_graphical;
 		std::string m_id;
 		std::string m_issues_url;
 		std::string m_name;

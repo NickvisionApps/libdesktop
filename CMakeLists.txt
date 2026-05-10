@@ -90,7 +90,6 @@ add_library(${PROJECT_NAME}
     "include/secrets/password_generator.h"
     "include/secrets/secret.h"
     "include/secrets/secret_service.h"
-    "include/services/service.h"
     "include/services/service_collection.h"
     "include/services/service_provider.h"
     "include/services/service_scope.h"

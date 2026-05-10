@@ -9,15 +9,14 @@
 #include <utility>
 #include "download_progress.h"
 #include "http_response.h"
-#include "services/service.h"
 
 namespace desktop::network
 {
-	class http_service : public services::service
+	class http_service
 	{
 	public:
 		http_service();
-		~http_service() override;
+		~http_service();
 		http_service(const http_service&) = delete;
 		http_service(http_service&&) = delete;
 		http_response del(const std::string& url) const;

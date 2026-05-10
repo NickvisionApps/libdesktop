@@ -7,10 +7,11 @@ using namespace desktop::helpers;
 
 namespace desktop::app
 {
-	app_info::app_info(std::string id, std::string name, std::string english_short_name)
+	app_info::app_info(std::string id, std::string name, std::string english_short_name, bool graphical)
 	    : m_id{ std::move(id) },
 	      m_name{ std::move(name) },
 	      m_english_short_name{ std::move(english_short_name) },
+	      m_graphical{ graphical },
 	      m_portable{ false }
 	{
 	}
@@ -111,6 +112,11 @@ namespace desktop::app
 	void app_info::add_extra_link(const std::string& name, const std::string& url)
 	{
 		m_extra_links[name] = url;
+	}
+
+	bool app_info::is_graphical() const
+	{
+		return m_graphical;
 	}
 
 	const std::string& app_info::get_id() const

@@ -24,21 +24,20 @@ namespace desktop::hosting
 	host::host(const host_options& options)
 	    : m_services{ std::make_shared<service_collection>() }
 	{
-		m_services->add_service<app_info>(service_scope::singleton, options.get_app_info());
-		m_services->add_service<logger>(service_scope::singleton, options.get_log_path());
-		m_services->add_service<arguments_service>(service_scope::singleton,
-		                                           std::span<char*>{ options.get_argv(), static_cast<std::size_t>(options.get_argc()) });
+		m_services->add_service<app_info>(options.get_app_info());
+		m_services->add_service<arguments_service>(service_scope::singleton, options.get_argv());
 		m_services->add_service<configuration_service>(service_scope::singleton);
 		m_services->add_service<database_service>(service_scope::singleton);
 		m_services->add_service<http_service>(service_scope::singleton);
 		m_services->add_service<keyring_service>(service_scope::singleton);
+		m_services->add_service<logger>(service_scope::singleton, options.get_log_path());
 		m_services->add_service<notification_service>(service_scope::singleton);
+		m_services->add_service<power_service>(service_scope::singleton);
 		m_services->add_service<secret_service>(service_scope::singleton);
 		m_services->add_service<translation_service>(service_scope::singleton);
-		m_services->add_service<power_service>(service_scope::singleton);
 	}
 
-	std::shared_ptr<service_collection> host::get_services()
+	std::shared_ptr<service_collection>& host::get_services()
 	{
 		return m_services;
 	}

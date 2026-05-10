@@ -9,16 +9,15 @@
 #include <tuple>
 #include <vector>
 #include "app/app_info.h"
-#include "services/service.h"
 
 namespace desktop::app
 {
-	class translation_service : public services::service
+	class translation_service
 	{
 	public:
 		using dependencies = std::tuple<app_info>;
 		translation_service(const std::shared_ptr<app_info>& info);
-		~translation_service() override = default;
+		~translation_service() = default;
 		translation_service(const translation_service&) = delete;
 		translation_service(translation_service&&) = delete;
 		const std::string& get_language() const;

@@ -24,7 +24,6 @@ namespace desktop::events
 		event(event&&) = delete;
 		event& operator=(const event&) = delete;
 		event& operator=(event&&) = delete;
-
 		event_id add_handler(std::function<void(const T&, const U&)> handler) const
 		{
 			std::lock_guard lock{ m_mutex };
@@ -32,7 +31,6 @@ namespace desktop::events
 			m_handlers.insert({ id, std::move(handler) });
 			return id;
 		}
-
 		void invoke(const T& sender, const U& args)
 		{
 			std::unordered_map<event_id, std::function<void(const T&, const U&)>> snapshot;
@@ -48,19 +46,16 @@ namespace desktop::events
 				}
 			}
 		}
-
 		void remove_handler(event_id id) const
 		{
 			std::lock_guard lock{ m_mutex };
 			m_handlers.erase(id);
 		}
-
 		const event& operator+=(std::function<void(const T&, const U&)> handler) const
 		{
 			add_handler(handler);
 			return *this;
 		}
-
 		const event& operator-=(event_id id) const
 		{
 			remove_handler(id);

@@ -6,10 +6,6 @@ namespace desktop::services
 {
 	std::any service_collection::get_service_impl(std::type_index type) const
 	{
-		if (type == typeid(service_provider))
-		{
-			return std::make_any<std::shared_ptr<service_provider>>(std::const_pointer_cast<service_collection>(shared_from_this()));
-		}
 		thread_local std::unordered_set<std::type_index> in_progress;
 		if (in_progress.contains(type))
 		{

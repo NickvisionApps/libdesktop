@@ -11,16 +11,15 @@
 #include "app/app_info.h"
 #include "database/database_value.h"
 #include "secrets/secret_service.h"
-#include "services/service.h"
 
 namespace desktop::database
 {
-	class database_service : public desktop::services::service
+	class database_service
 	{
 	public:
-		using dependencies = std::tuple<desktop::app::app_info, desktop::secrets::secret_service>;
-		database_service(std::shared_ptr<desktop::app::app_info> info, std::shared_ptr<desktop::secrets::secret_service> secret_service);
-		~database_service() override;
+		using dependencies = std::tuple<app::app_info, secrets::secret_service>;
+		database_service(std::shared_ptr<app::app_info> info, std::shared_ptr<secrets::secret_service> secret_service);
+		~database_service();
 		database_service(const database_service&) = delete;
 		database_service(database_service&&) = delete;
 		bool is_encrypted() const;
@@ -49,7 +48,7 @@ namespace desktop::database
 		mutable std::mutex m_mutex;
 		mutable sqlite3* m_db;
 		mutable bool m_is_encrypted;
-		std::shared_ptr<desktop::app::app_info> m_info;
-		std::shared_ptr<desktop::secrets::secret_service> m_secret_service;
+		std::shared_ptr<app::app_info> m_info;
+		std::shared_ptr<secrets::secret_service> m_secret_service;
 	};
 }

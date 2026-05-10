@@ -1,18 +1,17 @@
 #pragma once
 
 #include <mutex>
-#include "services/service.h"
 #ifdef __APPLE__
 #include <IOKit/pwr_mgt/IOPMLib.h>
 #endif
 
 namespace desktop::system
 {
-	class power_service : public services::service
+	class power_service
 	{
 	public:
 		power_service();
-		~power_service() override;
+		~power_service();
 		power_service(const power_service&) = delete;
 		power_service(power_service&&) = delete;
 		bool is_suspended() const;

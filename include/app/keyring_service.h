@@ -6,16 +6,15 @@
 #include <vector>
 #include "database/database_service.h"
 #include "secrets/credential.h"
-#include "services/service.h"
 
 namespace desktop::app
 {
-	class keyring_service : public services::service
+	class keyring_service
 	{
 	public:
 		using dependencies = std::tuple<database::database_service>;
 		keyring_service(std::shared_ptr<database::database_service> db);
-		~keyring_service() override = default;
+		~keyring_service() = default;
 		keyring_service(const keyring_service&) = delete;
 		keyring_service(keyring_service&&) = delete;
 		bool add_credential(const secrets::credential& credential);

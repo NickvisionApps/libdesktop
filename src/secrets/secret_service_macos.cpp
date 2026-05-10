@@ -7,6 +7,7 @@ namespace desktop::secrets
 {
 	std::optional<secret> secret_service::get(const std::string& name) const
 	{
+		std::scoped_lock lock{ m_mutex };
 		CFStringRef name_ref{ CFStringCreateWithCString(nullptr, name.c_str(), kCFStringEncodingUTF8) };
 		CFMutableDictionaryRef query{ CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) };
 		CFDictionaryAddValue(query, kSecClass, kSecClassGenericPassword);
@@ -40,6 +41,7 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
+		std::scoped_lock lock{ m_mutex };
 		if (s.get_value().empty())
 		{
 			return false;
@@ -60,6 +62,7 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
+		std::scoped_lock lock{ m_mutex };
 		if (s.get_value().empty())
 		{
 			return false;
@@ -81,6 +84,7 @@ namespace desktop::secrets
 
 	bool secret_service::remove(const std::string& name)
 	{
+		std::scoped_lock lock{ m_mutex };
 		CFStringRef name_ref{ CFStringCreateWithCString(nullptr, name.c_str(), kCFStringEncodingUTF8) };
 		CFMutableDictionaryRef query{ CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) };
 		CFDictionaryAddValue(query, kSecClass, kSecClassGenericPassword);

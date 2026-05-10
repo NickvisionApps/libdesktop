@@ -1,40 +1,43 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <stop_token>
 #include <thread>
-#include "app/logger.h"
-#include "services/service.h"
+#include "app/app_info.h"
 
 namespace desktop::hosting
 {
-	class lifetime_service : public services::service
+	class lifetime_service
 	{
 	public:
-		lifetime_service(std::shared_ptr<app::logger> logger, bool graphical);
-		~lifetime_service() override;
+		using dependencies = std::tuple<app::app_info>;
+		lifetime_service(const std::shared_ptr<app::app_info>& info);
+		~lifetime_service();
 		lifetime_service(const lifetime_service&) = delete;
 		lifetime_service(lifetime_service&&) = delete;
-		const std::stop_source& get_stop_source() const;
 		std::chrono::seconds get_uptime() const;
-		void run();
-		void stop();
+		void invoke_restart() noexcept;
+		std::exception_ptr run();
+		void stop() noexcept;
 		lifetime_service& operator=(const lifetime_service&) = delete;
 		lifetime_service& operator=(lifetime_service&&) = delete;
 
 	protected:
-		virtual void on_startup_and_run() = 0;
-		virtual void on_shutdown() = 0;
-		virtual void on_stop_requested() = 0;
+		virtual void on_startup_and_run() noexcept = 0;
+		virtual void on_shutdown() noexcept = 0;
+		virtual void on_stop_requested() noexcept = 0;
 
 	private:
-		void startup_and_run();
-		void shutdown();
-		std::shared_ptr<app::logger> m_logger;
+		void run_once();
+		mutable std::mutex m_mutex;
 		bool m_graphical;
-		std::stop_source m_stop_source;
-		std::thread m_thread;
 		std::chrono::steady_clock::time_point m_start_time;
+		std::stop_source m_stop_source;
+		bool m_should_restart;
+		std::thread m_worker;
+		std::exception_ptr m_exception;
 	};
 }

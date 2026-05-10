@@ -87,7 +87,7 @@ namespace desktop::system
 		int m_stderr_pipe[2];
 		int m_stdin_pipe[2];
 		void cleanup() noexcept;
-		void read_available(int fd, std::string& buffer);
+		std::string read_available(int fd, std::string& buffer);
 		void watch() noexcept;
 	};
 
@@ -205,8 +205,9 @@ namespace desktop::system
 		return true;
 	}
 
-	void process::impl::read_available(int fd, std::string& buffer)
+	std::string process::impl::read_available(int fd, std::string& buffer)
 	{
+		size_t old_size{ buffer.size() };
 		std::array<char, 4096> chunk{};
 		while (true)
 		{
@@ -219,13 +220,14 @@ namespace desktop::system
 			}
 			if (bytes == 0 || errno == EAGAIN || errno == EWOULDBLOCK)
 			{
-				return;
+				break;
 			}
 			if (errno != EINTR)
 			{
-				return;
+				break;
 			}
 		}
+		return buffer.substr(old_size);
 	}
 
 	bool process::impl::resume()
@@ -368,15 +370,15 @@ namespace desktop::system
 						exited = true;
 					}
 				}
-				read_available(m_stdout_pipe[0], m_standard_output);
-				read_available(m_stderr_pipe[0], m_standard_error);
+				m_process.m_output_received_event.invoke(m_process, { read_available(m_stdout_pipe[0], m_standard_output) });
+				m_process.m_error_received_event.invoke(m_process, { read_available(m_stderr_pipe[0], m_standard_error) });
 				if (!exited)
 				{
 					std::this_thread::sleep_for(process_wait_timeout);
 				}
 			}
-			read_available(m_stdout_pipe[0], m_standard_output);
-			read_available(m_stderr_pipe[0], m_standard_error);
+			m_process.m_output_received_event.invoke(m_process, { read_available(m_stdout_pipe[0], m_standard_output) });
+			m_process.m_error_received_event.invoke(m_process, { read_available(m_stderr_pipe[0], m_standard_error) });
 			int exit_code;
 			{
 				std::scoped_lock lock{ m_mutex };
@@ -406,6 +408,16 @@ namespace desktop::system
 	const events::event<process, events::param_event_args<int>>& process::get_exited_event() const
 	{
 		return m_exited_event;
+	}
+
+	const events::event<process, events::param_event_args<std::string>>& process::get_output_received_event() const
+	{
+		return m_output_received_event;
+	}
+
+	const events::event<process, events::param_event_args<std::string>>& process::get_error_received_event() const
+	{
+		return m_error_received_event;
 	}
 
 	const std::vector<std::string>& process::get_arguments() const

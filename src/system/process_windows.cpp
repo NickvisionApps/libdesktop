@@ -184,7 +184,7 @@ namespace desktop::system
 		HANDLE m_stdin_write{ nullptr };
 		HANDLE m_job{ nullptr };
 		PROCESS_INFORMATION m_process_information;
-		void append_pipe_output(std::string& buffer, HANDLE pipe);
+		std::string append_pipe_output(std::string& buffer, HANDLE pipe);
 		void cleanup() noexcept;
 		void watch() noexcept;
 	};
@@ -204,24 +204,26 @@ namespace desktop::system
 		cleanup();
 	}
 
-	void process::impl::append_pipe_output(std::string& buffer, HANDLE pipe)
+	std::string process::impl::append_pipe_output(std::string& buffer, HANDLE pipe)
 	{
+		size_t old_size{ buffer.size() };
 		while (true)
 		{
 			DWORD available{ 0 };
 			if (PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) == FALSE || available == 0)
 			{
-				return;
+				break;
 			}
 			std::vector<char> chunk(available);
 			DWORD read{ 0 };
 			if (ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) == FALSE || read == 0)
 			{
-				return;
+				break;
 			}
 			std::scoped_lock lock{ m_mutex };
 			buffer.append(chunk.data(), read);
 		}
+		return buffer.substr(old_size);
 	}
 
 	void process::impl::cleanup() noexcept
@@ -440,8 +442,8 @@ namespace desktop::system
 			while (true)
 			{
 				wait_result = WaitForSingleObject(m_process_information.hProcess, static_cast<DWORD>(process_wait_timeout.count()));
-				append_pipe_output(m_standard_output, m_stdout_read);
-				append_pipe_output(m_standard_error, m_stderr_read);
+				m_process.m_output_received_event.invoke(m_process, { append_pipe_output(m_standard_output, m_stdout_read) });
+				m_process.m_error_received_event.invoke(m_process, { append_pipe_output(m_standard_error, m_stderr_read) });
 				if (wait_result == WAIT_OBJECT_0)
 				{
 					break;
@@ -452,8 +454,8 @@ namespace desktop::system
 					break;
 				}
 			}
-			append_pipe_output(m_standard_output, m_stdout_read);
-			append_pipe_output(m_standard_error, m_stderr_read);
+			m_process.m_output_received_event.invoke(m_process, { append_pipe_output(m_standard_output, m_stdout_read) });
+			m_process.m_error_received_event.invoke(m_process, { append_pipe_output(m_standard_error, m_stderr_read) });
 			int exit_code{ -1 };
 			{
 				std::scoped_lock lock{ m_mutex };
@@ -476,9 +478,9 @@ namespace desktop::system
 	}
 
 	process::process(std::filesystem::path path, std::vector<std::string> arguments)
-	    : m_path{ std::move(path) },
-	      m_arguments{ std::move(arguments) },
-	      m_impl{ std::make_unique<impl>(*this) }
+	    : m_impl{ std::make_unique<impl>(*this) },
+	      m_path{ std::move(path) },
+	      m_arguments{ std::move(arguments) }
 	{
 	}
 
@@ -487,6 +489,16 @@ namespace desktop::system
 	const events::event<process, events::param_event_args<int>>& process::get_exited_event() const
 	{
 		return m_exited_event;
+	}
+
+	const events::event<process, events::param_event_args<std::string>>& process::get_output_received_event() const
+	{
+		return m_output_received_event;
+	}
+
+	const events::event<process, events::param_event_args<std::string>>& process::get_error_received_event() const
+	{
+		return m_error_received_event;
 	}
 
 	const std::vector<std::string>& process::get_arguments() const

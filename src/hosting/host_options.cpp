@@ -9,14 +9,9 @@ namespace desktop::hosting
 	{
 	}
 
-	int host_options::get_argc() const
+	std::span<char*> host_options::get_argv() const
 	{
-		return static_cast<int>(m_argv.size());
-	}
-
-	char** host_options::get_argv() const
-	{
-		return m_argv.data();
+		return m_argv;
 	}
 
 	const std::shared_ptr<app::app_info>& host_options::get_app_info() const

@@ -5,44 +5,43 @@
 #include <stdexcept>
 #include <string>
 #include <typeindex>
-#include "service.h"
 
 namespace desktop::services
 {
-	class service_provider : public service
+	template <typename T>
+	concept has_dependencies = requires { typename T::dependencies; };
+
+	class service_provider
 	{
 	public:
 		service_provider() = default;
-		~service_provider() override = default;
-		service_provider(const service_provider&) = delete;
-		service_provider(service_provider&&) = delete;
-
-		template <typename TService>
-		    requires is_service<TService>
-		std::shared_ptr<TService> get_service() const
+		virtual ~service_provider() = default;
+		service_provider(const service_provider&) = default;
+		service_provider(service_provider&&) = default;
+		template <typename T>
+		    requires std::is_class_v<T>
+		std::shared_ptr<T> get_service() const
 		{
-			std::any result{ get_service_impl(typeid(TService)) };
+			std::any result{ get_service_impl(typeid(T)) };
 			if (!result.has_value())
 			{
 				return nullptr;
 			}
-			return std::any_cast<std::shared_ptr<TService>>(result);
+			return std::any_cast<std::shared_ptr<T>>(result);
 		}
-
-		template <typename TService>
-		    requires is_service<TService>
-		std::shared_ptr<TService> get_required_service() const
+		template <typename T>
+		    requires std::is_class_v<T>
+		std::shared_ptr<T> get_required_service() const
 		{
-			auto svc{ get_service<TService>() };
+			auto svc{ get_service<T>() };
 			if (!svc)
 			{
-				throw std::runtime_error("Required service not registered: " + std::string(typeid(TService).name()));
+				throw std::runtime_error("Required service not registered: " + std::string(typeid(T).name()));
 			}
 			return svc;
 		}
-
-		service_provider& operator=(const service_provider&) = delete;
-		service_provider& operator=(service_provider&&) = delete;
+		service_provider& operator=(const service_provider&) = default;
+		service_provider& operator=(service_provider&&) = default;
 
 	protected:
 		virtual std::any get_service_impl(std::type_index type) const = 0;

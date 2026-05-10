@@ -5,15 +5,14 @@
 #include <mutex>
 #include <string_view>
 #include "log_type.h"
-#include "services/service.h"
 
 namespace desktop::app
 {
-	class logger : public services::service
+	class logger
 	{
 	public:
 		logger(const std::filesystem::path& log_path = {});
-		~logger() override;
+		~logger();
 		logger(const logger&) = delete;
 		logger(logger&&) = delete;
 		void critical(std::string_view message, std::string_view file, unsigned int line);

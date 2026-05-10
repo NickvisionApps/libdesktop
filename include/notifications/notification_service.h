@@ -2,15 +2,14 @@
 
 #include "events/event.h"
 #include "notification_sent_event_args.h"
-#include "services/service.h"
 
 namespace desktop::notifications
 {
-	class notification_service : public services::service
+	class notification_service
 	{
 	public:
 		notification_service() = default;
-		~notification_service() override = default;
+		~notification_service() = default;
 		notification_service(const notification_service&) = delete;
 		notification_service(notification_service&&) = delete;
 		const events::event<notification_service, notification_sent_event_args>& get_notification_sent_event() const;

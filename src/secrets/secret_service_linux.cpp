@@ -10,6 +10,7 @@ namespace desktop::secrets
 {
 	std::optional<secret> secret_service::get(const std::string& name) const
 	{
+		std::scoped_lock lock{ m_mutex };
 		GError* error{ nullptr };
 		char* value{ secret_password_lookup_sync(&LIBDESKTOP_SCHEMA, nullptr, &error, "application", name.c_str(), nullptr) };
 		if (error)
@@ -39,6 +40,7 @@ namespace desktop::secrets
 
 	bool secret_service::add(const secret& s)
 	{
+		std::scoped_lock lock{ m_mutex };
 		if (s.get_value().empty())
 		{
 			return false;
@@ -56,6 +58,7 @@ namespace desktop::secrets
 
 	bool secret_service::update(const secret& s)
 	{
+		std::scoped_lock lock{ m_mutex };
 		if (s.get_value().empty())
 		{
 			return false;
@@ -84,6 +87,7 @@ namespace desktop::secrets
 
 	bool secret_service::remove(const std::string& name)
 	{
+		std::scoped_lock lock{ m_mutex };
 		GError* error{ nullptr };
 		bool res{ static_cast<bool>(secret_password_clear_sync(&LIBDESKTOP_SCHEMA, nullptr, &error, "application", name.c_str(), nullptr)) };
 		if (error)

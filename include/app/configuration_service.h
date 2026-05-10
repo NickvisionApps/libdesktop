@@ -14,7 +14,6 @@
 #include "app/configuration_saved_event_args.h"
 #include "database/database_service.h"
 #include "events/event.h"
-#include "services/service.h"
 
 namespace desktop::app
 {
@@ -28,12 +27,12 @@ namespace desktop::app
 	template <typename T>
 	concept configuration_object = !configuration_settable<T>;
 
-	class configuration_service : public services::service
+	class configuration_service
 	{
 	public:
 		using dependencies = std::tuple<database::database_service>;
 		configuration_service(std::shared_ptr<database::database_service> db);
-		~configuration_service() override = default;
+		~configuration_service() = default;
 		configuration_service(const configuration_service&) = delete;
 		configuration_service(configuration_service&&) = delete;
 		const events::event<configuration_service, configuration_saved_event_args>& get_saved_event() const;
