@@ -2,6 +2,7 @@
 
 #include <compare>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 
 namespace desktop::updates
@@ -23,7 +24,7 @@ namespace desktop::updates
 		bool is_preview() const;
 		bool empty() const;
 		const std::string& str() const;
-		static bool try_parse(const std::string& s, version& v);
+		static std::optional<version> parse(const std::string& s);
 		std::strong_ordering operator<=>(const version& other) const;
 		bool operator==(const version& other) const;
 		bool operator!=(const version& other) const;

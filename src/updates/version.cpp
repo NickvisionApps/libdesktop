@@ -99,16 +99,15 @@ namespace desktop::updates
 		return m_str;
 	}
 
-	bool version::try_parse(const std::string& s, version& v)
+	std::optional<version> version::parse(const std::string& s)
 	{
 		try
 		{
-			v = version{ s };
-			return true;
+			return version{ s };
 		}
 		catch (...)
 		{
-			return false;
+			return std::nullopt;
 		}
 	}
 

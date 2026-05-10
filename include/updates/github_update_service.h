@@ -3,8 +3,11 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string_view>
+#include <vector>
 #include "app/app_info.h"
+#include "github_release.h"
 #include "network/download_progress.h"
 #include "network/http_service.h"
 #include "update_service.h"
@@ -21,17 +24,17 @@ namespace desktop::updates
 		~github_update_service() override = default;
 		github_update_service(const github_update_service&) = delete;
 		github_update_service(github_update_service&&) = delete;
-		bool download_asset(const version& version, std::string_view name, const std::filesystem::path& destination, bool exact_match = true,
+		bool download_asset(const version& target, std::string name, const std::filesystem::path& destination, bool exact_match = true,
 		                    const std::function<void(const network::download_progress&)>& progress = {}) override;
-		version get_latest_preview_version() const override;
-		version get_latest_stable_version() const override;
+		std::optional<version> get_latest_version(bool preview) const override;
 #ifdef _WIN32
-		bool install_windows_update(const version& version, const std::function<void(const network::download_progress&)>& progress = {}) override;
+		bool install_update_for_windows(const version& version, const std::function<void(const network::download_progress&)>& progress = {}) override;
 #endif
 		github_update_service& operator=(const github_update_service&) = delete;
 		github_update_service& operator=(github_update_service&&) = delete;
 
 	private:
+		std::vector<github_release> get_all_releases() const;
 		std::shared_ptr<network::http_service> m_http_service;
 		std::string m_owner;
 		std::string m_repo;

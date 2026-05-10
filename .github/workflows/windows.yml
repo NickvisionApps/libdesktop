@@ -35,7 +35,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
-          pkgs: curl gettext-libintl gtest libsecret maddy
+          pkgs: curl gettext-libintl gtest libsecret maddy openssl
           triplet: ${{ matrix.variant.triplet }}
           revision: 522253caf47268c1724f486a035e927a42a90092
           token: ${{ github.token }}
