@@ -34,7 +34,8 @@ namespace desktop::updates
 		github_update_service& operator=(github_update_service&&) = delete;
 
 	private:
-		std::vector<github_release> get_all_releases() const;
+		const std::vector<github_release>& get_all_releases() const;
+		mutable std::vector<github_release> m_releases;
 		std::shared_ptr<network::http_service> m_http_service;
 		std::string m_owner;
 		std::string m_repo;

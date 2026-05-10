@@ -125,8 +125,12 @@ namespace desktop::updates
 	}
 #endif
 
-	std::vector<github_release> github_update_service::get_all_releases() const
+	const std::vector<github_release>& github_update_service::get_all_releases() const
 	{
+		if (!m_releases.empty())
+		{
+			return m_releases;
+		}
 		if (std::filesystem::exists(m_cache_releases_path))
 		{
 			std::chrono::time_point<std::chrono::file_clock> time{ std::filesystem::last_write_time(m_cache_releases_path) };
@@ -135,7 +139,7 @@ namespace desktop::updates
 				std::filesystem::remove(m_cache_releases_path);
 			}
 		}
-		std::vector<github_release> releases;
+		m_releases.clear();
 		if (std::filesystem::exists(m_cache_releases_path))
 		{
 			std::ifstream file{ m_cache_releases_path };
@@ -143,10 +147,10 @@ namespace desktop::updates
 			file >> json;
 			for (const nlohmann::json& release : json)
 			{
-				releases.emplace_back(release);
+				m_releases.emplace_back(release);
 			}
 		}
-		if (releases.empty())
+		if (m_releases.empty())
 		{
 			http_response response{ m_http_service->get(std::format("https://api.github.com/repos/{}/{}/releases", m_owner, m_repo)) };
 			if (response.is_success())
@@ -156,11 +160,11 @@ namespace desktop::updates
 				file << json.dump(4);
 				for (const nlohmann::json& release : json)
 				{
-					releases.emplace_back(release);
+					m_releases.emplace_back(release);
 				}
 				file.close();
 			}
 		}
-		return releases;
+		return m_releases;
 	}
 }
