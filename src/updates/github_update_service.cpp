@@ -26,6 +26,8 @@ namespace desktop::updates
 		{
 			throw std::invalid_argument{ "Invalid source URL" };
 		}
+		m_owner = fields[3];
+		m_repo = fields[4];
 		m_cache_releases_path = user_directories::get_cache() / std::format("{}-{}-releases.json", m_owner, m_repo);
 		std::filesystem::create_directories(m_cache_releases_path.parent_path());
 	}
