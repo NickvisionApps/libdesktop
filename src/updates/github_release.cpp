@@ -1,8 +1,8 @@
-#include "updates/release.h"
+#include "updates/github_release.h"
 
 namespace desktop::updates
 {
-	release::release(const nlohmann::json& json)
+	github_release::github_release(const nlohmann::json& json)
 	    : m_url{ json.value("url", "") },
 	      m_tag_name{ json.value("tag_name", "") },
 	      m_prerelease{ json.value("prerelease", false) },
@@ -14,7 +14,7 @@ namespace desktop::updates
 			{
 				continue;
 			}
-			release_asset asset{ asset_json };
+			github_release_asset asset{ asset_json };
 			if (!asset.empty())
 			{
 				m_assets.emplace_back(asset);
@@ -22,52 +22,52 @@ namespace desktop::updates
 		}
 	}
 
-	const std::string& release::get_tag_name() const
+	const std::string& github_release::get_tag_name() const
 	{
 		return m_tag_name;
 	}
 
-	void release::set_tag_name(const std::string& tag_name)
+	void github_release::set_tag_name(const std::string& tag_name)
 	{
 		m_tag_name = tag_name;
 	}
 
-	bool release::is_prerelease() const
+	bool github_release::is_prerelease() const
 	{
 		return m_prerelease;
 	}
 
-	void release::set_prerelease(bool prerelease)
+	void github_release::set_prerelease(bool prerelease)
 	{
 		m_prerelease = prerelease;
 	}
 
-	bool release::is_draft() const
+	bool github_release::is_draft() const
 	{
 		return m_draft;
 	}
 
-	void release::set_draft(bool draft)
+	void github_release::set_draft(bool draft)
 	{
 		m_draft = draft;
 	}
 
-	const std::vector<release_asset>& release::get_assets() const
+	const std::vector<github_release_asset>& github_release::get_assets() const
 	{
 		return m_assets;
 	}
 
-	void release::set_assets(const std::vector<release_asset>& assets)
+	void github_release::set_assets(const std::vector<github_release_asset>& assets)
 	{
 		m_assets = assets;
 	}
 
-	bool release::empty() const
+	bool github_release::empty() const
 	{
 		return m_url.empty() && m_tag_name.empty() && m_assets.empty();
 	}
 
-	release::operator bool() const
+	github_release::operator bool() const
 	{
 		return !empty();
 	}

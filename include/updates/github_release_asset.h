@@ -6,14 +6,14 @@
 
 namespace desktop::updates
 {
-	class release_asset
+	class github_release_asset
 	{
 	public:
-		release_asset() = default;
-		~release_asset() = default;
-		release_asset(const nlohmann::json& json);
-		release_asset(const release_asset&) = default;
-		release_asset(release_asset&&) = default;
+		github_release_asset() = default;
+		~github_release_asset() = default;
+		github_release_asset(const nlohmann::json& json);
+		github_release_asset(const github_release_asset&) = default;
+		github_release_asset(github_release_asset&&) = default;
 		const std::string& get_url() const;
 		void set_url(const std::string& url);
 		const std::string& get_name() const;
@@ -25,8 +25,8 @@ namespace desktop::updates
 		const std::string& get_browser_download_url() const;
 		void set_browser_download_url(const std::string& browser_download_url);
 		bool empty() const;
-		release_asset& operator=(const release_asset&) = default;
-		release_asset& operator=(release_asset&&) = default;
+		github_release_asset& operator=(const github_release_asset&) = default;
+		github_release_asset& operator=(github_release_asset&&) = default;
 		operator bool() const;
 
 	private:
@@ -37,7 +37,7 @@ namespace desktop::updates
 		std::string m_browser_download_url;
 	};
 
-	inline void to_json(nlohmann::json& j, const release_asset& a)
+	inline void to_json(nlohmann::json& j, const github_release_asset& a)
 	{
 		j = { { "url", a.get_url() },
 			  { "name", a.get_name() },
@@ -46,8 +46,8 @@ namespace desktop::updates
 			  { "browser_download_url", a.get_browser_download_url() } };
 	}
 
-	inline void from_json(const nlohmann::json& j, release_asset& a)
+	inline void from_json(const nlohmann::json& j, github_release_asset& a)
 	{
-		a = release_asset{ j };
+		a = github_release_asset{ j };
 	}
 }

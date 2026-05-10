@@ -15,6 +15,7 @@ namespace desktop::hosting
 		host(host&&) noexcept = default;
 		std::shared_ptr<services::service_collection>& get_services();
 		void run();
+		void use_github_updates();
 		host& operator=(const host&) = default;
 		host& operator=(host&&) noexcept = default;
 

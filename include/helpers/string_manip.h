@@ -25,9 +25,8 @@ namespace desktop::helpers::string_manip
 	std::string trim(const std::string& str, char delimiter);
 	std::string upper(const std::string& str);
 	std::wstring wstr(const std::string& str);
-
 	template <implicitly_constructable_string T = std::string>
-	std::vector<T> split(const std::string& s, const std::string& delimiter, bool includeEmpty = true) noexcept
+	std::vector<T> split(const std::string& s, const std::string& delimiter, bool include_empty = true) noexcept
 	{
 		std::vector<T> splits;
 		size_t last{ 0 };
@@ -35,23 +34,22 @@ namespace desktop::helpers::string_manip
 		while ((next = s.find(delimiter, last)) != std::string::npos)
 		{
 			std::string token{ s.substr(last, next - last) };
-			if (includeEmpty || !trim(token).empty())
+			if (include_empty || !trim(token).empty())
 			{
 				splits.push_back(token);
 			}
 			last = next + delimiter.length();
 		}
 		std::string finalToken{ s.substr(last) };
-		if (includeEmpty || !trim(finalToken).empty())
+		if (include_empty || !trim(finalToken).empty())
 		{
 			splits.push_back(finalToken);
 		}
 		return splits;
 	}
-
 	template <implicitly_constructable_string T = std::string>
-	std::vector<T> split(const std::string& s, char delimiter, bool includeEmpty = true) noexcept
+	std::vector<T> split(const std::string& s, char delimiter, bool include_empty = true) noexcept
 	{
-		return split<T>(s, std::string(1, delimiter), includeEmpty);
+		return split<T>(s, std::string(1, delimiter), include_empty);
 	}
 }

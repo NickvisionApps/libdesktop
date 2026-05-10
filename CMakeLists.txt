@@ -71,6 +71,7 @@ add_library(${PROJECT_NAME}
     "include/events/event_args.h"
     "include/events/param_event_args.h"
     "include/filesystem/user_directories.h"
+    "include/helpers/hash.h"
     "include/helpers/string_manip.h"
     "include/helpers/uuid.h"
     "include/hosting/host.h"
@@ -99,8 +100,10 @@ add_library(${PROJECT_NAME}
     "include/system/power_service.h"
     "include/system/process.h"
     "include/system/process_status.h"
-    "include/updates/release.h"
-    "include/updates/release_asset.h"
+    "include/updates/github_release.h"
+    "include/updates/github_release_asset.h"
+    "include/updates/github_update_service.h"
+    "include/updates/update_service.h"
     "include/updates/version.h"
     "src/app/app_info.cpp"
     "src/app/arguments_service.cpp"
@@ -112,6 +115,7 @@ add_library(${PROJECT_NAME}
     "src/app/window_geometry.cpp"
     "src/database/database_service.cpp"
     "src/database/database_value.cpp"
+    "src/helpers/hash.cpp"
     "src/helpers/string_manip.cpp"
     "src/helpers/uuid.cpp"
     "src/hosting/host.cpp"
@@ -129,8 +133,9 @@ add_library(${PROJECT_NAME}
     "src/secrets/password_generator.cpp"
     "src/secrets/secret.cpp"
     "src/services/service_collection.cpp"
-    "src/updates/release.cpp"
-    "src/updates/release_asset.cpp"
+    "src/updates/github_release.cpp"
+    "src/updates/github_release_asset.cpp"
+    "src/updates/github_update_service.cpp"
     "src/updates/version.cpp")
 
 if(WIN32)
@@ -140,24 +145,20 @@ if(WIN32)
         "src/system/environment_windows.cpp"
         "src/system/power_service_windows.cpp"
         "src/system/process_windows.cpp")
-endif()
-if(UNIX)
-    target_sources(${PROJECT_NAME} PRIVATE
-        "src/system/process_unix.cpp")
-endif()
-if(APPLE)
+elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_macos.cpp"
         "src/secrets/secret_service_macos.cpp"
         "src/system/environment_macos.cpp"
-        "src/system/power_service_macos.cpp")
-endif()
-if(LINUX)
+        "src/system/power_service_macos.cpp"
+        "src/system/process_unix.cpp")
+elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_linux.cpp"
         "src/secrets/secret_service_linux.cpp"
         "src/system/environment_linux.cpp"
-        "src/system/power_service_linux.cpp")
+        "src/system/power_service_linux.cpp"
+        "src/system/process_unix.cpp")
 endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
@@ -202,7 +203,7 @@ find_package(CURL REQUIRED)
 find_package(Intl REQUIRED)
 find_package(maddy CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json sqlcipher)
+target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json OpenSSL::SSL OpenSSL::Crypto sqlcipher)
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32 Shell32)
 else()
@@ -215,17 +216,16 @@ else()
     pkg_check_modules(gobject REQUIRED IMPORTED_TARGET gobject-2.0)
     pkg_check_modules(gthread REQUIRED IMPORTED_TARGET gthread-2.0)
     target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads PkgConfig::glib PkgConfig::gio PkgConfig::gmodule PkgConfig::gobject PkgConfig::gthread)
-endif()
-if(LINUX)
-    pkg_check_modules(libsecret REQUIRED IMPORTED_TARGET libsecret-1)
-    target_link_libraries(${PROJECT_NAME} PUBLIC  PkgConfig::libsecret)
-endif()
-if(APPLE)
-    find_library(CF_LIBRARY CoreFoundation)
-    find_library(CS_LIBRARY CoreServices)
-    find_library(IOKIT_LIBRARY IOKit)
-    find_library(SECURITY_LIBRARY Security)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${CF_LIBRARY} ${CS_LIBRARY} ${IOKIT_LIBRARY} ${SECURITY_LIBRARY})
+    if(LINUX)
+        pkg_check_modules(libsecret REQUIRED IMPORTED_TARGET libsecret-1)
+        target_link_libraries(${PROJECT_NAME} PUBLIC  PkgConfig::libsecret)
+    elseif(APPLE)
+        find_library(CF_LIBRARY CoreFoundation)
+        find_library(CS_LIBRARY CoreServices)
+        find_library(IOKIT_LIBRARY IOKit)
+        find_library(SECURITY_LIBRARY Security)
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${CF_LIBRARY} ${CS_LIBRARY} ${IOKIT_LIBRARY} ${SECURITY_LIBRARY})
+    endif()
 endif()
 
 configure_file("${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}.pc.in" "${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}.pc" @ONLY)

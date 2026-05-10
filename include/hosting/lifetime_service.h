@@ -6,6 +6,7 @@
 #include <mutex>
 #include <stop_token>
 #include <thread>
+#include <tuple>
 #include "app/app_info.h"
 
 namespace desktop::hosting

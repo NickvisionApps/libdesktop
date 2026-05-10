@@ -10,6 +10,7 @@
 #include "notifications/notification_service.h"
 #include "secrets/secret_service.h"
 #include "system/power_service.h"
+#include "updates/github_update_service.h"
 
 using namespace desktop::app;
 using namespace desktop::database;
@@ -18,6 +19,7 @@ using namespace desktop::notifications;
 using namespace desktop::secrets;
 using namespace desktop::services;
 using namespace desktop::system;
+using namespace desktop::updates;
 
 namespace desktop::hosting
 {
@@ -45,5 +47,10 @@ namespace desktop::hosting
 	void host::run()
 	{
 		m_services->get_required_service<lifetime_service>()->run();
+	}
+
+	void host::use_github_updates()
+	{
+		m_services->add_service<update_service, github_update_service>(service_scope::singleton);
 	}
 }
