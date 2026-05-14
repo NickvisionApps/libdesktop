@@ -34,7 +34,7 @@ namespace desktop::updates
 
 	github_update_service::github_update_service(const std::string& owner, const std::string& repo, std::shared_ptr<http_service> http_service)
 	    : m_http_service{ std::move(http_service) },
-          m_owner{ owner },
+	      m_owner{ owner },
 	      m_repo{ repo },
 	      m_cache_releases_path{ user_directories::get_cache() / std::format("{}-{}-releases.json", owner, repo) }
 	{

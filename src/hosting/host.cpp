@@ -44,9 +44,9 @@ namespace desktop::hosting
 		return m_services;
 	}
 
-	void host::run()
+	std::exception_ptr host::run()
 	{
-		m_services->get_required_service<lifetime_service>()->run();
+		return m_services->get_required_service<lifetime_service>()->run();
 	}
 
 	void host::use_github_updates()

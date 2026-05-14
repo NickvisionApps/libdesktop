@@ -31,6 +31,7 @@ namespace desktop::network
 		http_response patch(const std::string& url, const std::vector<std::byte>& data) const;
 		http_response patch(const std::string& url, const std::filesystem::path& file_path) const;
 		http_response patch(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const;
+		bool ping(const std::string& url) const;
 		http_response post(const std::string& url, const nlohmann::json& json) const;
 		http_response post(const std::string& url, const std::vector<std::byte>& data) const;
 		http_response post(const std::string& url, const std::filesystem::path& file_path) const;

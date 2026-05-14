@@ -208,191 +208,6 @@ namespace desktop::network
 		return result == CURLUE_OK;
 	}
 
-	http_response http_service::post(const std::string& url, const nlohmann::json& json) const
-	{
-		if (url.empty())
-		{
-			return {};
-		}
-		CURL* easy{ curl_easy_init() };
-		if (easy == nullptr)
-		{
-			return {};
-		}
-		const std::string body{ json.dump() };
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/json");
-		http_response response;
-		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
-		if (!m_ssl_verification)
-		{
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
-		}
-		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
-		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
-		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, body.c_str());
-		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(body.size()));
-		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
-		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
-		{
-			http_response* response{ static_cast<http_response*>(userdata) };
-			response->write_content(ptr, size * nmemb);
-			return size * nmemb;
-		});
-		if (curl_easy_perform(easy) == CURLE_OK)
-		{
-			response.set_info_from_easy(easy);
-		}
-		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
-		return response;
-	}
-
-	http_response http_service::post(const std::string& url, const std::vector<std::byte>& data) const
-	{
-		if (url.empty())
-		{
-			return {};
-		}
-		CURL* easy{ curl_easy_init() };
-		if (easy == nullptr)
-		{
-			return {};
-		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
-		http_response response;
-		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
-		if (!m_ssl_verification)
-		{
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
-		}
-		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
-		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
-		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, reinterpret_cast<const char*>(data.data()));
-		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(data.size()));
-		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
-		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
-		{
-			http_response* response{ static_cast<http_response*>(userdata) };
-			response->write_content(ptr, size * nmemb);
-			return size * nmemb;
-		});
-		if (curl_easy_perform(easy) == CURLE_OK)
-		{
-			response.set_info_from_easy(easy);
-		}
-		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
-		return response;
-	}
-
-	http_response http_service::post(const std::string& url, const std::filesystem::path& file_path) const
-	{
-		if (url.empty() || !std::filesystem::exists(file_path))
-		{
-			return {};
-		}
-		CURL* easy{ curl_easy_init() };
-		if (easy == nullptr)
-		{
-			return {};
-		}
-		std::ifstream in{ file_path, std::ios::binary };
-		if (!in.is_open())
-		{
-			curl_easy_cleanup(easy);
-			return {};
-		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
-		http_response response;
-		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
-		if (!m_ssl_verification)
-		{
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
-		}
-		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
-		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
-		curl_easy_setopt(easy, CURLOPT_POST, 1L);
-		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(std::filesystem::file_size(file_path)));
-		curl_easy_setopt(easy, CURLOPT_READDATA, &in);
-		curl_easy_setopt(easy, CURLOPT_READFUNCTION, +[](char* buffer, size_t size, size_t nmemb, void* userdata) -> size_t
-		{
-			std::ifstream* in{ static_cast<std::ifstream*>(userdata) };
-			in->read(buffer, static_cast<std::streamsize>(size * nmemb));
-			return static_cast<size_t>(in->gcount());
-		});
-		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
-		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
-		{
-			http_response* response{ static_cast<http_response*>(userdata) };
-			response->write_content(ptr, size * nmemb);
-			return size * nmemb;
-		});
-		if (curl_easy_perform(easy) == CURLE_OK)
-		{
-			response.set_info_from_easy(easy);
-		}
-		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
-		return response;
-	}
-
-	http_response http_service::post(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
-	{
-		if (url.empty())
-		{
-			return {};
-		}
-		CURL* easy{ curl_easy_init() };
-		if (easy == nullptr)
-		{
-			return {};
-		}
-		curl_mime* mime{ curl_mime_init(easy) };
-		for (const std::pair<std::string, std::string>& pair : form)
-		{
-			curl_mimepart* part{ curl_mime_addpart(mime) };
-			curl_mime_name(part, pair.first.c_str());
-			curl_mime_data(part, pair.second.c_str(), CURL_ZERO_TERMINATED);
-		}
-		http_response response;
-		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
-		if (!m_ssl_verification)
-		{
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
-			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
-		}
-		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
-		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_MIMEPOST, mime);
-		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
-		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
-		{
-			http_response* response{ static_cast<http_response*>(userdata) };
-			response->write_content(ptr, size * nmemb);
-			return size * nmemb;
-		});
-		if (curl_easy_perform(easy) == CURLE_OK)
-		{
-			response.set_info_from_easy(easy);
-		}
-		curl_easy_cleanup(easy);
-		curl_mime_free(mime);
-		return response;
-	}
-
 	http_response http_service::patch(const std::string& url, const nlohmann::json& json) const
 	{
 		if (url.empty())
@@ -565,6 +380,217 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PATCH");
+		curl_easy_setopt(easy, CURLOPT_MIMEPOST, mime);
+		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
+		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
+		{
+			http_response* response{ static_cast<http_response*>(userdata) };
+			response->write_content(ptr, size * nmemb);
+			return size * nmemb;
+		});
+		if (curl_easy_perform(easy) == CURLE_OK)
+		{
+			response.set_info_from_easy(easy);
+		}
+		curl_easy_cleanup(easy);
+		curl_mime_free(mime);
+		return response;
+	}
+
+	bool http_service::ping(const std::string& url) const
+	{
+		if (url.empty())
+		{
+			return false;
+		}
+		CURL* easy{ curl_easy_init() };
+		if (easy == nullptr)
+		{
+			return false;
+		}
+		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
+		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
+		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_NOBODY, 1L);
+		bool success{ curl_easy_perform(easy) == CURLE_OK };
+		curl_easy_cleanup(easy);
+		return success;
+	}
+
+	http_response http_service::post(const std::string& url, const nlohmann::json& json) const
+	{
+		if (url.empty())
+		{
+			return {};
+		}
+		CURL* easy{ curl_easy_init() };
+		if (easy == nullptr)
+		{
+			return {};
+		}
+		const std::string body{ json.dump() };
+		curl_slist* headers{ nullptr };
+		headers = curl_slist_append(headers, "Content-Type: application/json");
+		http_response response;
+		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
+		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
+		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, body.c_str());
+		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(body.size()));
+		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
+		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
+		{
+			http_response* response{ static_cast<http_response*>(userdata) };
+			response->write_content(ptr, size * nmemb);
+			return size * nmemb;
+		});
+		if (curl_easy_perform(easy) == CURLE_OK)
+		{
+			response.set_info_from_easy(easy);
+		}
+		curl_easy_cleanup(easy);
+		curl_slist_free_all(headers);
+		return response;
+	}
+
+	http_response http_service::post(const std::string& url, const std::vector<std::byte>& data) const
+	{
+		if (url.empty())
+		{
+			return {};
+		}
+		CURL* easy{ curl_easy_init() };
+		if (easy == nullptr)
+		{
+			return {};
+		}
+		curl_slist* headers{ nullptr };
+		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		http_response response;
+		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
+		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
+		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, reinterpret_cast<const char*>(data.data()));
+		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(data.size()));
+		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
+		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
+		{
+			http_response* response{ static_cast<http_response*>(userdata) };
+			response->write_content(ptr, size * nmemb);
+			return size * nmemb;
+		});
+		if (curl_easy_perform(easy) == CURLE_OK)
+		{
+			response.set_info_from_easy(easy);
+		}
+		curl_easy_cleanup(easy);
+		curl_slist_free_all(headers);
+		return response;
+	}
+
+	http_response http_service::post(const std::string& url, const std::filesystem::path& file_path) const
+	{
+		if (url.empty() || !std::filesystem::exists(file_path))
+		{
+			return {};
+		}
+		CURL* easy{ curl_easy_init() };
+		if (easy == nullptr)
+		{
+			return {};
+		}
+		std::ifstream in{ file_path, std::ios::binary };
+		if (!in.is_open())
+		{
+			curl_easy_cleanup(easy);
+			return {};
+		}
+		curl_slist* headers{ nullptr };
+		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		http_response response;
+		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
+		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
+		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_POST, 1L);
+		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(std::filesystem::file_size(file_path)));
+		curl_easy_setopt(easy, CURLOPT_READDATA, &in);
+		curl_easy_setopt(easy, CURLOPT_READFUNCTION, +[](char* buffer, size_t size, size_t nmemb, void* userdata) -> size_t
+		{
+			std::ifstream* in{ static_cast<std::ifstream*>(userdata) };
+			in->read(buffer, static_cast<std::streamsize>(size * nmemb));
+			return static_cast<size_t>(in->gcount());
+		});
+		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
+		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
+		{
+			http_response* response{ static_cast<http_response*>(userdata) };
+			response->write_content(ptr, size * nmemb);
+			return size * nmemb;
+		});
+		if (curl_easy_perform(easy) == CURLE_OK)
+		{
+			response.set_info_from_easy(easy);
+		}
+		curl_easy_cleanup(easy);
+		curl_slist_free_all(headers);
+		return response;
+	}
+
+	http_response http_service::post(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
+	{
+		if (url.empty())
+		{
+			return {};
+		}
+		CURL* easy{ curl_easy_init() };
+		if (easy == nullptr)
+		{
+			return {};
+		}
+		curl_mime* mime{ curl_mime_init(easy) };
+		for (const std::pair<std::string, std::string>& pair : form)
+		{
+			curl_mimepart* part{ curl_mime_addpart(mime) };
+			curl_mime_name(part, pair.first.c_str());
+			curl_mime_data(part, pair.second.c_str(), CURL_ZERO_TERMINATED);
+		}
+		http_response response;
+		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
+		if (!m_ssl_verification)
+		{
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
+			curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
+		}
+		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
+		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
 		curl_easy_setopt(easy, CURLOPT_MIMEPOST, mime);
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
 		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t

@@ -398,7 +398,7 @@ namespace desktop::system
 
 	process::process(std::filesystem::path path, std::vector<std::string> arguments)
 	    : m_impl{ std::make_unique<impl>(*this) },
-          m_path{ std::move(path) },
+	      m_path{ std::move(path) },
 	      m_arguments{ std::move(arguments) }
 	{
 	}
