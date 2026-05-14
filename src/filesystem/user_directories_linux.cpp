@@ -31,67 +31,67 @@ static std::filesystem::path get_home_path()
 	return {};
 }
 
-static std::filesystem::path get_xdg_user_dir(const std::string& name)
-{
-	if (name.empty())
-	{
-		return {};
-	}
-	const char* path = std::getenv(name.c_str());
-	if (path && *path != '\0')
-	{
-		return std::filesystem::path{ path };
-	}
-	std::filesystem::path dirs_path{ user_directories::get_config() / "user-dirs.dirs" };
-	if (!std::filesystem::exists(dirs_path))
-	{
-		return {};
-	}
-	std::ifstream file{ dirs_path };
-	std::string line;
-	std::string home_str{ get_home_path().string() };
-	while (std::getline(file, line))
-	{
-		std::string trimmed{ trim(line) };
-		if (trimmed.empty() || trimmed.front() == '#')
-		{
-			continue;
-		}
-		std::size_t eq{ trimmed.find('=') };
-		if (eq == std::string::npos)
-		{
-			continue;
-		}
-		if (trim(trimmed.substr(0, eq)) != name)
-		{
-			continue;
-		}
-		std::string value{ trim(trimmed.substr(eq + 1)) };
-		while (!value.empty() && value.front() == '"')
-		{
-			value.erase(value.begin());
-		}
-		while (!value.empty() && value.back() == '"')
-		{
-			value.pop_back();
-		}
-		std::size_t pos{ 0 };
-		while ((pos = value.find("$HOME", pos)) != std::string::npos)
-		{
-			value.replace(pos, 5, home_str);
-			pos += home_str.size();
-		}
-		if (!value.empty())
-		{
-			return std::filesystem::path{ value };
-		}
-		break;
-	}
-	return {};
-}
-
 namespace desktop::filesystem
 {
+	static std::filesystem::path get_xdg_user_dir(const std::string& name)
+	{
+		if (name.empty())
+		{
+			return {};
+		}
+		const char* path = std::getenv(name.c_str());
+		if (path && *path != '\0')
+		{
+			return std::filesystem::path{ path };
+		}
+		std::filesystem::path dirs_path{ user_directories::get_config() / "user-dirs.dirs" };
+		if (!std::filesystem::exists(dirs_path))
+		{
+			return {};
+		}
+		std::ifstream file{ dirs_path };
+		std::string line;
+		std::string home_str{ get_home_path().string() };
+		while (std::getline(file, line))
+		{
+			std::string trimmed{ trim(line) };
+			if (trimmed.empty() || trimmed.front() == '#')
+			{
+				continue;
+			}
+			std::size_t eq{ trimmed.find('=') };
+			if (eq == std::string::npos)
+			{
+				continue;
+			}
+			if (trim(trimmed.substr(0, eq)) != name)
+			{
+				continue;
+			}
+			std::string value{ trim(trimmed.substr(eq + 1)) };
+			while (!value.empty() && value.front() == '"')
+			{
+				value.erase(value.begin());
+			}
+			while (!value.empty() && value.back() == '"')
+			{
+				value.pop_back();
+			}
+			std::size_t pos{ 0 };
+			while ((pos = value.find("$HOME", pos)) != std::string::npos)
+			{
+				value.replace(pos, 5, home_str);
+				pos += home_str.size();
+			}
+			if (!value.empty())
+			{
+				return std::filesystem::path{ value };
+			}
+			break;
+		}
+		return {};
+	}
+
 	std::filesystem::path user_directories::get_cache()
 	{
 		std::filesystem::path res;

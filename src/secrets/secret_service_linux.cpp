@@ -30,7 +30,7 @@ namespace desktop::secrets
 	std::optional<secret> secret_service::create(const std::string& name)
 	{
 		password_generator gen;
-		secret s{ name, gen.next(64) };
+		secret s{ name, gen.generate(64) };
 		if (add(s))
 		{
 			return s;

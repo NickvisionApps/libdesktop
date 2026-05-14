@@ -160,7 +160,7 @@ namespace desktop::system
 		std::size_t remaining{ data.size() };
 		while (remaining > 0)
 		{
-			const ssize_t written{ write(stdin_fd, current, remaining) };
+			const ssize_t written{ ::write(stdin_fd, current, remaining) };
 			if (written < 0)
 			{
 				if (errno == EINTR)
@@ -273,15 +273,15 @@ namespace desktop::system
 			setpgid(0, 0);
 			if (dup2(m_stdout_pipe[1], STDOUT_FILENO) < 0 || dup2(m_stderr_pipe[1], STDERR_FILENO) < 0 || dup2(m_stdin_pipe[0], STDIN_FILENO) < 0)
 			{
-				const std::string message{ std::string("Failed to configure process pipes: ") + std::strerror(errno) + "\n" };
-				write(STDERR_FILENO, message.data(), message.size());
+				std::string message{ std::string("Failed to configure process pipes: ") + std::strerror(errno) + "\n" };
+				::write(STDERR_FILENO, message.data(), message.size());
 				_exit(127);
 			}
 			cleanup();
 			if (!m_process.m_working_directory.empty() && chdir(m_process.m_working_directory.string().c_str()) != 0)
 			{
-				const std::string message{ std::string("Failed to change the working directory: ") + std::strerror(errno) + "\n" };
-				write(STDERR_FILENO, message.data(), message.size());
+				std::string message{ std::string("Failed to change the working directory: ") + std::strerror(errno) + "\n" };
+				::write(STDERR_FILENO, message.data(), message.size());
 				_exit(127);
 			}
 			std::vector<std::string> args{ m_process.m_arguments };
@@ -295,8 +295,8 @@ namespace desktop::system
 			}
 			argv.push_back(nullptr);
 			execvp(m_process.m_path.string().c_str(), argv.data());
-			const std::string message{ std::string("Failed to execute process: ") + std::strerror(errno) + "\n" };
-			write(STDERR_FILENO, message.data(), message.size());
+			std::string message{ std::string("Failed to execute process: ") + std::strerror(errno) + "\n" };
+			::write(STDERR_FILENO, message.data(), message.size());
 			_exit(127);
 		}
 		try

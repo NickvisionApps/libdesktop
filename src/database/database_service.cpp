@@ -48,7 +48,7 @@ namespace desktop::database
 				switch (sqlite3_column_type(stmt, i))
 				{
 				case SQLITE_INTEGER:
-					val = { col_name, sqlite3_column_int64(stmt, i) };
+					val = { col_name, static_cast<int64_t>(sqlite3_column_int64(stmt, i)) };
 					break;
 				case SQLITE_FLOAT:
 					val = { col_name, sqlite3_column_double(stmt, i) };
