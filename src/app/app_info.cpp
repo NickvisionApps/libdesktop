@@ -8,10 +8,10 @@ using namespace desktop::helpers;
 namespace desktop::app
 {
 	app_info::app_info(std::string id, std::string name, std::string english_short_name, bool graphical)
-	    : m_id{ std::move(id) },
-	      m_name{ std::move(name) },
-	      m_english_short_name{ std::move(english_short_name) },
+	    : m_english_short_name{ std::move(english_short_name) },
 	      m_graphical{ graphical },
+          m_id{ std::move(id) },
+	      m_name{ std::move(name) },
 	      m_portable{ false }
 	{
 	}
