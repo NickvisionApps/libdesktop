@@ -20,9 +20,9 @@ namespace desktop::services
 		service_provider(service_provider&&) = default;
 		template <typename T>
 		    requires std::is_class_v<T>
-		std::shared_ptr<T> get_service() const
+		std::shared_ptr<T> get() const
 		{
-			std::any result{ get_service_impl(typeid(T)) };
+			std::any result{ get_impl(typeid(T)) };
 			if (!result.has_value())
 			{
 				return nullptr;
@@ -31,9 +31,9 @@ namespace desktop::services
 		}
 		template <typename T>
 		    requires std::is_class_v<T>
-		std::shared_ptr<T> get_required_service() const
+		std::shared_ptr<T> get_required() const
 		{
-			auto svc{ get_service<T>() };
+			auto svc{ get<T>() };
 			if (!svc)
 			{
 				throw std::runtime_error("Required service not registered: " + std::string(typeid(T).name()));
@@ -44,6 +44,6 @@ namespace desktop::services
 		service_provider& operator=(service_provider&&) = default;
 
 	protected:
-		virtual std::any get_service_impl(std::type_index type) const = 0;
+		virtual std::any get_impl(std::type_index type) const = 0;
 	};
 }

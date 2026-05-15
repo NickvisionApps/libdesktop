@@ -20,14 +20,14 @@ namespace desktop::hosting
 		lifetime_service(const lifetime_service&) = delete;
 		lifetime_service(lifetime_service&&) = delete;
 		std::chrono::seconds get_uptime() const;
-		void invoke_restart() noexcept;
+		void request_restart() noexcept;
+		void request_stop() noexcept;
 		std::exception_ptr run();
-		void stop() noexcept;
 		lifetime_service& operator=(const lifetime_service&) = delete;
 		lifetime_service& operator=(lifetime_service&&) = delete;
 
 	protected:
-		virtual void on_startup_and_run() noexcept = 0;
+		virtual void on_startup_and_run() = 0;
 		virtual void on_shutdown() noexcept = 0;
 		virtual void on_stop_requested() noexcept = 0;
 

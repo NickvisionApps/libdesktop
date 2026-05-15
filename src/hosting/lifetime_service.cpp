@@ -17,7 +17,7 @@ namespace desktop::hosting
 
 	lifetime_service::~lifetime_service()
 	{
-		stop();
+		request_stop();
 		if (m_worker.joinable())
 		{
 			m_worker.join();
@@ -29,13 +29,28 @@ namespace desktop::hosting
 		return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - m_start_time);
 	}
 
-	void lifetime_service::invoke_restart() noexcept
+	void lifetime_service::request_restart() noexcept
 	{
 		try
 		{
 			std::unique_lock lock{ m_mutex };
 			std::stop_source src{ m_stop_source };
 			m_should_restart = true;
+			lock.unlock();
+			src.request_stop();
+		}
+		catch (...)
+		{
+		}
+	}
+
+	void lifetime_service::request_stop() noexcept
+	{
+		try
+		{
+			std::unique_lock lock{ m_mutex };
+			std::stop_source src{ m_stop_source };
+			m_should_restart = false;
 			lock.unlock();
 			src.request_stop();
 		}
@@ -96,21 +111,6 @@ namespace desktop::hosting
 		});
 		m_worker.join();
 		return m_exception;
-	}
-
-	void lifetime_service::stop() noexcept
-	{
-		try
-		{
-			std::unique_lock lock{ m_mutex };
-			std::stop_source src{ m_stop_source };
-			m_should_restart = false;
-			lock.unlock();
-			src.request_stop();
-		}
-		catch (...)
-		{
-		}
 	}
 
 	void lifetime_service::run_once()

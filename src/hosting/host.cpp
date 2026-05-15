@@ -26,17 +26,17 @@ namespace desktop::hosting
 	host::host(const host_options& options)
 	    : m_services{ std::make_shared<service_collection>() }
 	{
-		m_services->add_service<app_info>(options.get_app_info());
-		m_services->add_service<arguments_service>(service_scope::singleton, options.get_argv());
-		m_services->add_service<configuration_service>(service_scope::singleton);
-		m_services->add_service<database_service>(service_scope::singleton);
-		m_services->add_service<http_service>(service_scope::singleton);
-		m_services->add_service<keyring_service>(service_scope::singleton);
-		m_services->add_service<logger>(service_scope::singleton, options.get_log_path());
-		m_services->add_service<notification_service>(service_scope::singleton);
-		m_services->add_service<power_service>(service_scope::singleton);
-		m_services->add_service<secret_service>(service_scope::singleton);
-		m_services->add_service<translation_service>(service_scope::singleton);
+		m_services->add<app_info>(options.get_app_info());
+		m_services->add<arguments_service>(service_scope::singleton, options.get_argv());
+		m_services->add<configuration_service>(service_scope::singleton);
+		m_services->add<database_service>(service_scope::singleton);
+		m_services->add<http_service>(service_scope::singleton);
+		m_services->add<keyring_service>(service_scope::singleton);
+		m_services->add<logger>(service_scope::singleton, options.get_log_path());
+		m_services->add<notification_service>(service_scope::singleton);
+		m_services->add<power_service>(service_scope::singleton);
+		m_services->add<secret_service>(service_scope::singleton);
+		m_services->add<translation_service>(service_scope::singleton);
 	}
 
 	std::shared_ptr<service_collection>& host::get_services()
@@ -46,11 +46,11 @@ namespace desktop::hosting
 
 	std::exception_ptr host::run()
 	{
-		return m_services->get_required_service<lifetime_service>()->run();
+		return m_services->get_required<lifetime_service>()->run();
 	}
 
 	void host::use_github_updates()
 	{
-		m_services->add_service<update_service, github_update_service>(service_scope::singleton);
+		m_services->add<update_service, github_update_service>(service_scope::singleton);
 	}
 }
