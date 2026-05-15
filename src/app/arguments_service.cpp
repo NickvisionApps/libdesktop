@@ -9,6 +9,19 @@ namespace desktop::app
 	{
 	}
 
+	char** arguments_service::argv() const
+	{
+		std::scoped_lock lock{ m_mutex };
+		m_argv.clear();
+		m_argv.reserve(m_arguments.size() + 1);
+		for (const std::string& argument : m_arguments)
+		{
+			m_argv.push_back(const_cast<char*>(argument.c_str()));
+		}
+		m_argv.push_back(nullptr);
+		return m_argv.data();
+	}
+
 	void arguments_service::add(const std::string& argument)
 	{
 		std::scoped_lock lock{ m_mutex };
@@ -21,7 +34,7 @@ namespace desktop::app
 		return std::ranges::find(m_arguments, argument) != m_arguments.end();
 	}
 
-	const std::vector<std::string>& arguments_service::get_all() const
+	std::vector<std::string> arguments_service::get_all() const
 	{
 		std::scoped_lock lock{ m_mutex };
 		return m_arguments;
