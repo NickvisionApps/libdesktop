@@ -127,7 +127,6 @@ add_library(${PROJECT_NAME}
     "src/network/network_monitor.cpp"
     "src/notifications/notification.cpp"
     "src/notifications/notification_sent_event_args.cpp"
-    "src/notifications/notification_service.cpp"
     "src/notifications/shell_notification.cpp"
     "src/secrets/credential.cpp"
     "src/secrets/password_generator.cpp"
@@ -141,6 +140,7 @@ add_library(${PROJECT_NAME}
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_windows.cpp"
+        "src/notifications/notification_service_windows.cpp"
         "src/secrets/secret_service_windows.cpp"
         "src/system/environment_windows.cpp"
         "src/system/power_service_windows.cpp"
@@ -148,6 +148,7 @@ if(WIN32)
 elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_macos.cpp"
+        "src/notifications/notification_service_macos.cpp"
         "src/secrets/secret_service_macos.cpp"
         "src/system/environment_macos.cpp"
         "src/system/power_service_macos.cpp"
@@ -155,6 +156,7 @@ elseif(APPLE)
 elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_linux.cpp"
+        "src/notifications/notification_service_linux.cpp"
         "src/secrets/secret_service_linux.cpp"
         "src/system/environment_linux.cpp"
         "src/system/power_service_linux.cpp"

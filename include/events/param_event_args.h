@@ -7,8 +7,8 @@ namespace desktop::events
 	class param_event_args : public event_args
 	{
 	public:
-		param_event_args(const T& value)
-		    : m_value{ value }
+		param_event_args(T value)
+		    : m_value{ std::move(value) }
 		{
 		}
 		~param_event_args() override = default;

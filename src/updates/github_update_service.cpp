@@ -87,7 +87,7 @@ namespace desktop::updates
 				std::optional<version> version{ version::parse(release.get_tag_name()) };
 				if (version.has_value())
 				{
-					return *version;
+					return version;
 				}
 			}
 		}

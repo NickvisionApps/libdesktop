@@ -28,22 +28,22 @@ namespace desktop::app
 		const char* _p(const char* context, const char* msgid) const noexcept;
 		const char* _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;
 		template <typename... Args>
-		std::string _(const char* msgid, Args&&... args) const noexcept
+		std::string _(const char* msgid, const Args&&... args) const noexcept
 		{
 			return std::vformat(_(msgid), std::make_format_args(args...));
 		}
 		template <typename... Args>
-		std::string _n(const char* msgid, const char* msgid_plural, unsigned long n, Args&&... args) const noexcept
+		std::string _n(const char* msgid, const char* msgid_plural, unsigned long n, const Args&&... args) const noexcept
 		{
 			return std::vformat(_n(msgid, msgid_plural, n), std::make_format_args(args...));
 		}
 		template <typename... Args>
-		std::string _p(const char* context, const char* msgid, Args&&... args) const noexcept
+		std::string _p(const char* context, const char* msgid, const Args&&... args) const noexcept
 		{
 			return std::vformat(_p(context, msgid), std::make_format_args(args...));
 		}
 		template <typename... Args>
-		std::string _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n, Args&&... args) const noexcept
+		std::string _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n, const Args&&... args) const noexcept
 		{
 			return std::vformat(_pn(context, msgid, msgid_plural, n), std::make_format_args(args...));
 		}

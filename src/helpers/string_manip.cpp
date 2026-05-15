@@ -5,6 +5,7 @@
 #include <cwchar>
 #include <ranges>
 #include <sstream>
+#include <utility>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -190,13 +191,13 @@ namespace desktop::helpers
 		std::mbstate_t state{};
 		const wchar_t* ptr{ wstr.data() };
 		size_t size{ 1 + std::wcsrtombs(nullptr, &ptr, 0, &state) };
-		if (size == static_cast<size_t>(-1))
+		if (std::cmp_equal(size, -1))
 		{
 			return {};
 		}
 		std::vector<char> buf(size);
 		std::wcsrtombs(buf.data(), &ptr, buf.size(), &state);
-		return std::string(buf.data());
+		return { buf.data() };
 #endif
 	}
 
@@ -265,13 +266,13 @@ namespace desktop::helpers
 		std::mbstate_t state{};
 		const char* ptr{ str.data() };
 		size_t size{ 1 + std::mbsrtowcs(nullptr, &ptr, 0, &state) };
-		if (size == static_cast<size_t>(-1))
+		if (std::cmp_equal(size, -1))
 		{
 			return {};
 		}
 		std::vector<wchar_t> buf(size);
 		std::mbsrtowcs(buf.data(), &ptr, buf.size(), &state);
-		return std::wstring(buf.data());
+		return { buf.data() };
 #endif
 	}
 }

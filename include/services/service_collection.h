@@ -27,7 +27,7 @@ namespace desktop::services
 		    requires std::is_class_v<T> && std::constructible_from<T, TFirst, TRest...>
 		void add(service_scope scope, TFirst&& first, TRest&&... rest)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
@@ -41,7 +41,7 @@ namespace desktop::services
 		    requires std::is_class_v<T>
 		void add(service_scope scope, std::function<std::shared_ptr<T>()> factory)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
@@ -55,7 +55,7 @@ namespace desktop::services
 		    requires std::is_class_v<T>
 		void add(service_scope scope)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
@@ -66,7 +66,7 @@ namespace desktop::services
 		    requires std::is_class_v<T>
 		void add(std::shared_ptr<T> instance)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
@@ -78,7 +78,7 @@ namespace desktop::services
 		             (!std::same_as<TInterface, TImpl>)
 		void add(service_scope scope, TFirst&& first, TRest&&... rest)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
@@ -92,7 +92,7 @@ namespace desktop::services
 		    requires std::is_class_v<TInterface> && std::derived_from<TImpl, TInterface> && (!std::same_as<TInterface, TImpl>)
 		void add(service_scope scope, std::function<std::shared_ptr<TImpl>()> factory)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
@@ -106,7 +106,7 @@ namespace desktop::services
 		    requires std::is_class_v<TInterface> && std::derived_from<TImpl, TInterface> && (!std::same_as<TInterface, TImpl>)
 		void add(service_scope scope)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
@@ -117,7 +117,7 @@ namespace desktop::services
 		    requires std::is_class_v<TInterface> && std::derived_from<TImpl, TInterface> && (!std::same_as<TInterface, TImpl>)
 		void add(std::shared_ptr<TImpl> instance)
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
 				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
@@ -129,14 +129,14 @@ namespace desktop::services
 		    requires std::is_class_v<T>
 		bool contains() const
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			return m_services.contains(typeid(T));
 		}
 		template <typename T>
 		    requires std::is_class_v<T>
 		void remove()
 		{
-			std::lock_guard lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			m_services.erase(typeid(T));
 		}
 		service_collection& operator=(const service_collection&) = delete;
@@ -149,9 +149,9 @@ namespace desktop::services
 			service_entry() = delete;
 			~service_entry() = default;
 			service_entry(service_scope scope, std::function<std::any()> factory, std::optional<std::any> instance = std::nullopt)
-			    : scope{ scope },
-			      factory{ std::move(factory) },
-			      instance{ std::move(instance) }
+			    : m_scope{ scope },
+			      m_factory{ std::move(factory) },
+			      m_instance{ std::move(instance) }
 			{
 			}
 			service_entry(const service_entry&) = default;
@@ -161,9 +161,9 @@ namespace desktop::services
 
 		private:
 			friend class service_collection;
-			service_scope scope;
-			mutable std::function<std::any()> factory;
-			mutable std::optional<std::any> instance;
+			service_scope m_scope;
+			mutable std::function<std::any()> m_factory;
+			mutable std::optional<std::any> m_instance;
 		};
 
 		std::any get_impl(std::type_index type) const override;
@@ -177,7 +177,7 @@ namespace desktop::services
 				{
 					return std::function<std::any()>{ [this]()
 					{
-						return std::make_any<std::shared_ptr<T>>(std::make_shared<T>(this->get<TDeps>()...));
+						return std::make_any<std::shared_ptr<T>>(std::make_shared<T>(this->get_required<TDeps>()...));
 					} };
 				}(static_cast<typename T::dependencies*>(nullptr));
 			}
@@ -199,7 +199,7 @@ namespace desktop::services
 				{
 					return std::function<std::any()>{ [this]()
 					{
-						return std::make_any<std::shared_ptr<TInterface>>(std::make_shared<TImpl>(this->get<TDeps>()...));
+						return std::make_any<std::shared_ptr<TInterface>>(std::make_shared<TImpl>(this->get_required<TDeps>()...));
 					} };
 				}(static_cast<typename TImpl::dependencies*>(nullptr));
 			}

@@ -16,7 +16,7 @@ namespace desktop::hosting
 	public:
 		using dependencies = std::tuple<app::app_info>;
 		lifetime_service(const std::shared_ptr<app::app_info>& info);
-		~lifetime_service();
+		virtual ~lifetime_service();
 		lifetime_service(const lifetime_service&) = delete;
 		lifetime_service(lifetime_service&&) = delete;
 		std::chrono::seconds get_uptime() const;

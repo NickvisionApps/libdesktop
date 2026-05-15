@@ -24,6 +24,7 @@ public:
 	{
 		m_logger->info("Starting", __FILE__, __LINE__);
 	}
+	~console_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override
@@ -52,6 +53,7 @@ public:
 	    : lifetime_service{ info }
 	{
 	}
+	~erroneous_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override
@@ -76,6 +78,7 @@ public:
 	{
 		m_logger->info("Starting", __FILE__, __LINE__);
 	}
+	~restarting_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override
@@ -116,6 +119,7 @@ public:
 	{
 		m_logger->info("Starting", __FILE__, __LINE__);
 	}
+	~stopping_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override

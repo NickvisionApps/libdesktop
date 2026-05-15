@@ -1,9 +1,9 @@
 #include "system/process.h"
 #include <array>
+#include <cerrno>
 #include <chrono>
 #include <csignal>
 #include <cstring>
-#include <errno.h>
 #include <fcntl.h>
 #include <mutex>
 #include <sys/wait.h>

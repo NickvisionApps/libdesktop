@@ -42,7 +42,7 @@ namespace desktop::app
 		T get(const std::string& name, T default_value)
 		{
 			ensure_table();
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			std::string raw;
 			bool found{ false };
 			if (m_cache.contains(name))
@@ -111,7 +111,7 @@ namespace desktop::app
 		T get(const std::string& name, const T& default_value)
 		{
 			ensure_table();
-			std::lock_guard<std::mutex> lock{ m_mutex };
+			std::scoped_lock lock{ m_mutex };
 			std::string raw;
 			if (m_cache.contains(name))
 			{

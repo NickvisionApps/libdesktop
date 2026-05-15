@@ -25,12 +25,12 @@ namespace desktop::services
 				return {};
 			}
 			const service_entry& entry{ it->second };
-			if (entry.scope == service_scope::singleton && entry.instance.has_value())
+			if (entry.m_scope == service_scope::singleton && entry.m_instance.has_value())
 			{
-				return entry.instance.value();
+				return entry.m_instance.value();
 			}
-			scope = entry.scope;
-			factory = entry.factory;
+			scope = entry.m_scope;
+			factory = entry.m_factory;
 		}
 		if (!factory)
 		{
@@ -54,13 +54,13 @@ namespace desktop::services
 			auto it{ m_services.find(type) };
 			if (it != m_services.end())
 			{
-				if (!it->second.instance.has_value())
+				if (!it->second.m_instance.has_value())
 				{
-					it->second.instance = result;
+					it->second.m_instance = result;
 				}
 				else
 				{
-					result = it->second.instance.value();
+					result = it->second.m_instance.value();
 				}
 			}
 		}

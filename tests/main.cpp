@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <libdesktop.h>
+#include <stdexcept>
 
 using namespace desktop::app;
 using namespace desktop::hosting;
@@ -15,6 +16,7 @@ public:
 	      m_arguments_service{ std::move(arguments_service) }
 	{
 	}
+	~testing_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override
@@ -22,7 +24,10 @@ protected:
 		int argc{ static_cast<int>(m_arguments_service->get_count()) };
 		testing::InitGoogleTest(&argc, m_arguments_service->argv());
 		testing::InitGoogleMock(&argc, m_arguments_service->argv());
-		RUN_ALL_TESTS();
+		if (RUN_ALL_TESTS() == 1)
+		{
+			throw std::runtime_error("Running tests failed");
+		}
 	}
 
 	void on_shutdown() noexcept override { }
@@ -37,5 +42,5 @@ int main(int argc, char* argv[])
 {
 	host host{ std::make_shared<app_info>("libdesktop.test", "Test", "Test", false), std::span<char*>{ argv, static_cast<size_t>(argc) } };
 	host.get_services()->add<lifetime_service, testing_lifetime_service>(service_scope::singleton);
-	host.run();
+	return host.run() ? 1 : 0;
 }

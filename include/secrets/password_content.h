@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <type_traits>
 
 namespace desktop::secrets
 {
-	enum class password_content
+	enum class password_content : std::uint8_t
 	{
 		numeric = 1,
 		uppercase = 2,

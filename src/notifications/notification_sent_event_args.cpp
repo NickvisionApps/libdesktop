@@ -2,13 +2,13 @@
 
 namespace desktop::notifications
 {
-	notification_sent_event_args::notification_sent_event_args(std::shared_ptr<notification> notification)
+	notification_sent_event_args::notification_sent_event_args(notification notification)
 	    : m_notification{ std::move(notification) },
 	      m_timestamp{ std::chrono::system_clock::now() }
 	{
 	}
 
-	const std::shared_ptr<notification>& notification_sent_event_args::get_notification() const
+	const notification& notification_sent_event_args::get_notification() const
 	{
 		return m_notification;
 	}

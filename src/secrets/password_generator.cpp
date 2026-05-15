@@ -53,7 +53,7 @@ namespace desktop::secrets
 		{
 			while (true)
 			{
-				password_content random_type{ static_cast<int>(std::pow(2, type_dist(m_random_engine))) };
+				password_content random_type{ static_cast<std::uint8_t>(std::pow(2, type_dist(m_random_engine))) };
 				if ((m_content_flags & random_type) == password_content::numeric)
 				{
 					password += s_numeric.at(numeric_dist(m_random_engine));

@@ -40,10 +40,10 @@ namespace desktop::helpers::string_manip
 			}
 			last = next + delimiter.length();
 		}
-		std::string finalToken{ s.substr(last) };
-		if (include_empty || !trim(finalToken).empty())
+		std::string final_token{ s.substr(last) };
+		if (include_empty || !trim(final_token).empty())
 		{
-			splits.push_back(finalToken);
+			splits.push_back(final_token);
 		}
 		return splits;
 	}
