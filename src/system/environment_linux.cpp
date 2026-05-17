@@ -1,5 +1,7 @@
 #include "system/environment.h"
+#include <cerrno>
 #include <cstdlib>
+#include <cstring>
 #include <locale>
 #include <sstream>
 #include <unordered_map>
@@ -171,5 +173,10 @@ namespace desktop::system
 			return false;
 		}
 		return value == "true" || value == "1" || value == "yes" || value == "on" || value == "t" || value == "y" || value == "enable" || value == "enabled";
+	}
+
+	std::string environment::get_last_system_error_message()
+	{
+		return { std::strerror(errno) };
 	}
 }

@@ -71,6 +71,7 @@ add_library(${PROJECT_NAME}
     "include/events/event_args.h"
     "include/events/param_event_args.h"
     "include/filesystem/user_directories.h"
+    "include/helpers/file.h"
     "include/helpers/hash.h"
     "include/helpers/string_manip.h"
     "include/helpers/uuid.h"
@@ -81,6 +82,7 @@ add_library(${PROJECT_NAME}
     "include/network/http_response.h"
     "include/network/http_service.h"
     "include/network/network_monitor.h"
+    "include/network/network_state.h"
     "include/notifications/app_notification.h"
     "include/notifications/app_notification_sent_event_args.h"
     "include/notifications/notification_service.h"
@@ -115,6 +117,7 @@ add_library(${PROJECT_NAME}
     "src/app/window_geometry.cpp"
     "src/database/database_service.cpp"
     "src/database/database_value.cpp"
+    "src/helpers/file.cpp"
     "src/helpers/hash.cpp"
     "src/helpers/string_manip.cpp"
     "src/helpers/uuid.cpp"
@@ -124,7 +127,6 @@ add_library(${PROJECT_NAME}
     "src/network/download_progress.cpp"
     "src/network/http_response.cpp"
     "src/network/http_service.cpp"
-    "src/network/network_monitor.cpp"
     "src/notifications/app_notification.cpp"
     "src/notifications/app_notification_sent_event_args.cpp"
     "src/notifications/shell_notification.cpp"
@@ -140,6 +142,7 @@ add_library(${PROJECT_NAME}
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_windows.cpp"
+        "src/network/network_monitor_windows.cpp"
         "src/notifications/notification_service_windows.cpp"
         "src/secrets/secret_service_windows.cpp"
         "src/system/environment_windows.cpp"
@@ -148,6 +151,7 @@ if(WIN32)
 elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_macos.cpp"
+        "src/network/network_monitor_unix.cpp"
         "src/notifications/notification_service_macos.cpp"
         "src/secrets/secret_service_macos.cpp"
         "src/system/environment_macos.cpp"
@@ -156,6 +160,7 @@ elseif(APPLE)
 elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_linux.cpp"
+        "src/network/network_monitor_unix.cpp"
         "src/notifications/notification_service_linux.cpp"
         "src/secrets/secret_service_linux.cpp"
         "src/system/environment_linux.cpp"

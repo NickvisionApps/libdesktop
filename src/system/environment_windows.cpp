@@ -162,4 +162,19 @@ namespace desktop::system
 		}
 		return value == "true" || value == "1" || value == "yes" || value == "on" || value == "t" || value == "y" || value == "enable" || value == "enabled";
 	}
+
+	std::string environment::get_last_system_error_message()
+	{
+		DWORD id{ GetLastError() };
+		if (id == 0)
+		{
+			return {};
+		}
+		LPSTR buffer{ nullptr };
+		size_t size{ FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, id,
+			                        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&buffer), 0, nullptr) };
+		std::string message{ buffer, size };
+		LocalFree(buffer);
+		return message;
+	}
 }

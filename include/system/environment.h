@@ -21,4 +21,5 @@ namespace desktop::system::environment
 	bool has_variable(const std::string& name);
 	bool set_variable(const std::string& name, const std::string& value);
 	bool test_variable(const std::string& name);
+	std::string get_last_system_error_message();
 }
