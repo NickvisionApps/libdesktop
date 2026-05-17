@@ -35,14 +35,16 @@ namespace desktop::notifications
 	{
 	}
 
-	const events::event<notification_service, notification_sent_event_args>& notification_service::get_notification_sent_event() const
+	notification_service::~notification_service() = default;
+
+	const events::event<notification_service, app_notification_sent_event_args>& notification_service::get_app_notification_sent_event() const
 	{
-		return m_notification_sent_event;
+		return m_app_notification_sent_event;
 	}
 
-	void notification_service::send(const notification& notification)
+	void notification_service::send(const app_notification& notification)
 	{
-		m_notification_sent_event.invoke(*this, { notification });
+		m_app_notification_sent_event.invoke(*this, { notification });
 	}
 
 	void notification_service::send(const shell_notification& notification)

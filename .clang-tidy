@@ -52,6 +52,7 @@ Checks: >
   -cppcoreguidelines-pro-type-vararg,
   -bugprone-easily-swappable-parameters,
   -bugprone-empty-catch,
+  -bugprone-exception-escape,
   -modernize-use-nodiscard,
   -modernize-use-trailing-return-type,
   -performance-no-int-to-ptr,

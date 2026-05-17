@@ -50,7 +50,7 @@ jobs:
         with:
           pkgs: curl gettext-libintl glib gtest libsecret maddy nlohmann_json openssl
           triplet: ${{ matrix.variant.triplet }}
-          revision: 522253caf47268c1724f486a035e927a42a90092
+          revision: 2b65c20fc66eda893aa15a15a453c3cf09500b19
           token: ${{ github.token }}
           cache-key: ${{ matrix.variant.triplet }}
       - name: "Build"

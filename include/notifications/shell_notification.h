@@ -1,11 +1,11 @@
 #pragma once
 
 #include <string>
-#include "notification.h"
+#include "app_notification.h"
 
 namespace desktop::notifications
 {
-	class shell_notification : public notification
+	class shell_notification : public app_notification
 	{
 	public:
 		shell_notification(std::string title, std::string message, notification_severity severity);

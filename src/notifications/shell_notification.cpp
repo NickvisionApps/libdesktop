@@ -3,7 +3,7 @@
 namespace desktop::notifications
 {
 	shell_notification::shell_notification(std::string title, std::string message, notification_severity severity)
-	    : notification{ std::move(message), severity },
+	    : app_notification{ std::move(message), severity },
 	      m_title{ std::move(title) }
 	{
 	}

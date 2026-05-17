@@ -4,9 +4,9 @@
 #include <tuple>
 #include "app/app_info.h"
 #include "app/translation_service.h"
+#include "app_notification.h"
+#include "app_notification_sent_event_args.h"
 #include "events/event.h"
-#include "notification.h"
-#include "notification_sent_event_args.h"
 #include "shell_notification.h"
 
 namespace desktop::notifications
@@ -16,11 +16,11 @@ namespace desktop::notifications
 	public:
 		using dependencies = std::tuple<app::app_info, app::translation_service>;
 		notification_service(std::shared_ptr<app::app_info> app_info, std::shared_ptr<app::translation_service> translation_service);
-		~notification_service() = default;
+		~notification_service();
 		notification_service(const notification_service&) = delete;
 		notification_service(notification_service&&) = delete;
-		const events::event<notification_service, notification_sent_event_args>& get_notification_sent_event() const;
-		void send(const notification& notification);
+		const events::event<notification_service, app_notification_sent_event_args>& get_app_notification_sent_event() const;
+		void send(const app_notification& notification);
 		void send(const shell_notification& notification);
 		notification_service& operator=(const notification_service&) = delete;
 		notification_service& operator=(notification_service&&) = delete;
@@ -28,6 +28,6 @@ namespace desktop::notifications
 	private:
 		std::shared_ptr<app::app_info> m_app_info;
 		std::shared_ptr<app::translation_service> m_translation_service;
-		events::event<notification_service, notification_sent_event_args> m_notification_sent_event;
+		events::event<notification_service, app_notification_sent_event_args> m_app_notification_sent_event;
 	};
 }
