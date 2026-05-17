@@ -12,7 +12,7 @@ namespace desktop::network
 	{
 	public:
 		network_monitor();
-		~network_monitor() = default;
+		~network_monitor();
 		network_monitor(const network_monitor&) = delete;
 		network_monitor(network_monitor&&) noexcept = delete;
 		const events::event<network_monitor, events::param_event_args<network_state>>& get_state_changed_event() const;

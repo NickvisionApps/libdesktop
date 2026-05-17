@@ -17,9 +17,10 @@ namespace desktop::network
 		      m_net_list_manager{ nullptr },
 		      m_connection_point{ nullptr },
 		      m_cookie{ 0 },
-		      m_ref_count{ 1 }
+		      m_ref_count{ 1 },
+		      m_handles_com{ false }
 		{
-			CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+			m_handles_com = CoInitializeEx(nullptr, COINIT_MULTITHREADED) == S_OK;
 			CComPtr<IConnectionPointContainer> connection_point_container{ nullptr };
 			CComPtr<IUnknown> sink{ nullptr };
 			if (CoCreateInstance(CLSID_NetworkListManager, nullptr, CLSCTX_ALL, __uuidof(INetworkListManager),
@@ -43,7 +44,7 @@ namespace desktop::network
 			{
 				throw std::runtime_error("Unable to get advice connection point.");
 			}
-			check_connection_state();
+			check_connection_state(false);
 		}
 
 		virtual ~impl() noexcept
@@ -52,7 +53,10 @@ namespace desktop::network
 			{
 				m_connection_point->Unadvise(m_cookie);
 			}
-			CoUninitialize();
+			if (m_handles_com)
+			{
+				CoUninitialize();
+			}
 		}
 
 		impl(const impl&) = delete;
@@ -93,7 +97,7 @@ namespace desktop::network
 
 		HRESULT STDMETHODCALLTYPE ConnectivityChanged(NLM_CONNECTIVITY connectivity) override
 		{
-			check_connection_state();
+			check_connection_state(true);
 			return S_OK;
 		}
 
@@ -107,7 +111,7 @@ namespace desktop::network
 		impl& operator=(impl&&) noexcept = delete;
 
 	private:
-		void check_connection_state() noexcept
+		void check_connection_state(bool event) noexcept
 		{
 			network_state new_state{ network_state::disconnected };
 			NLM_CONNECTIVITY connectivity{ NLM_CONNECTIVITY_DISCONNECTED };
@@ -131,7 +135,10 @@ namespace desktop::network
 			{
 				m_current_state = new_state;
 				lock.unlock();
-				m_owner.m_state_changed_event.invoke(m_owner, { new_state });
+				if (event)
+				{
+					m_owner.m_state_changed_event.invoke(m_owner, { new_state });
+				}
 			}
 		}
 		mutable std::mutex m_mutex;
@@ -141,12 +148,15 @@ namespace desktop::network
 		CComPtr<IConnectionPoint> m_connection_point;
 		DWORD m_cookie;
 		ULONG m_ref_count;
+		bool m_handles_com;
 	};
 
 	network_monitor::network_monitor()
 	    : m_impl{ std::make_unique<impl>(*this) }
 	{
 	}
+
+	network_monitor::~network_monitor() = default;
 
 	const event<network_monitor, param_event_args<network_state>>& network_monitor::get_state_changed_event() const
 	{

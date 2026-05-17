@@ -81,14 +81,11 @@ namespace desktop::hosting
 		m_worker = std::thread([this]()
 		{
 #ifdef _WIN32
-			if (m_graphical)
+			HRESULT hr = CoInitializeEx(nullptr, m_graphical ? COINIT_APARTMENTTHREADED : COINIT_MULTITHREADED);
+			if (FAILED(hr))
 			{
-				HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-				if (FAILED(hr))
-				{
-					m_exception = std::make_exception_ptr(std::runtime_error("Failed to initialize COM"));
-					return;
-				}
+				m_exception = std::make_exception_ptr(std::runtime_error("Failed to initialize COM"));
+				return;
 			}
 #endif
 			while (true)
@@ -103,10 +100,7 @@ namespace desktop::hosting
 			}
 			on_shutdown();
 #ifdef _WIN32
-			if (m_graphical)
-			{
-				CoUninitialize();
-			}
+			CoUninitialize();
 #endif
 		});
 		m_worker.join();

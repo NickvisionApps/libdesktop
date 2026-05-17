@@ -18,14 +18,14 @@ namespace desktop::network
 			                                            G_CALLBACK((void (*)(GNetworkMonitor*, gboolean, void*))(
 			                                                [](GNetworkMonitor*, gboolean, void* data)
 			{
-				static_cast<impl*>(data)->check_connection_state();
+				static_cast<impl*>(data)->check_connection_state(true);
 			})),
 			                                            this, nullptr, G_CONNECT_DEFAULT);
 			if (m_signal_handler_id <= 0)
 			{
 				throw std::runtime_error("Unable to connect to network monitor signal.");
 			}
-			check_connection_state();
+			check_connection_state(false);
 		}
 
 		~impl() noexcept
@@ -48,7 +48,7 @@ namespace desktop::network
 		impl& operator=(impl&&) noexcept = delete;
 
 	private:
-		void check_connection_state() noexcept
+		void check_connection_state(bool event) noexcept
 		{
 			network_state new_state{ network_state::disconnected };
 			GNetworkConnectivity connectivity{ g_network_monitor_get_connectivity(g_network_monitor_get_default()) };
@@ -69,7 +69,10 @@ namespace desktop::network
 			{
 				m_current_state = new_state;
 				lock.unlock();
-				m_owner.m_state_changed_event.invoke(m_owner, { new_state });
+				if (event)
+				{
+					m_owner.m_state_changed_event.invoke(m_owner, { new_state });
+				}
 			}
 		}
 		mutable std::mutex m_mutex;
@@ -82,6 +85,8 @@ namespace desktop::network
 	    : m_impl{ std::make_unique<impl>(*this) }
 	{
 	}
+
+	network_monitor::~network_monitor() = default;
 
 	const event<network_monitor, param_event_args<network_state>>& network_monitor::get_state_changed_event() const
 	{

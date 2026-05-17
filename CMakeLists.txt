@@ -260,7 +260,9 @@ if (BUILD_TESTING)
 
     add_executable(${PROJECT_NAME}_tests
         "tests/hosting.cpp"
-        "tests/main.cpp")
+        "tests/http_service.cpp"
+        "tests/main.cpp"
+        "tests/network_monitor.cpp")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)
 
