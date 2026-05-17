@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <concepts>
 #include <filesystem>
 #include <memory>
 #include <mutex>
@@ -25,7 +26,7 @@ namespace desktop::app
 	concept configuration_settable = configuration_gettable<T> || std::is_same_v<T, const char*> || std::is_same_v<T, std::string_view>;
 
 	template <typename T>
-	concept configuration_object = !configuration_settable<T>;
+	concept configuration_object = !configuration_settable<T> && std::is_default_constructible_v<T>;
 
 	class configuration_service
 	{
@@ -142,7 +143,9 @@ namespace desktop::app
 			}
 			try
 			{
-				return nlohmann::json::parse(raw).get<T>();
+				T obj;
+				nlohmann::from_json(nlohmann::json::parse(raw), obj);
+				return obj;
 			}
 			catch (...)
 			{

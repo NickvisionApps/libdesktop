@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <concepts>
 #include <cstddef>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
@@ -23,17 +24,21 @@ namespace desktop::network
 		std::string get_content_as_string() const;
 		nlohmann::json get_content_as_json() const;
 		template <typename T>
+		    requires std::is_default_constructible_v<T>
 		std::optional<T> get_content_as_object() const
 		{
-			nlohmann::json json{ get_content_as_json() };
+			nlohmann::json json = get_content_as_json();
 			if (!json.is_null() && !json.empty())
 			{
 				try
 				{
-					return json.get<T>();
+					T obj;
+					nlohmann::from_json(json, obj);
+					return obj;
 				}
 				catch (...)
 				{
+					throw;
 					return std::nullopt;
 				}
 			}

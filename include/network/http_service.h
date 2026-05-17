@@ -22,7 +22,7 @@ namespace desktop::network
 		http_response del(const std::string& url) const;
 		void disable_ssl_verification();
 		bool download_file(const std::string& url, const std::filesystem::path& destination, bool overwrite = true,
-		                   const std::function<void(download_progress)>& progress = {}) const;
+		                   const std::function<void(const download_progress&)>& progress = {}) const;
 		void enable_ssl_verification();
 		http_response get(const std::string& url) const;
 		bool is_ssl_verification_enabled() const;

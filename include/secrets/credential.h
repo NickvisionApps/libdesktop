@@ -8,6 +8,7 @@ namespace desktop::secrets
 	class credential
 	{
 	public:
+		credential() = default;
 		credential(std::string name, std::string username, std::string password, std::string url);
 		~credential() = default;
 		credential(const credential& other) = default;
@@ -26,12 +27,12 @@ namespace desktop::secrets
 		credential& operator=(const credential& other) = default;
 		credential& operator=(credential&& other) noexcept = default;
 
-		inline void to_json(nlohmann::json& j, const credential& v)
+		friend void to_json(nlohmann::json& j, const credential& v)
 		{
 			j = { { "name", v.get_name() }, { "username", v.get_username() }, { "password", v.get_password() }, { "url", v.get_url() } };
 		}
 
-		inline void from_json(const nlohmann::json& j, credential& c)
+		friend void from_json(const nlohmann::json& j, credential& c)
 		{
 			c = credential{ j.at("name").get<std::string>(), j.at("username").get<std::string>(), j.at("password").get<std::string>(),
 				            j.at("url").get<std::string>() };

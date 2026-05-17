@@ -29,6 +29,20 @@ namespace desktop::updates
 		github_release_asset& operator=(github_release_asset&&) = default;
 		operator bool() const;
 
+		friend void to_json(nlohmann::json& j, const github_release_asset& a)
+		{
+			j = { { "url", a.get_url() },
+				  { "name", a.get_name() },
+				  { "size", a.get_size() },
+				  { "digest", a.get_digest() },
+				  { "browser_download_url", a.get_browser_download_url() } };
+		}
+
+		friend void from_json(const nlohmann::json& j, github_release_asset& a)
+		{
+			a = github_release_asset{ j };
+		}
+
 	private:
 		std::string m_url;
 		std::string m_name;
@@ -36,18 +50,4 @@ namespace desktop::updates
 		std::string m_digest;
 		std::string m_browser_download_url;
 	};
-
-	inline void to_json(nlohmann::json& j, const github_release_asset& a)
-	{
-		j = { { "url", a.get_url() },
-			  { "name", a.get_name() },
-			  { "size", a.get_size() },
-			  { "digest", a.get_digest() },
-			  { "browser_download_url", a.get_browser_download_url() } };
-	}
-
-	inline void from_json(const nlohmann::json& j, github_release_asset& a)
-	{
-		a = github_release_asset{ j };
-	}
 }

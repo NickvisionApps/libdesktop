@@ -28,6 +28,16 @@ namespace desktop::updates
 		github_release& operator=(github_release&&) = default;
 		operator bool() const;
 
+		friend void to_json(nlohmann::json& j, const github_release& r)
+		{
+			j = { { "tag_name", r.get_tag_name() }, { "prerelease", r.is_prerelease() }, { "draft", r.is_draft() }, { "assets", r.get_assets() } };
+		}
+
+		friend void from_json(const nlohmann::json& j, github_release& r)
+		{
+			r = github_release{ j };
+		}
+
 	private:
 		std::string m_url;
 		std::string m_tag_name;
@@ -35,14 +45,4 @@ namespace desktop::updates
 		bool m_draft;
 		std::vector<github_release_asset> m_assets;
 	};
-
-	inline void to_json(nlohmann::json& j, const github_release& r)
-	{
-		j = { { "tag_name", r.get_tag_name() }, { "prerelease", r.is_prerelease() }, { "draft", r.is_draft() }, { "assets", r.get_assets() } };
-	}
-
-	inline void from_json(const nlohmann::json& j, github_release& r)
-	{
-		r = github_release{ j };
-	}
 }

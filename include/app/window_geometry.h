@@ -26,6 +26,17 @@ namespace desktop::app
 		window_geometry& operator=(const window_geometry& other) = default;
 		window_geometry& operator=(window_geometry&& other) noexcept = default;
 
+		friend void to_json(nlohmann::json& j, const window_geometry& w)
+		{
+			j = { { "height", w.get_height() }, { "width", w.get_width() }, { "maximized", w.is_maximized() }, { "x", w.get_x() }, { "y", w.get_y() } };
+		}
+
+		friend void from_json(const nlohmann::json& j, window_geometry& w)
+		{
+			w = window_geometry{ j.at("height").get<int>(), j.at("width").get<int>(), j.at("maximized").get<bool>(), j.at("x").get<int>(),
+				                 j.at("y").get<int>() };
+		}
+
 	private:
 		int m_height;
 		int m_width;
@@ -33,14 +44,4 @@ namespace desktop::app
 		int m_x;
 		int m_y;
 	};
-
-	inline void to_json(nlohmann::json& j, const window_geometry& w)
-	{
-		j = { { "height", w.get_height() }, { "width", w.get_width() }, { "maximized", w.is_maximized() }, { "x", w.get_x() }, { "y", w.get_y() } };
-	}
-
-	inline void from_json(const nlohmann::json& j, window_geometry& w)
-	{
-		w = window_geometry{ j.at("height").get<int>(), j.at("width").get<int>(), j.at("maximized").get<bool>(), j.at("x").get<int>(), j.at("y").get<int>() };
-	}
 }

@@ -100,7 +100,7 @@ namespace desktop::network
 		network_monitor& m_owner;
 		network_state m_current_state;
 		GDBusProxy* m_proxy;
-		gulong m_signal_handler_id;
+		unsigned long m_signal_handler_id;
 	};
 
 	network_monitor::network_monitor()

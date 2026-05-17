@@ -77,7 +77,7 @@ namespace desktop::network
 	}
 
 	bool http_service::download_file(const std::string& url, const std::filesystem::path& destination, bool overwrite,
-	                                 const std::function<void(download_progress)>& progress) const
+	                                 const std::function<void(const download_progress&)>& progress) const
 	{
 		if (url.empty())
 		{
@@ -113,7 +113,7 @@ namespace desktop::network
 			curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &progress);
 			curl_easy_setopt(easy, CURLOPT_XFERINFOFUNCTION, +[](void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t, curl_off_t) -> int
 			{
-				std::function<void(download_progress)>* callback{ static_cast<std::function<void(download_progress)>*>(clientp) };
+				std::function<void(const download_progress&)>* callback{ static_cast<std::function<void(const download_progress&)>*>(clientp) };
 				(*callback)({ static_cast<std::int64_t>(dlnow), static_cast<std::int64_t>(dltotal) });
 				return 0;
 			});
