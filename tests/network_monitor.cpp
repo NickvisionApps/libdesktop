@@ -1,10 +1,19 @@
+#include <filesystem>
 #include <gtest/gtest.h>
 #include <libdesktop.h>
 
 using namespace desktop::network;
+using namespace desktop::system;
 
 TEST(NetworkMonitor, IsConnected)
 {
 	network_monitor monitor;
-	ASSERT_EQ(monitor.get_current_state(), network_state::connected_global);
+	if (environment::get_deployment_mode() == deployment_mode::wsl)
+	{
+		ASSERT_EQ(monitor.get_current_state(), network_state::connected_local);
+	}
+	else
+	{
+		ASSERT_EQ(monitor.get_current_state(), network_state::connected_global);
+	}
 }

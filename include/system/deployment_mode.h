@@ -8,6 +8,7 @@ namespace desktop::system
 	{
 		local,
 		flatpak,
-		snap
+		snap,
+		wsl
 	};
 }

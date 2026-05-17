@@ -151,7 +151,7 @@ if(WIN32)
 elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_macos.cpp"
-        "src/network/network_monitor_unix.cpp"
+        "src/network/network_monitor_macos.cpp"
         "src/notifications/notification_service_macos.cpp"
         "src/secrets/secret_service_macos.cpp"
         "src/system/environment_macos.cpp"
@@ -160,7 +160,7 @@ elseif(APPLE)
 elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/user_directories_linux.cpp"
-        "src/network/network_monitor_unix.cpp"
+        "src/network/network_monitor_linux.cpp"
         "src/notifications/notification_service_linux.cpp"
         "src/secrets/secret_service_linux.cpp"
         "src/system/environment_linux.cpp"

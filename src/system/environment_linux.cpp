@@ -109,6 +109,10 @@ namespace desktop::system
 		{
 			return deployment_mode::snap;
 		}
+		if (std::filesystem::exists("/proc/sys/fs/binfmt_misc/WSLInterop"))
+		{
+			return deployment_mode::wsl;
+		}
 		return deployment_mode::local;
 	}
 
