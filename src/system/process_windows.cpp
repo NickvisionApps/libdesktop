@@ -526,6 +526,11 @@ namespace desktop::system
 		return m_impl->get_standard_output();
 	}
 
+	process_result process::get_result() const
+	{
+		return { m_impl->get_standard_output(), m_impl->get_standard_error(), m_impl->get_exit_code() };
+	}
+
 	process_status process::get_status() const
 	{
 		return m_impl->get_status();

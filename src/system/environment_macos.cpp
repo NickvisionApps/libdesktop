@@ -27,7 +27,7 @@ static bool search_in(const std::filesystem::path& dep, std::filesystem::path& r
 
 namespace desktop::system
 {
-	std::string environment::execute(const std::string& command)
+	process_result environment::execute(const std::string& command)
 	{
 		if (command.empty())
 		{
@@ -40,7 +40,7 @@ namespace desktop::system
 		if (proc.start())
 		{
 			proc.wait_for_exit();
-			return proc.get_standard_output();
+			return proc.get_result();
 		}
 		return {};
 	}

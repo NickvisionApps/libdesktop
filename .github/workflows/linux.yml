@@ -50,13 +50,13 @@ jobs:
         with:
           pkgs: curl gettext-libintl glib gtest libsecret maddy nlohmann_json openssl
           triplet: ${{ matrix.variant.triplet }}
-          revision: 2b65c20fc66eda893aa15a15a453c3cf09500b19
+          revision: 432412eecac55981cf608cc12e5b4bd91768ec57
           token: ${{ github.token }}
           cache-key: ${{ matrix.variant.triplet }}
       - name: "Build"
         working-directory: ${{github.workspace}}/build
         run: |
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_CXX_STANDARD=20
           cmake --build . --parallel
       - name: "Install"
         working-directory: ${{github.workspace}}/build

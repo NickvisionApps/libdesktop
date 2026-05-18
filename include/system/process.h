@@ -7,6 +7,7 @@
 #include <vector>
 #include "events/event.h"
 #include "events/param_event_args.h"
+#include "process_result.h"
 #include "process_status.h"
 
 namespace desktop::system
@@ -26,6 +27,7 @@ namespace desktop::system
 		const std::filesystem::path& get_path() const;
 		const std::string& get_standard_error() const;
 		const std::string& get_standard_output() const;
+		process_result get_result() const;
 		process_status get_status() const;
 		const std::filesystem::path& get_working_directory() const;
 		bool write(std::string_view data) const;

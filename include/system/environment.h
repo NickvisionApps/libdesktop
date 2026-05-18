@@ -5,10 +5,11 @@
 #include <vector>
 #include "dependency_search_option.h"
 #include "deployment_mode.h"
+#include "process_result.h"
 
 namespace desktop::system::environment
 {
-	std::string execute(const std::string& command);
+	process_result execute(const std::string& command);
 	const std::filesystem::path& find_dependency(std::string_view name, dependency_search_option option);
 	std::string get_debugging_information();
 	deployment_mode get_deployment_mode();
