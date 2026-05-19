@@ -99,6 +99,7 @@ add_library(${PROJECT_NAME}
     "include/system/dependency_search_option.h"
     "include/system/deployment_mode.h"
     "include/system/environment.h"
+    "include/system/executable_service.h"
     "include/system/power_service.h"
     "include/system/process.h"
     "include/system/process_result.h"
@@ -135,6 +136,7 @@ add_library(${PROJECT_NAME}
     "src/secrets/password_generator.cpp"
     "src/secrets/secret.cpp"
     "src/services/service_collection.cpp"
+    "src/system/executable_service.cpp"
     "src/system/process_result.cpp"
     "src/updates/github_release.cpp"
     "src/updates/github_release_asset.cpp"
@@ -210,9 +212,10 @@ endif()
 
 find_package(CURL REQUIRED)
 find_package(Intl REQUIRED)
+find_package(LibArchive REQUIRED)
 find_package(maddy CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl maddy::maddy nlohmann_json::nlohmann_json OpenSSL::SSL OpenSSL::Crypto sqlcipher)
+target_link_libraries(${PROJECT_NAME} PUBLIC CURL::libcurl Intl::Intl LibArchive::LibArchive maddy::maddy nlohmann_json::nlohmann_json OpenSSL::SSL OpenSSL::Crypto sqlcipher)
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PUBLIC Kernel32 Shell32)
 else()
