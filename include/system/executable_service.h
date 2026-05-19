@@ -25,7 +25,7 @@ namespace desktop::system
 		executable_service(const executable_service&) = delete;
 		executable_service(executable_service&&) = delete;
 		bool download_update(const updates::version& version, const std::function<void(const network::download_progress&)>& progress = {});
-		process_result execute(const std::vector<std::string>& arguments);
+		process_result execute(const std::vector<std::string>& arguments) const;
 		const updates::version& get_bundled_version() const;
 		virtual std::filesystem::path get_executable_path() const;
 		updates::version get_executable_version(const std::string& version_argument = "--version") const;

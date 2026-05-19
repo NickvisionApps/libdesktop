@@ -2,6 +2,11 @@
 
 namespace desktop::system
 {
+	process_result::process_result()
+	    : m_exit_code{ -1 }
+	{
+	}
+
 	process_result::process_result(std::string_view output, std::string_view error, int exit_code)
 	    : m_output{ output },
 	      m_error{ error },

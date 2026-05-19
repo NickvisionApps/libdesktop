@@ -75,7 +75,7 @@ namespace desktop::system
 		return res;
 	}
 
-	process_result executable_service::execute(const std::vector<std::string>& arguments)
+	process_result executable_service::execute(const std::vector<std::string>& arguments) const
 	{
 		process proc{ get_executable_path(), arguments };
 		if (proc.start())

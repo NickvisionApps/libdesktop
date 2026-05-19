@@ -7,7 +7,7 @@ namespace desktop::system
 	class process_result
 	{
 	public:
-		process_result() = default;
+		process_result();
 		process_result(std::string_view output, std::string_view error, int exit_code);
 		~process_result() = default;
 		process_result(const process_result&) = default;
