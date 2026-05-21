@@ -33,7 +33,7 @@ namespace desktop::helpers
 				archive_write_free(write);
 				return false;
 			}
-			else if (archive_entry_size(entry) > 0)
+			if (archive_entry_size(entry) > 0)
 			{
 				const void* buff{ nullptr };
 				size_t size{ 0 };
