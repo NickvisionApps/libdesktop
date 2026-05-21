@@ -11,8 +11,7 @@ namespace desktop::network
 	{
 	public:
 		impl(network_monitor& owner)
-		    : m_owner{ owner },
-		      m_reachability{ nullptr }
+		    : m_owner{ owner }
 		{
 			sockaddr_in addr{};
 			addr.sin_len = sizeof(addr);
@@ -23,7 +22,7 @@ namespace desktop::network
 			{
 				throw std::runtime_error("Unable to create network reachability target.");
 			}
-			SCNetworkReachabilityContext context{ 0, this, nullptr, nullptr, nullptr };
+			SCNetworkReachabilityContext context{ .version = 0, .info = this, .retain = nullptr, .release = nullptr, .copyDescription = nullptr };
 			if (!SCNetworkReachabilitySetCallback(m_reachability, [](SCNetworkReachabilityRef, SCNetworkReachabilityFlags, void* data)
 			{
 				static_cast<impl*>(data)->check_connection_state(true);
@@ -98,7 +97,7 @@ namespace desktop::network
 		mutable std::mutex m_mutex;
 		network_monitor& m_owner;
 		network_state m_current_state{ network_state::disconnected };
-		SCNetworkReachabilityRef m_reachability;
+		SCNetworkReachabilityRef m_reachability{ nullptr };
 	};
 
 	network_monitor::network_monitor()
