@@ -12,7 +12,6 @@ namespace desktop::network
 	public:
 		impl(network_monitor& owner)
 		    : m_owner{ owner },
-		      m_current_state{ network_state::disconnected },
 		      m_reachability{ nullptr }
 		{
 			sockaddr_in addr{};
@@ -98,7 +97,7 @@ namespace desktop::network
 
 		mutable std::mutex m_mutex;
 		network_monitor& m_owner;
-		network_state m_current_state;
+		network_state m_current_state{ network_state::disconnected };
 		SCNetworkReachabilityRef m_reachability;
 	};
 

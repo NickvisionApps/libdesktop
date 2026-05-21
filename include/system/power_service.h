@@ -26,7 +26,7 @@ namespace desktop::system
 #ifdef __linux__
 		unsigned int m_cookie{ 0 };
 #elif defined(__APPLE__)
-		IOPMAssertionID m_cookie;
+		IOPMAssertionID m_cookie{ kIOPMNullAssertionID };
 #endif
 	};
 }
