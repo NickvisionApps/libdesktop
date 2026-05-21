@@ -1,5 +1,6 @@
 #include "network/network_monitor.h"
 #include <SystemConfiguration/SystemConfiguration.h>
+#include <netinet/in.h>
 #include <stdexcept>
 
 using namespace desktop::events;
@@ -12,8 +13,7 @@ namespace desktop::network
 		impl(network_monitor& owner)
 		    : m_owner{ owner },
 		      m_current_state{ network_state::disconnected },
-		      m_reachability{ nullptr },
-		      m_run_loop_source{ nullptr }
+		      m_reachability{ nullptr }
 		{
 			sockaddr_in addr{};
 			addr.sin_len = sizeof(addr);
@@ -33,25 +33,20 @@ namespace desktop::network
 				CFRelease(m_reachability);
 				throw std::runtime_error("Unable to set network reachability callback.");
 			}
-			m_run_loop_source = SCNetworkReachabilityCreateRunLoopSource(kCFAllocatorDefault, m_reachability, 0);
-			if (!m_run_loop_source)
+			if (!SCNetworkReachabilityScheduleWithRunLoop(m_reachability, CFRunLoopGetMain(), kCFRunLoopDefaultMode))
 			{
+				SCNetworkReachabilitySetCallback(m_reachability, nullptr, nullptr);
 				CFRelease(m_reachability);
-				throw std::runtime_error("Unable to create network reachability run loop source.");
+				throw std::runtime_error("Unable to schedule network reachability with run loop.");
 			}
-			CFRunLoopAddSource(CFRunLoopGetMain(), m_run_loop_source, kCFRunLoopDefaultMode);
 			check_connection_state(false);
 		}
 
 		~impl() noexcept
 		{
-			if (m_run_loop_source)
-			{
-				CFRunLoopRemoveSource(CFRunLoopGetMain(), m_run_loop_source, kCFRunLoopDefaultMode);
-				CFRelease(m_run_loop_source);
-			}
 			if (m_reachability)
 			{
+				SCNetworkReachabilityUnscheduleFromRunLoop(m_reachability, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
 				SCNetworkReachabilitySetCallback(m_reachability, nullptr, nullptr);
 				CFRelease(m_reachability);
 			}
@@ -105,7 +100,6 @@ namespace desktop::network
 		network_monitor& m_owner;
 		network_state m_current_state;
 		SCNetworkReachabilityRef m_reachability;
-		CFRunLoopSourceRef m_run_loop_source;
 	};
 
 	network_monitor::network_monitor()

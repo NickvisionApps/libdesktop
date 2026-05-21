@@ -18,7 +18,7 @@ namespace desktop::system
 		process(std::filesystem::path path, std::vector<std::string> arguments = {});
 		~process();
 		process(const process&) = delete;
-		process(process&&) noexcept = default;
+		process(process&&) noexcept = delete;
 		const events::event<process, events::param_event_args<int>>& get_exited_event() const;
 		const events::event<process, events::param_event_args<std::string>>& get_output_received_event() const;
 		const events::event<process, events::param_event_args<std::string>>& get_error_received_event() const;
@@ -39,7 +39,7 @@ namespace desktop::system
 		bool start();
 		int wait_for_exit() const;
 		process& operator=(const process&) = delete;
-		process& operator=(process&&) noexcept = default;
+		process& operator=(process&&) noexcept = delete;
 
 	private:
 		class impl;

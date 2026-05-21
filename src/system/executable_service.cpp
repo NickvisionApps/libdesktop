@@ -110,7 +110,11 @@ namespace desktop::system
 			m_configuration_service->set(config_key, m_bundled_version);
 		}
 		m_executable_path = environment::find_dependency(m_executable_name, dependency_search_option::global);
-		return std::filesystem::exists(m_executable_path) ? m_executable_path : m_executable_name;
+		if (std::filesystem::exists(m_executable_path))
+		{
+			return m_executable_path;
+		}
+		return m_executable_name;
 	}
 
 	version executable_service::get_executable_version(const std::string& version_argument) const
