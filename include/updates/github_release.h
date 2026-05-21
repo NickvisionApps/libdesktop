@@ -41,8 +41,8 @@ namespace desktop::updates
 	private:
 		std::string m_url;
 		std::string m_tag_name;
-		bool m_prerelease;
-		bool m_draft;
+		bool m_prerelease{ false };
+		bool m_draft{ false };
 		std::vector<github_release_asset> m_assets;
 	};
 }

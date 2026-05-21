@@ -46,7 +46,7 @@ namespace desktop::updates
 	private:
 		std::string m_url;
 		std::string m_name;
-		int64_t m_size;
+		int64_t m_size{ 0 };
 		std::string m_digest;
 		std::string m_browser_download_url;
 	};

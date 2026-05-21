@@ -179,7 +179,7 @@ namespace desktop::services
 					{
 						return std::make_any<std::shared_ptr<T>>(std::make_shared<T>(this->get_required<TDeps>()...));
 					} };
-				}(static_cast<typename T::dependencies*>(nullptr));
+				}(static_cast<T::dependencies*>(nullptr));
 			}
 			else
 			{
@@ -201,7 +201,7 @@ namespace desktop::services
 					{
 						return std::make_any<std::shared_ptr<TInterface>>(std::make_shared<TImpl>(this->get_required<TDeps>()...));
 					} };
-				}(static_cast<typename TImpl::dependencies*>(nullptr));
+				}(static_cast<TImpl::dependencies*>(nullptr));
 			}
 			else
 			{
