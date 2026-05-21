@@ -1,6 +1,7 @@
 #include "network/network_monitor.h"
-#include <SystemConfiguration/SystemConfiguration.h>
-#include <netinet/in.h>
+#include <Network/Network.h>
+#include <condition_variable>
+#include <dispatch/dispatch.h>
 #include <stdexcept>
 
 using namespace desktop::events;
@@ -11,42 +12,44 @@ namespace desktop::network
 	{
 	public:
 		impl(network_monitor& owner)
-		    : m_owner{ owner }
+		    : m_owner{ owner },
+		      m_queue{ dispatch_queue_create("libdesktop.network_monitor", DISPATCH_QUEUE_SERIAL) }
 		{
-			sockaddr_in addr{};
-			addr.sin_len = sizeof(addr);
-			addr.sin_family = AF_INET;
-			addr.sin_addr.s_addr = htonl(0x08080808);
-			m_reachability = SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, reinterpret_cast<sockaddr*>(&addr));
-			if (!m_reachability)
+			if (!m_queue)
 			{
-				throw std::runtime_error("Unable to create network reachability target.");
+				throw std::runtime_error("Unable to create network monitor dispatch queue.");
 			}
-			SCNetworkReachabilityContext context{ .version = 0, .info = this, .retain = nullptr, .release = nullptr, .copyDescription = nullptr };
-			if (!SCNetworkReachabilitySetCallback(m_reachability, [](SCNetworkReachabilityRef, SCNetworkReachabilityFlags, void* data)
+			m_monitor = nw_path_monitor_create();
+			if (!m_monitor)
 			{
-				static_cast<impl*>(data)->check_connection_state(true);
-			}, &context))
-			{
-				CFRelease(m_reachability);
-				throw std::runtime_error("Unable to set network reachability callback.");
+				dispatch_release(m_queue);
+				m_queue = nullptr;
+				throw std::runtime_error("Unable to create network path monitor.");
 			}
-			if (!SCNetworkReachabilityScheduleWithRunLoop(m_reachability, CFRunLoopGetMain(), kCFRunLoopDefaultMode))
+			nw_path_monitor_set_queue(m_monitor, m_queue);
+			nw_path_monitor_set_update_handler(m_monitor, ^(nw_path_t path) { handle_path_update(path); });
+			nw_path_monitor_start(m_monitor);
+			std::unique_lock<std::mutex> lock{ m_mutex };
+			m_first_update_arrived.wait(lock, [this]
 			{
-				SCNetworkReachabilitySetCallback(m_reachability, nullptr, nullptr);
-				CFRelease(m_reachability);
-				throw std::runtime_error("Unable to schedule network reachability with run loop.");
-			}
-			check_connection_state(false);
+				return m_received_first_update;
+			});
 		}
 
 		~impl() noexcept
 		{
-			if (m_reachability)
+			if (m_monitor)
 			{
-				SCNetworkReachabilityUnscheduleFromRunLoop(m_reachability, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
-				SCNetworkReachabilitySetCallback(m_reachability, nullptr, nullptr);
-				CFRelease(m_reachability);
+				nw_path_monitor_cancel(m_monitor);
+				if (m_queue)
+				{
+					dispatch_sync(m_queue, ^{});
+				}
+				nw_release(m_monitor);
+			}
+			if (m_queue)
+			{
+				dispatch_release(m_queue);
 			}
 		}
 
@@ -65,39 +68,49 @@ namespace desktop::network
 		impl& operator=(impl&&) noexcept = delete;
 
 	private:
-		void check_connection_state(bool event) noexcept
+		void handle_path_update(nw_path_t path) noexcept
 		{
 			network_state new_state{ network_state::disconnected };
-			SCNetworkReachabilityFlags flags{};
-			if (SCNetworkReachabilityGetFlags(m_reachability, &flags))
+			switch (nw_path_get_status(path))
 			{
-				bool reachable{ static_cast<bool>(flags & kSCNetworkReachabilityFlagsReachable) };
-				bool connection_required{ static_cast<bool>(flags & kSCNetworkReachabilityFlagsConnectionRequired) };
-				if (reachable && !connection_required)
-				{
-					new_state = network_state::connected_global;
-				}
-				else if (reachable)
-				{
-					new_state = network_state::connected_local;
-				}
+			case nw_path_status_satisfied:
+				new_state = network_state::connected_global;
+				break;
+			case nw_path_status_satisfiable:
+				new_state = network_state::connected_local;
+				break;
+			case nw_path_status_unsatisfied:
+			case nw_path_status_invalid:
+			default:
+				new_state = network_state::disconnected;
+				break;
 			}
 			std::unique_lock<std::mutex> lock{ m_mutex };
-			if (m_current_state != new_state)
+			bool first_update{ !m_received_first_update };
+			m_received_first_update = true;
+			bool changed{ m_current_state != new_state };
+			if (changed)
 			{
 				m_current_state = new_state;
-				lock.unlock();
-				if (event)
-				{
-					m_owner.m_state_changed_event.invoke(m_owner, { new_state });
-				}
+			}
+			lock.unlock();
+			if (first_update)
+			{
+				m_first_update_arrived.notify_all();
+			}
+			if (changed && !first_update)
+			{
+				m_owner.m_state_changed_event.invoke(m_owner, { new_state });
 			}
 		}
 
 		mutable std::mutex m_mutex;
+		std::condition_variable m_first_update_arrived;
 		network_monitor& m_owner;
 		network_state m_current_state{ network_state::disconnected };
-		SCNetworkReachabilityRef m_reachability{ nullptr };
+		nw_path_monitor_t m_monitor{ nullptr };
+		dispatch_queue_t m_queue{ nullptr };
+		bool m_received_first_update{ false };
 	};
 
 	network_monitor::network_monitor()
