@@ -46,8 +46,8 @@ namespace desktop::database
 	private:
 		void ensure_database() const;
 		mutable std::mutex m_mutex;
-		mutable sqlite3* m_db;
-		mutable bool m_is_encrypted;
+		mutable sqlite3* m_db{ nullptr };
+		mutable bool m_is_encrypted{ false };
 		std::shared_ptr<app::app_info> m_info;
 		std::shared_ptr<secrets::secret_service> m_secret_service;
 	};

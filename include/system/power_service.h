@@ -22,9 +22,9 @@ namespace desktop::system
 
 	private:
 		mutable std::mutex m_mutex;
-		bool m_suspended;
+		bool m_suspended{ false };
 #ifdef __linux__
-		unsigned int m_cookie;
+		unsigned int m_cookie{ 0 };
 #elif defined(__APPLE__)
 		IOPMAssertionID m_cookie;
 #endif

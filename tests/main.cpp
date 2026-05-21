@@ -30,9 +30,13 @@ protected:
 		}
 	}
 
-	void on_shutdown() noexcept override { }
+	void on_shutdown() noexcept override
+	{
+	}
 
-	void on_stop_requested() noexcept override { }
+	void on_stop_requested() noexcept override
+	{
+	}
 
 private:
 	std::shared_ptr<arguments_service> m_arguments_service;

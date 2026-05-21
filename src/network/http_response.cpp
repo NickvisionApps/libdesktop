@@ -3,8 +3,7 @@
 namespace desktop::network
 {
 	http_response::http_response()
-	    : m_response_code{ 0 },
-	      m_elapsed{ 0 }
+	    : m_elapsed{ 0 }
 	{
 	}
 

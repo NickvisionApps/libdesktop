@@ -20,7 +20,6 @@ static const std::string& get_user_agent()
 namespace desktop::network
 {
 	http_service::http_service()
-	    : m_ssl_verification{ true }
 	{
 		CURLcode result{ curl_global_init(CURL_GLOBAL_ALL) };
 		if (result != CURLE_OK)

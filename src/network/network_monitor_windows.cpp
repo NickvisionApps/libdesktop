@@ -13,12 +13,8 @@ namespace desktop::network
 	public:
 		impl(network_monitor& owner)
 		    : m_owner{ owner },
-		      m_current_state{ network_state::disconnected },
 		      m_net_list_manager{ nullptr },
-		      m_connection_point{ nullptr },
-		      m_cookie{ 0 },
-		      m_ref_count{ 1 },
-		      m_handles_com{ false }
+		      m_connection_point{ nullptr }
 		{
 			m_handles_com = CoInitializeEx(nullptr, COINIT_MULTITHREADED) == S_OK;
 			CComPtr<IConnectionPointContainer> connection_point_container{ nullptr };
@@ -143,12 +139,12 @@ namespace desktop::network
 		}
 		mutable std::mutex m_mutex;
 		network_monitor& m_owner;
-		network_state m_current_state;
+		network_state m_current_state{ network_state::disconnected };
 		CComPtr<INetworkListManager> m_net_list_manager;
 		CComPtr<IConnectionPoint> m_connection_point;
-		DWORD m_cookie;
-		ULONG m_ref_count;
-		bool m_handles_com;
+		DWORD m_cookie{ 0 };
+		ULONG m_ref_count{ 1 };
+		bool m_handles_com{ false };
 	};
 
 	network_monitor::network_monitor()

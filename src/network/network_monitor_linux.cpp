@@ -14,10 +14,7 @@ namespace desktop::network
 	{
 	public:
 		impl(network_monitor& owner)
-		    : m_owner{ owner },
-		      m_current_state{ network_state::disconnected },
-		      m_proxy{ nullptr },
-		      m_signal_handler_id{ 0 }
+		    : m_owner{ owner }
 		{
 			GError* error{ nullptr };
 			m_proxy = g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE, nullptr, "org.freedesktop.NetworkManager",
@@ -98,9 +95,9 @@ namespace desktop::network
 		}
 		mutable std::mutex m_mutex;
 		network_monitor& m_owner;
-		network_state m_current_state;
-		GDBusProxy* m_proxy;
-		unsigned long m_signal_handler_id;
+		network_state m_current_state{ network_state::disconnected };
+		GDBusProxy* m_proxy{ nullptr };
+		unsigned long m_signal_handler_id{ 0 };
 	};
 
 	network_monitor::network_monitor()

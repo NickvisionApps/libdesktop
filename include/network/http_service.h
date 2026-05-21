@@ -44,6 +44,6 @@ namespace desktop::network
 		http_service& operator=(http_service&&) = delete;
 
 	private:
-		bool m_ssl_verification;
+		bool m_ssl_verification{ true };
 	};
 }

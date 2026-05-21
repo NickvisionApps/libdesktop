@@ -37,7 +37,7 @@ namespace desktop::hosting
 		bool m_graphical;
 		std::chrono::steady_clock::time_point m_start_time;
 		std::stop_source m_stop_source;
-		bool m_should_restart;
+		bool m_should_restart{ false };
 		std::thread m_worker;
 		std::exception_ptr m_exception;
 	};

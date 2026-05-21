@@ -39,7 +39,9 @@ protected:
 		m_logger->info("Shutting down", __FILE__, __LINE__);
 	}
 
-	void on_stop_requested() noexcept override { }
+	void on_stop_requested() noexcept override
+	{
+	}
 
 private:
 	std::shared_ptr<logger> m_logger;
@@ -62,9 +64,13 @@ protected:
 		throw std::runtime_error{ "Test error" };
 	}
 
-	void on_shutdown() noexcept override { }
+	void on_shutdown() noexcept override
+	{
+	}
 
-	void on_stop_requested() noexcept override { }
+	void on_stop_requested() noexcept override
+	{
+	}
 };
 
 class restarting_lifetime_service : public lifetime_service
@@ -73,8 +79,7 @@ public:
 	using dependencies = std::tuple<logger, app_info>;
 	restarting_lifetime_service(std::shared_ptr<logger> logger, const std::shared_ptr<app_info>& info)
 	    : lifetime_service{ info },
-	      m_logger{ std::move(logger) },
-	      m_restarted{ false }
+	      m_logger{ std::move(logger) }
 	{
 		m_logger->info("Starting", __FILE__, __LINE__);
 	}
@@ -106,7 +111,7 @@ protected:
 
 private:
 	std::shared_ptr<logger> m_logger;
-	bool m_restarted;
+	bool m_restarted{ false };
 };
 
 class stopping_lifetime_service : public lifetime_service

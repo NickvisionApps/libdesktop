@@ -88,9 +88,7 @@ namespace desktop::database
 	}
 
 	database_service::database_service(std::shared_ptr<desktop::app::app_info> info, std::shared_ptr<desktop::secrets::secret_service> secret_service)
-	    : m_db{ nullptr },
-	      m_is_encrypted{ false },
-	      m_info{ std::move(info) },
+	    : m_info{ std::move(info) },
 	      m_secret_service{ std::move(secret_service) }
 	{
 	}

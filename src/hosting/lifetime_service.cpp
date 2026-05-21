@@ -10,7 +10,6 @@ namespace desktop::hosting
 	lifetime_service::lifetime_service(const std::shared_ptr<app_info>& info)
 	    : m_graphical{ info->is_graphical() },
 	      m_start_time{ std::chrono::steady_clock::now() },
-	      m_should_restart{ false },
 	      m_exception{ nullptr }
 	{
 	}

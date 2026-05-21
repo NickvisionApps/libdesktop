@@ -50,7 +50,7 @@ namespace desktop::network
 		http_response& operator=(http_response&&) = default;
 
 	private:
-		long m_response_code;
+		long m_response_code{ 0 };
 		std::chrono::seconds m_elapsed;
 		std::vector<char> m_content;
 	};

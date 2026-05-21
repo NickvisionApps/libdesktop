@@ -61,7 +61,7 @@ namespace desktop::app
 		std::string m_id;
 		std::string m_issues_url;
 		std::string m_name;
-		bool m_portable;
+		bool m_portable{ false };
 		std::string m_short_name;
 		std::string m_source_url;
 		std::string m_translation_credits;

@@ -3,11 +3,7 @@
 
 namespace desktop::system
 {
-	power_service::power_service()
-	    : m_suspended{ false },
-	      m_cookie{ 0 }
-	{
-	}
+	power_service::power_service() = default;
 
 	power_service::~power_service()
 	{

@@ -5,7 +5,7 @@ BasedOnStyle: LLVM
 
 AccessModifierOffset: -4
 AllowShortBlocksOnASingleLine: Empty
-AllowShortFunctionsOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: None
 AllowShortLoopsOnASingleLine: false
@@ -38,6 +38,8 @@ IncludeIsMainRegex: '([-_]|(/.*/)?)[A-Za-z0-9_]*$'
 IndentCaseLabels: false
 IndentRequiresClause: true
 IndentWidth: 4
+KeepEmptyLines:
+  AtStartOfBlock: false
 LambdaBodyIndentation: OuterScope
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: All

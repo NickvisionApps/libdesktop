@@ -15,10 +15,7 @@ namespace desktop::events
 	class event
 	{
 	public:
-		event()
-		    : m_next{ 0 }
-		{
-		}
+		event() = default;
 		~event() = default;
 		event(const event&) = delete;
 		event(event&&) = delete;
@@ -64,7 +61,7 @@ namespace desktop::events
 
 	private:
 		mutable std::mutex m_mutex;
-		mutable event_id m_next;
+		mutable event_id m_next{ 0 };
 		mutable std::unordered_map<event_id, std::function<void(const T&, const U&)>> m_handlers;
 	};
 }

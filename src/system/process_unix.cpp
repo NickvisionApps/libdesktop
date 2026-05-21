@@ -77,28 +77,22 @@ namespace desktop::system
 	private:
 		mutable std::mutex m_mutex;
 		process& m_process;
-		process_status m_status;
-		int m_exit_code;
+		process_status m_status{ process_status::created };
+		int m_exit_code{ -1 };
 		std::string m_standard_output;
 		std::string m_standard_error;
 		std::thread m_watch_thread;
-		pid_t m_pid;
-		int m_stdout_pipe[2];
-		int m_stderr_pipe[2];
-		int m_stdin_pipe[2];
+		pid_t m_pid{ -1 };
+		int m_stdout_pipe[2]{ -1, -1 };
+		int m_stderr_pipe[2]{ -1, -1 };
+		int m_stdin_pipe[2]{ -1, -1 };
 		void cleanup() noexcept;
 		std::string read_available(int fd, std::string& buffer);
 		void watch() noexcept;
 	};
 
 	process::impl::impl(process& process)
-	    : m_process{ process },
-	      m_status{ process_status::created },
-	      m_exit_code{ -1 },
-	      m_pid{ -1 },
-	      m_stdout_pipe{ -1, -1 },
-	      m_stderr_pipe{ -1, -1 },
-	      m_stdin_pipe{ -1, -1 }
+	    : m_process{ process }
 	{
 	}
 
