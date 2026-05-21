@@ -83,9 +83,9 @@ namespace desktop::system
 		std::string m_standard_error;
 		std::thread m_watch_thread;
 		pid_t m_pid{ -1 };
-		int m_stdout_pipe[2]{ -1, -1 };
-		int m_stderr_pipe[2]{ -1, -1 };
-		int m_stdin_pipe[2]{ -1, -1 };
+		std::array<int, 2> m_stdout_pipe{ -1, -1 };
+		std::array<int, 2> m_stderr_pipe{ -1, -1 };
+		std::array<int, 2> m_stdin_pipe{ -1, -1 };
 		void cleanup() noexcept;
 		std::string read_available(int fd, std::string& buffer);
 		void watch() noexcept;
@@ -251,7 +251,7 @@ namespace desktop::system
 		{
 			return false;
 		}
-		if (pipe(m_stdout_pipe) < 0 || pipe(m_stderr_pipe) < 0 || pipe(m_stdin_pipe) < 0)
+		if (pipe(m_stdout_pipe.data()) < 0 || pipe(m_stderr_pipe.data()) < 0 || pipe(m_stdin_pipe.data()) < 0)
 		{
 			cleanup();
 			return false;
@@ -373,7 +373,7 @@ namespace desktop::system
 			}
 			m_process.m_output_received_event.invoke(m_process, { read_available(m_stdout_pipe[0], m_standard_output) });
 			m_process.m_error_received_event.invoke(m_process, { read_available(m_stderr_pipe[0], m_standard_error) });
-			int exit_code;
+			int exit_code{ -1 };
 			{
 				std::scoped_lock lock{ m_mutex };
 				m_exit_code = WIFEXITED(status_value) ? WEXITSTATUS(status_value) : -1;
