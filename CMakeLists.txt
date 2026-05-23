@@ -181,14 +181,18 @@ endif()
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 if(CLANG_TIDY)
+    message(NOTICE "Found clang-tidy")
     if(MSVC)
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=/EHsc")
     else()
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions")
     endif()
+else()
+    message(WARNING "Unable to find clang-tidy")
 endif()
 
 if(CLANG_FORMAT)
+    message(NOTICE "Found clang-format")
     file(GLOB_RECURSE FORMAT_SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/include/*.h"
         "${CMAKE_SOURCE_DIR}/src/*.cpp"
@@ -198,6 +202,8 @@ if(CLANG_FORMAT)
         COMMAND ${CLANG_FORMAT} -i ${FORMAT_SOURCE_FILES}
         COMMENT "Running clang-format")
     add_dependencies(${PROJECT_NAME} format)
+else()
+    message(WARNING "Unable to find clang-format")
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC

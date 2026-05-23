@@ -47,3 +47,9 @@ Release/
 CMakePresets.json
 CMakeSettings.json
 CMakeLists.txt.user
+
+# macOS
+.DS_Store
+
+# Qt Creator
+*.pro.user
