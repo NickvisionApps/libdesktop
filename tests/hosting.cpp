@@ -154,7 +154,7 @@ static std::shared_ptr<app_info> info{ std::make_shared<app_info>("libdesktop.te
 TEST(Hosting, CapturesException)
 {
 	host host{ info, std::span<char*>{} };
-	host.get_services()->add<lifetime_service, erroneous_lifetime_service>(service_scope::singleton);
+	host.use_lifetime<erroneous_lifetime_service>();
 	std::exception_ptr ptr;
 	ASSERT_NO_THROW(ptr = host.run());
 	ASSERT_TRUE(ptr);
@@ -181,7 +181,7 @@ TEST(Hosting, ContainsDefaults)
 TEST(Hosting, Restarts)
 {
 	host host{ info, std::span<char*>{} };
-	host.get_services()->add<lifetime_service, restarting_lifetime_service>(service_scope::singleton);
+	host.use_lifetime<restarting_lifetime_service>();
 	std::exception_ptr ptr;
 	ASSERT_NO_THROW(ptr = host.run());
 	ASSERT_FALSE(ptr);

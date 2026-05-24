@@ -4,6 +4,7 @@
 #include <exception>
 #include <memory>
 #include "host_options.h"
+#include "lifetime_service.h"
 #include "services/service_collection.h"
 
 namespace desktop::hosting
@@ -26,6 +27,12 @@ namespace desktop::hosting
 		std::shared_ptr<services::service_collection>& get_services();
 		std::exception_ptr run();
 		void use_github_updates();
+		template <typename T>
+		    requires std::is_base_of_v<lifetime_service, T>
+		void use_lifetime()
+		{
+			m_services->add<lifetime_service, T>(services::service_scope::singleton);
+		}
 		host& operator=(const host&) = default;
 		host& operator=(host&&) noexcept = default;
 
