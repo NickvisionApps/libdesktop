@@ -76,6 +76,9 @@ add_library(${PROJECT_NAME}
     "include/events/event.h"
     "include/events/event_args.h"
     "include/events/param_event_args.h"
+    "include/filesystem/folder_watcher.h"
+    "include/filesystem/folder_watcher_change_flag.h"
+    "include/filesystem/folder_watcher_event_args.h"
     "include/filesystem/user_directories.h"
     "include/helpers/file.h"
     "include/helpers/hash.h"
@@ -125,6 +128,7 @@ add_library(${PROJECT_NAME}
     "src/app/window_geometry.cpp"
     "src/database/database_service.cpp"
     "src/database/database_value.cpp"
+    "src/filesystem/folder_watcher_event_args.cpp"
     "src/helpers/file.cpp"
     "src/helpers/hash.cpp"
     "src/helpers/string_manip.cpp"
@@ -151,6 +155,7 @@ add_library(${PROJECT_NAME}
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/filesystem/folder_watcher_windows.cpp"
         "src/filesystem/user_directories_windows.cpp"
         "src/network/network_monitor_windows.cpp"
         "src/notifications/notification_service_windows.cpp"
@@ -160,6 +165,7 @@ if(WIN32)
         "src/system/process_windows.cpp")
 elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/filesystem/folder_watcher_macos.cpp"
         "src/filesystem/user_directories_macos.cpp"
         "src/network/network_monitor_macos.cpp"
         "src/notifications/notification_service_macos.cpp"
@@ -169,6 +175,7 @@ elseif(APPLE)
         "src/system/process_unix.cpp")
 elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/filesystem/folder_watcher_linux.cpp"
         "src/filesystem/user_directories_linux.cpp"
         "src/network/network_monitor_linux.cpp"
         "src/notifications/notification_service_linux.cpp"
@@ -281,7 +288,8 @@ if (BUILD_TESTING)
         "tests/hosting.cpp"
         "tests/http_service.cpp"
         "tests/main.cpp"
-        "tests/network_monitor.cpp")
+        "tests/network_monitor.cpp"
+        "tests/user_directories.cpp")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)
 
