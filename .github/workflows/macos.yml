@@ -3,7 +3,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    types: [ "review_requested", "ready_for_review" ]
+    types: [ "opened", "synchronize", "review_requested", "ready_for_review" ]
   workflow_dispatch:
 name: macOS
 permissions:
@@ -20,9 +20,11 @@ jobs:
           - arch: x64
             runner: macos-26-intel
             triplet: x64-osx
+            prefix: /usr/local
           - arch: arm64
             runner: macos-26
             triplet: arm64-osx
+            prefix: /opt/homebrew
     runs-on: ${{ matrix.variant.runner }}
     steps:
       - name: "Checkout"  
@@ -33,16 +35,11 @@ jobs:
         run: |
           mkdir build
           brew update
-          brew install python-setuptools
-      - name: "Vcpkg"
-        uses: johnwason/vcpkg-action@v7
-        id: vcpkg
-        with:
-          pkgs: curl gettext-libintl glib gtest libarchive maddy nlohmann-json openssl
-          triplet: ${{ matrix.variant.triplet }}
-          revision: aa40adda5352e87655b8583cfb2451d5e9e276fd
-          token: ${{ github.token }}
-          cache-key: ${{ matrix.variant.triplet }}
+          brew install curl gettext glib googletest libarchive nlohmann-json openssl
+          git clone --branch 1.6.0 https://github.com/progsource/maddy /tmp/maddy
+          cmake -S /tmp/maddy -B /tmp/maddy/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ matrix.variant.prefix }}
+          cmake --build /tmp/maddy/build
+          sudo cmake --install /tmp/maddy/build
       - name: "Build"
         working-directory: ${{github.workspace}}/build
         run: |

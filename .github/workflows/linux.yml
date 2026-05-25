@@ -3,7 +3,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    types: [ "review_requested", "ready_for_review" ]
+    types: [ "opened", "synchronize", "review_requested", "ready_for_review" ]
   workflow_dispatch:
 name: Linux
 permissions:
@@ -24,39 +24,26 @@ jobs:
             runner: ubuntu-24.04-arm
             triplet: arm64-linux
     runs-on: ${{ matrix.variant.runner }}
+    container:
+          image: fedora:44
     steps:
-      - name: "Checkout"  
-        uses: actions/checkout@v6
-        with:
-          submodules: recursive
       - name: "Setup Environment"
         run: |
           mkdir build
-          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 
-          brew update
-          sudo apt-get update
-          sudo apt-get install build-essential xdg-user-dirs xdg-user-dirs-gtk gettext libssl-dev linux-libc-dev tzdata locales -y
-          brew install binutils gcc@15 cmake
-          xdg-user-dirs-update
-          xdg-user-dirs-gtk-update
-          sudo locale-gen en_US.UTF-8
-          sudo update-locale LANG=en_US.UTF-8
-          sudo update-alternatives --install /usr/bin/gcc gcc /home/linuxbrew/.linuxbrew/bin/gcc-15 100
-          sudo update-alternatives --install /usr/bin/g++ g++ /home/linuxbrew/.linuxbrew/bin/g++-15 100
-          sudo update-alternatives --install /usr/bin/cmake cmake /home/linuxbrew/.linuxbrew/bin/cmake 100
-          sudo update-alternatives --install /usr/bin/as as /home/linuxbrew/.linuxbrew/bin/as 100
-          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
-      - name: "Unlock Keyring"
-        uses: t1m0thyj/unlock-keyring@v1
-      - name: "Vcpkg"
-        uses: johnwason/vcpkg-action@v7
-        id: vcpkg
+          dnf install -y curl cmake dbus-daemon gcc gcc-c++ gettext-devel git glib2-devel gnome-keyring gtest-devel json-devel libarchive-devel libsecret libsecret-devel ninja-build openssl-devel pkgconfig
+          git clone --branch 1.6.0 https://github.com/progsource/maddy /tmp/maddy
+          cmake -S /tmp/maddy -B /tmp/maddy/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          cmake --build /tmp/maddy/build
+          cmake --install /tmp/maddy/build
+      - name: "Checkout"
+        uses: actions/checkout@v6
         with:
-          pkgs: curl gettext-libintl glib gtest libarchive libsecret maddy nlohmann-json
-          triplet: ${{ matrix.variant.triplet }}
-          revision: aa40adda5352e87655b8583cfb2451d5e9e276fd
-          token: ${{ github.token }}
-          cache-key: ${{ matrix.variant.triplet }}
+          submodules: recursive
+      - name: "Unlock Keyring"
+        run: |
+          export $(dbus-launch)
+          echo "" | gnome-keyring-daemon --unlock --components=secrets
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> $GITHUB_ENV
       - name: "Build"
         working-directory: ${{github.workspace}}/build
         run: |
