@@ -35,8 +35,8 @@ jobs:
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 
           brew update
           sudo apt-get update
-          sudo apt-get install binutils build-essential xdg-user-dirs xdg-user-dirs-gtk gettext libssl-dev linux-libc-dev tzdata locales -y
-          brew install gcc@15 cmake
+          sudo apt-get install build-essential xdg-user-dirs xdg-user-dirs-gtk gettext libssl-dev linux-libc-dev tzdata locales -y
+          brew install binutils gcc@15 cmake
           xdg-user-dirs-update
           xdg-user-dirs-gtk-update
           sudo locale-gen en_US.UTF-8
@@ -44,6 +44,8 @@ jobs:
           sudo update-alternatives --install /usr/bin/gcc gcc /home/linuxbrew/.linuxbrew/bin/gcc-15 100
           sudo update-alternatives --install /usr/bin/g++ g++ /home/linuxbrew/.linuxbrew/bin/g++-15 100
           sudo update-alternatives --install /usr/bin/cmake cmake /home/linuxbrew/.linuxbrew/bin/cmake 100
+          sudo update-alternatives --install /usr/bin/as as /home/linuxbrew/.linuxbrew/bin/as 100
+          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
       - name: "Unlock Keyring"
         uses: t1m0thyj/unlock-keyring@v1
       - name: "Vcpkg"
