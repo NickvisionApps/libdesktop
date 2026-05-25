@@ -1,4 +1,5 @@
 #include "filesystem/folder_watcher.h"
+#include <climits>
 #include <condition_variable>
 #include <mutex>
 #include <stdexcept>
