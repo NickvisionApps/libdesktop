@@ -17,14 +17,14 @@ namespace desktop::network
 		{
 			if (!m_queue)
 			{
-				throw std::runtime_error("Unable to create network monitor dispatch queue.");
+				throw std::runtime_error("Unable to create dispatch queue");
 			}
 			m_monitor = nw_path_monitor_create();
 			if (!m_monitor)
 			{
 				dispatch_release(m_queue);
 				m_queue = nullptr;
-				throw std::runtime_error("Unable to create network path monitor.");
+				throw std::runtime_error("Unable to create network path monitor");
 			}
 			nw_path_monitor_set_queue(m_monitor, m_queue);
 			nw_path_monitor_set_update_handler(m_monitor, ^(nw_path_t path) { handle_path_update(path); });

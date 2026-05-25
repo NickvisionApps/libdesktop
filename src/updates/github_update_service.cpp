@@ -24,7 +24,7 @@ namespace desktop::updates
 		std::vector<std::string> fields{ string_manip::split(info->get_source_url(), '/') };
 		if (fields.size() < 5)
 		{
-			throw std::invalid_argument{ "Invalid source URL" };
+			throw std::invalid_argument(std::format("Invalid source url ({}) expected format: https://github.com/owner/repo", info->get_source_url()));
 		}
 		m_owner = fields[3];
 		m_repo = fields[4];

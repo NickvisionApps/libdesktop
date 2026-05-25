@@ -1,9 +1,9 @@
 #pragma once
 
 #include <any>
+#include <format>
 #include <memory>
 #include <stdexcept>
-#include <string>
 #include <typeindex>
 
 namespace desktop::services
@@ -36,7 +36,7 @@ namespace desktop::services
 			auto svc{ get<T>() };
 			if (!svc)
 			{
-				throw std::runtime_error("Required service not registered: " + std::string(typeid(T).name()));
+				throw std::runtime_error(std::format("Required service not registered ({})", typeid(T).name()));
 			}
 			return svc;
 		}

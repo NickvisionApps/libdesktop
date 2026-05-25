@@ -13,7 +13,7 @@ namespace desktop::services
 		thread_local std::unordered_set<std::type_index> in_progress;
 		if (in_progress.contains(type))
 		{
-			throw std::runtime_error("Circular dependency detected for service: " + std::string(type.name()));
+			throw std::runtime_error(std::format("Circular dependency found for service ({})", type.name()));
 		}
 		service_scope scope{ service_scope::singleton };
 		std::function<std::any()> factory;

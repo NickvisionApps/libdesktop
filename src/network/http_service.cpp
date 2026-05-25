@@ -24,7 +24,7 @@ namespace desktop::network
 		CURLcode result{ curl_global_init(CURL_GLOBAL_ALL) };
 		if (result != CURLE_OK)
 		{
-			throw std::runtime_error{ "Failed to initialize curl library" };
+			throw std::runtime_error("Unable to initalize curl");
 		}
 	}
 

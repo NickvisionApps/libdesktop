@@ -1,10 +1,11 @@
 #pragma once
 
 #include <chrono>
-#include <concepts>
 #include <cstddef>
 #include <curl/curl.h>
+#include <format>
 #include <nlohmann/json.hpp>
+#include <stdexcept>
 #include <string>
 
 namespace desktop::network
@@ -38,8 +39,7 @@ namespace desktop::network
 				}
 				catch (...)
 				{
-					throw;
-					return std::nullopt;
+					throw std::runtime_error(std::format("Unable to convert json to object ({})", typeid(T).name()));
 				}
 			}
 			return std::nullopt;

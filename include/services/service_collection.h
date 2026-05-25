@@ -2,6 +2,7 @@
 
 #include <any>
 #include <concepts>
+#include <format>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -30,7 +31,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(T).name()));
 			}
 			m_services.emplace(typeid(T), service_entry{ scope, [first = std::forward<TFirst>(first), ... rest = std::forward<TRest>(rest)]() mutable
 			{
@@ -44,7 +45,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(T).name()));
 			}
 			m_services.emplace(typeid(T), service_entry{ scope, [f = std::move(factory)]() mutable
 			{
@@ -58,7 +59,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(T).name()));
 			}
 			m_services.emplace(typeid(T), service_entry{ scope, make_resolving_factory<T>() });
 		}
@@ -69,7 +70,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(T)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(T).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(T).name()));
 			}
 			m_services.emplace(typeid(T), service_entry{ service_scope::singleton, nullptr, std::make_any<std::shared_ptr<T>>(std::move(instance)) });
 		}
@@ -81,7 +82,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(TInterface).name()));
 			}
 			m_services.emplace(typeid(TInterface), service_entry{ scope, [first = std::forward<TFirst>(first), ... rest = std::forward<TRest>(rest)]() mutable
 			{
@@ -95,7 +96,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(TInterface).name()));
 			}
 			m_services.emplace(typeid(TInterface), service_entry{ scope, [f = std::move(factory)]() mutable
 			{
@@ -109,7 +110,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(TInterface).name()));
 			}
 			m_services.emplace(typeid(TInterface), service_entry{ scope, make_resolving_factory<TInterface, TImpl>() });
 		}
@@ -120,7 +121,7 @@ namespace desktop::services
 			std::scoped_lock lock{ m_mutex };
 			if (m_services.contains(typeid(TInterface)))
 			{
-				throw std::runtime_error("Service already registered: " + std::string(typeid(TInterface).name()));
+				throw std::runtime_error(std::format("Service already registered ({})", typeid(TInterface).name()));
 			}
 			m_services.emplace(typeid(TInterface),
 			                   service_entry{ service_scope::singleton, nullptr, std::make_any<std::shared_ptr<TInterface>>(std::move(instance)) });

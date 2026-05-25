@@ -149,7 +149,7 @@ private:
 	std::shared_ptr<logger> m_logger;
 };
 
-static std::shared_ptr<app_info> info{ std::make_shared<app_info>("libdesktop.test.hosting", "Test", "Test", false) };
+static const std::shared_ptr<app_info> info{ std::make_shared<app_info>("libdesktop.test.hosting", "Test", "Test", false) };
 
 TEST(Hosting, CapturesException)
 {

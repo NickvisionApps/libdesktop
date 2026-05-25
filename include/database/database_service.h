@@ -23,6 +23,7 @@ namespace desktop::database
 		database_service(const database_service&) = delete;
 		database_service(database_service&&) = delete;
 		bool is_encrypted() const;
+		bool is_in_memory() const;
 		bool begin_transaction();
 		bool commit_transaction();
 		bool rollback_transaction();
@@ -47,7 +48,8 @@ namespace desktop::database
 		void ensure_database() const;
 		mutable std::mutex m_mutex;
 		mutable sqlite3* m_db{ nullptr };
-		mutable bool m_is_encrypted{ false };
+		mutable bool m_encrypted{ false };
+		mutable bool m_in_memory{ false };
 		std::shared_ptr<app::app_info> m_info;
 		std::shared_ptr<secrets::secret_service> m_secret_service;
 	};

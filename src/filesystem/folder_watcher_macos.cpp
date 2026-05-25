@@ -18,13 +18,13 @@ namespace desktop::filesystem
 			CFStringRef cf_path{ CFStringCreateWithCString(kCFAllocatorDefault, path_str.c_str(), kCFStringEncodingUTF8) };
 			if (!cf_path)
 			{
-				throw std::runtime_error("Unable to initalize watcher");
+				throw std::runtime_error("Unable to create string");
 			}
 			CFArrayRef paths{ CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void**>(&cf_path), 1, &kCFTypeArrayCallBacks) };
 			CFRelease(cf_path);
 			if (!paths)
 			{
-				throw std::runtime_error("Unable to initalize watcher");
+				throw std::runtime_error("Unable to create array");
 			}
 			FSEventStreamContext context{};
 			context.info = this;
@@ -33,7 +33,7 @@ namespace desktop::filesystem
 			CFRelease(paths);
 			if (!m_stream)
 			{
-				throw std::runtime_error("Unable to initalize watcher event");
+				throw std::runtime_error("Unable to initalize filesystem event");
 			}
 			m_queue = dispatch_queue_create("desktop.filesystem.folder_watcher", DISPATCH_QUEUE_SERIAL);
 			FSEventStreamSetDispatchQueue(m_stream, m_queue);

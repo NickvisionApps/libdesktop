@@ -1,4 +1,5 @@
 ﻿#include "updates/version.h"
+#include <format>
 #include <stdexcept>
 
 namespace desktop::updates
@@ -27,7 +28,7 @@ namespace desktop::updates
 	{
 		if (preview.empty())
 		{
-			throw std::invalid_argument("preview label must not be empty; use the three-argument constructor for stable versions.");
+			throw std::invalid_argument("Unexpected empty version preview label");
 		}
 		build_str();
 	}
@@ -51,12 +52,12 @@ namespace desktop::updates
 		std::size_t dot1{ v.find('.') };
 		if (dot1 == std::string::npos)
 		{
-			throw std::invalid_argument("Invalid version format.");
+			throw std::invalid_argument(std::format("Invalid version ({}) expected format: major.minor.build-preview", s));
 		}
 		std::size_t dot2{ v.find('.', dot1 + 1) };
 		if (dot2 == std::string::npos)
 		{
-			throw std::invalid_argument("Invalid version format.");
+			throw std::invalid_argument(std::format("Invalid version ({}) expected format: major.minor.build-preview", s));
 		}
 		m_major = std::stoi(v.substr(0, dot1));
 		m_minor = std::stoi(v.substr(dot1 + 1, dot2 - dot1 - 1));

@@ -105,7 +105,13 @@ namespace desktop::database
 	bool database_service::is_encrypted() const
 	{
 		ensure_database();
-		return m_is_encrypted;
+		return m_encrypted;
+	}
+
+	bool database_service::is_in_memory() const
+	{
+		ensure_database();
+		return m_in_memory;
 	}
 
 	bool database_service::begin_transaction()
@@ -477,48 +483,55 @@ namespace desktop::database
 		std::string password;
 		if (!m_info->is_portable() && m_secret_service)
 		{
-			try
+			std::optional<secret> s{ m_secret_service->get(m_info->get_id()) };
+			if (!s)
 			{
-				std::optional<secret> s{ m_secret_service->get(m_info->get_id()) };
-				if (!s)
-				{
-					s = m_secret_service->create(m_info->get_id());
-				}
-				if (s && !s->empty())
-				{
-					password = s->get_value();
-				}
+				s = m_secret_service->create(m_info->get_id());
 			}
-			catch (...)
+			if (s && !s->empty())
 			{
+				password = s->get_value();
 			}
 		}
 		std::error_code ec;
 		std::filesystem::create_directories(path.parent_path(), ec);
-		sqlite3* db{ nullptr };
-		if (sqlite3_open_v2(path.string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
+		if (sqlite3_open_v2(path.string().c_str(), &m_db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 		{
-			if (db != nullptr)
+			if (m_db != nullptr)
 			{
-				sqlite3_close(db);
+				sqlite3_close(m_db);
+				m_db = nullptr;
 			}
-			if (password.empty())
+			if (sqlite3_open_v2(":memory:", &m_db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
 			{
-				sqlite3_open_v2(":memory:", &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+				m_db = nullptr;
+				throw std::runtime_error("Unable to open sqlite database");
 			}
-			m_db = db;
-			return;
+			else
+			{
+				m_in_memory = true;
+			}
 		}
-		if (!password.empty())
+		else if (!password.empty())
 		{
-			sqlite3_key(db, password.c_str(), static_cast<int>(password.size()));
-			if (sqlite3_exec(db, "SELECT count(*) FROM sqlite_master;", nullptr, nullptr, nullptr) != SQLITE_OK)
+			sqlite3_key(m_db, password.c_str(), static_cast<int>(password.size()));
+			if (sqlite3_exec(m_db, "SELECT count(*) FROM sqlite_master;", nullptr, nullptr, nullptr) != SQLITE_OK)
 			{
-				sqlite3_close(db);
-				return;
+				sqlite3_close(m_db);
+				if (sqlite3_open_v2(":memory:", &m_db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK)
+				{
+					m_db = nullptr;
+					throw std::runtime_error("Unable to open sqlite database");
+				}
+				else
+				{
+					m_in_memory = true;
+				}
 			}
-			m_is_encrypted = true;
+			else
+			{
+				m_encrypted = true;
+			}
 		}
-		m_db = db;
 	}
 }
