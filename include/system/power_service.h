@@ -10,7 +10,7 @@ namespace desktop::system
 	class power_service
 	{
 	public:
-		power_service();
+		power_service() = default;
 		~power_service();
 		power_service(const power_service&) = delete;
 		power_service(power_service&&) = delete;

@@ -22,21 +22,21 @@ public:
 	    : lifetime_service{ info },
 	      m_logger{ std::move(logger) }
 	{
-		m_logger->info("Starting", __FILE__, __LINE__);
+		m_logger->info("Starting");
 	}
 	~console_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override
 	{
-		m_logger->info("Running", __FILE__, __LINE__);
+		m_logger->info("Running");
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-		m_logger->info("Finishing", __FILE__, __LINE__);
+		m_logger->info("Finishing");
 	}
 
 	void on_shutdown() noexcept override
 	{
-		m_logger->info("Shutting down", __FILE__, __LINE__);
+		m_logger->info("Shutting down");
 	}
 
 	void on_stop_requested() noexcept override
@@ -81,32 +81,32 @@ public:
 	    : lifetime_service{ info },
 	      m_logger{ std::move(logger) }
 	{
-		m_logger->info("Starting", __FILE__, __LINE__);
+		m_logger->info("Starting");
 	}
 	~restarting_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override
 	{
-		m_logger->info("Running", __FILE__, __LINE__);
+		m_logger->info("Running");
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		if (!m_restarted)
 		{
-			m_logger->info("Restarting", __FILE__, __LINE__);
+			m_logger->info("Restarting");
 			request_restart();
 			m_restarted = true;
 		}
-		m_logger->info("Finishing", __FILE__, __LINE__);
+		m_logger->info("Finishing");
 	}
 
 	void on_shutdown() noexcept override
 	{
-		m_logger->info("Shutting down", __FILE__, __LINE__);
+		m_logger->info("Shutting down");
 	}
 
 	void on_stop_requested() noexcept override
 	{
-		m_logger->info("Stopping", __FILE__, __LINE__);
+		m_logger->info("Stopping");
 	}
 
 private:
@@ -122,27 +122,27 @@ public:
 	    : lifetime_service{ info },
 	      m_logger{ std::move(logger) }
 	{
-		m_logger->info("Starting", __FILE__, __LINE__);
+		m_logger->info("Starting");
 	}
 	~stopping_lifetime_service() override = default;
 
 protected:
 	void on_startup_and_run() override
 	{
-		m_logger->info("Running", __FILE__, __LINE__);
+		m_logger->info("Running");
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		request_stop();
-		m_logger->info("Finishing", __FILE__, __LINE__);
+		m_logger->info("Finishing");
 	}
 
 	void on_shutdown() noexcept override
 	{
-		m_logger->info("Shutting down", __FILE__, __LINE__);
+		m_logger->info("Shutting down");
 	}
 
 	void on_stop_requested() noexcept override
 	{
-		m_logger->info("Stopping", __FILE__, __LINE__);
+		m_logger->info("Stopping");
 	}
 
 private:
@@ -169,19 +169,20 @@ TEST(Hosting, ContainsDefaults)
 	ASSERT_TRUE(host.get_services()->get<database_service>());
 	ASSERT_TRUE(host.get_services()->get<http_service>());
 	ASSERT_TRUE(host.get_services()->get<keyring_service>());
-	ASSERT_TRUE(host.get_services()->get<logger>());
 	ASSERT_TRUE(host.get_services()->get<notification_service>());
 	ASSERT_TRUE(host.get_services()->get<power_service>());
 	ASSERT_TRUE(host.get_services()->get<secret_service>());
 	ASSERT_TRUE(host.get_services()->get<translation_service>());
-	ASSERT_FALSE(host.get_services()->get<update_service>());
 	ASSERT_FALSE(host.get_services()->get<lifetime_service>());
+	ASSERT_FALSE(host.get_services()->get<logger>());
+	ASSERT_FALSE(host.get_services()->get<update_service>());
 }
 
 TEST(Hosting, Restarts)
 {
 	host host{ info, std::span<char*>{} };
 	host.use_lifetime<restarting_lifetime_service>();
+	host.use_logging();
 	std::exception_ptr ptr;
 	ASSERT_NO_THROW(ptr = host.run());
 	ASSERT_FALSE(ptr);
@@ -190,6 +191,7 @@ TEST(Hosting, Restarts)
 TEST(Hosting, Runs)
 {
 	host host{ info, std::span<char*>{} };
+	host.use_logging();
 	host.get_services()->add<lifetime_service, console_lifetime_service>(service_scope::singleton);
 	std::exception_ptr ptr;
 	ASSERT_NO_THROW(ptr = host.run());
@@ -199,6 +201,7 @@ TEST(Hosting, Runs)
 TEST(Hosting, Stops)
 {
 	host host{ info, std::span<char*>{} };
+	host.use_logging();
 	host.get_services()->add<lifetime_service, stopping_lifetime_service>(service_scope::singleton);
 	std::exception_ptr ptr;
 	ASSERT_NO_THROW(ptr = host.run());

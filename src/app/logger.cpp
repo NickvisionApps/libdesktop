@@ -20,38 +20,33 @@ namespace desktop::app
 		case log_type::error:
 			return "\033[31m";
 		case log_type::critical:
-			return "\033[1;31m";
+			return "\033[35m";
 		default:
 			return "\033[0m";
 		}
 	}
 
-	static const std::string& log_type_to_string(log_type type)
+	static std::string_view log_type_to_string(log_type type)
 	{
-		static std::string debug{ "DEBUG" };
-		static std::string info{ "INFO" };
-		static std::string warn{ "WARN" };
-		static std::string error{ "ERROR" };
-		static std::string critical{ "CRITICAL" };
-		static std::string unknown{ "UNKNOWN" };
 		switch (type)
 		{
 		case log_type::debug:
-			return debug;
+			return "DEBUG";
 		case log_type::info:
-			return info;
+			return "INFO";
 		case log_type::warn:
-			return warn;
+			return "WARN";
 		case log_type::error:
-			return error;
+			return "ERROR";
 		case log_type::critical:
-			return critical;
+			return "CRITICAL";
 		default:
-			return unknown;
+			return "UNKNOWN";
 		}
 	}
 
-	logger::logger(const std::filesystem::path& log_path)
+	logger::logger(log_type minimum, const std::filesystem::path& log_path)
+	    : m_minimum{ minimum }
 	{
 #ifdef _WIN32
 		HANDLE h_out{ GetStdHandle(STD_OUTPUT_HANDLE) };
@@ -86,52 +81,48 @@ namespace desktop::app
 		}
 	}
 
-	void logger::critical(std::string_view message, std::string_view file, unsigned int line)
+	bool logger::critical(std::string_view message, const std::source_location& location)
 	{
-		log(log_type::critical, message, file, line);
+		return log(log_type::critical, message, location);
 	}
 
-	void logger::debug(std::string_view message, std::string_view file, unsigned int line)
+	bool logger::debug(std::string_view message, const std::source_location& location)
 	{
-		log(log_type::debug, message, file, line);
+		return log(log_type::debug, message, location);
 	}
 
-	void logger::error(std::string_view message, std::string_view file, unsigned int line)
+	bool logger::error(std::string_view message, const std::source_location& location)
 	{
-		log(log_type::error, message, file, line);
+		return log(log_type::error, message, location);
 	}
 
-	void logger::info(std::string_view message, std::string_view file, unsigned int line)
+	bool logger::info(std::string_view message, const std::source_location& location)
 	{
-		log(log_type::info, message, file, line);
+		return log(log_type::info, message, location);
 	}
 
-	void logger::warn(std::string_view message, std::string_view file, unsigned int line)
+	bool logger::warn(std::string_view message, const std::source_location& location)
 	{
-		log(log_type::warn, message, file, line);
+		return log(log_type::warn, message, location);
 	}
 
-	void logger::log(log_type type, std::string_view message, std::string_view file, unsigned int line)
+	bool logger::log(log_type type, std::string_view message, const std::source_location& location)
 	{
 		constexpr std::string_view reset{ "\033[0m" };
 		std::scoped_lock lock{ m_mutex };
+		if (type < m_minimum)
+		{
+			return false;
+		}
 		bool is_severe{ type == log_type::error || type == log_type::critical };
-		std::string file_name{ std::filesystem::path(file).filename().string() };
-		std::string msg{ std::format("[{}] {} ({}:{})", log_type_to_string(type), message, file_name, line) };
+		std::string msg{ std::format("[{}] {} ({}:{})", log_type_to_string(type), message, location.file_name(), location.line()) };
 		if (is_severe)
 		{
 			std::cerr << log_type_to_color(type) << msg << reset << '\n';
 		}
 		else
 		{
-#ifdef NDEBUG
-			if (type != log_type::debug)
-			{
-#endif
-				std::cout << log_type_to_color(type) << msg << reset << '\n';
-#ifdef NDEBUG
-			}
-#endif
+			std::cout << log_type_to_color(type) << msg << reset << '\n';
 		}
 		if (m_file.is_open())
 		{
@@ -141,5 +132,6 @@ namespace desktop::app
 				m_file.flush();
 			}
 		}
+		return true;
 	}
 }

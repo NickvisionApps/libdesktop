@@ -54,7 +54,7 @@ namespace desktop::notifications
 		wc.lpszClassName = class_name.c_str();
 		if (RegisterClassA(&wc) == 0 && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
 		{
-			throw std::runtime_error{ "Failed to register window class for notifications." };
+			throw std::runtime_error{ "Unable to register window class" };
 		}
 	}
 

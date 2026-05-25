@@ -20,23 +20,23 @@ namespace desktop::network
 			if (CoCreateInstance(CLSID_NetworkListManager, nullptr, CLSCTX_ALL, __uuidof(INetworkListManager),
 			                     reinterpret_cast<LPVOID*>(&m_net_list_manager)) != S_OK)
 			{
-				throw std::runtime_error("Unable to create network list manager.");
+				throw std::runtime_error("Unable to create network list manager");
 			}
 			if (m_net_list_manager->QueryInterface(IID_PPV_ARGS(&connection_point_container)) != S_OK)
 			{
-				throw std::runtime_error("Unable to create connection point container.");
+				throw std::runtime_error("Unable to create connection point container");
 			}
 			if (connection_point_container->FindConnectionPoint(IID_INetworkListManagerEvents, &m_connection_point) != S_OK)
 			{
-				throw std::runtime_error("Unable to find connection point.");
+				throw std::runtime_error("Unable to find connection point");
 			}
 			if (QueryInterface(IID_IUnknown, reinterpret_cast<void**>(&sink)) != S_OK)
 			{
-				throw std::runtime_error("Unable to get sink pointer.");
+				throw std::runtime_error("Unable to get sink pointer");
 			}
 			if (m_connection_point->Advise(sink, &m_cookie) != S_OK)
 			{
-				throw std::runtime_error("Unable to get advice connection point.");
+				throw std::runtime_error("Unable to get advice connection point");
 			}
 			check_connection_state(false);
 		}

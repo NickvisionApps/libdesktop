@@ -287,6 +287,7 @@ if (BUILD_TESTING)
     add_executable(${PROJECT_NAME}_tests
         "tests/hosting.cpp"
         "tests/http_service.cpp"
+        "tests/logger.cpp"
         "tests/main.cpp"
         "tests/network_monitor.cpp"
         "tests/user_directories.cpp")

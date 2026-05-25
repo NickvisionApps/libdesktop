@@ -22,7 +22,7 @@ namespace desktop::network
 			if (error)
 			{
 				g_error_free(error);
-				throw std::runtime_error("Unable to create NetworkManager proxy.");
+				throw std::runtime_error("Unable to create NetworkManager proxy");
 			}
 			m_signal_handler_id = g_signal_connect_data(G_OBJECT(m_proxy), "g-properties-changed",
 			                                            G_CALLBACK((void (*)(GDBusProxy*, GVariant*, GStrv, void*))(
@@ -39,7 +39,7 @@ namespace desktop::network
 			if (m_signal_handler_id <= 0)
 			{
 				g_object_unref(m_proxy);
-				throw std::runtime_error("Unable to connect to NetworkManager signal.");
+				throw std::runtime_error("Unable to connect to NetworkManager signal");
 			}
 			check_connection_state(false);
 		}

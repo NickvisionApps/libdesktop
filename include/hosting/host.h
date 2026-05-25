@@ -3,6 +3,7 @@
 #include <concepts>
 #include <exception>
 #include <memory>
+#include "app/log_type.h"
 #include "host_options.h"
 #include "lifetime_service.h"
 #include "services/service_collection.h"
@@ -12,7 +13,7 @@ namespace desktop::hosting
 	class host
 	{
 	public:
-		host(const host_options& options);
+		host(host_options options);
 		~host() = default;
 		template <typename... TArgs>
 		    requires std::constructible_from<host_options, TArgs...> &&
@@ -33,10 +34,16 @@ namespace desktop::hosting
 		{
 			m_services->add<lifetime_service, T>(services::service_scope::singleton);
 		}
+#ifdef NDEBUG
+		void use_logging(app::log_type minimum = app::log_type::info);
+#else
+		void use_logging(app::log_type minimum = app::log_type::debug);
+#endif
 		host& operator=(const host&) = default;
 		host& operator=(host&&) noexcept = default;
 
 	private:
+		host_options m_options;
 		std::shared_ptr<services::service_collection> m_services;
 	};
 }

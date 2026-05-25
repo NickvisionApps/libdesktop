@@ -23,16 +23,16 @@ using namespace desktop::updates;
 
 namespace desktop::hosting
 {
-	host::host(const host_options& options)
-	    : m_services{ std::make_shared<service_collection>() }
+	host::host(host_options options)
+	    : m_options{ std::move(options) },
+	      m_services{ std::make_shared<service_collection>() }
 	{
-		m_services->add<app_info>(options.get_app_info());
-		m_services->add<arguments_service>(service_scope::singleton, options.get_argv());
+		m_services->add<app_info>(m_options.get_app_info());
+		m_services->add<arguments_service>(service_scope::singleton, m_options.get_argv());
 		m_services->add<configuration_service>(service_scope::singleton);
 		m_services->add<database_service>(service_scope::singleton);
 		m_services->add<http_service>(service_scope::singleton);
 		m_services->add<keyring_service>(service_scope::singleton);
-		m_services->add<logger>(service_scope::singleton, options.get_log_path());
 		m_services->add<notification_service>(service_scope::singleton);
 		m_services->add<power_service>(service_scope::singleton);
 		m_services->add<secret_service>(service_scope::singleton);
@@ -52,5 +52,10 @@ namespace desktop::hosting
 	void host::use_github_updates()
 	{
 		m_services->add<update_service, github_update_service>(service_scope::singleton);
+	}
+
+	void host::use_logging(app::log_type minimum)
+	{
+		m_services->add<logger>(service_scope::singleton, minimum, m_options.get_log_path());
 	}
 }
