@@ -34,7 +34,7 @@ jobs:
           mkdir build
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 
           brew update
-          sudo apt-get install build-essential xdg-user-dirs xdg-user-dirs-gtk gettext tzdata locales libsqlcipher-dev linux-libc-dev -y
+          sudo apt-get install build-essential xdg-user-dirs xdg-user-dirs-gtk gettext libssl-dev linux-libc-dev tzdata locales -y
           brew install gcc@15 cmake
           xdg-user-dirs-update
           xdg-user-dirs-gtk-update
@@ -49,7 +49,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
-          pkgs: curl gettext-libintl glib gtest libarchive libsecret maddy nlohmann-json openssl
+          pkgs: curl gettext-libintl glib gtest libarchive libsecret maddy nlohmann-json
           triplet: ${{ matrix.variant.triplet }}
           revision: aa40adda5352e87655b8583cfb2451d5e9e276fd
           token: ${{ github.token }}

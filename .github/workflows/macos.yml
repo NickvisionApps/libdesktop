@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir build
           brew update
-          brew install python-setuptools sqlcipher
+          brew install python-setuptools
       - name: "Vcpkg"
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
