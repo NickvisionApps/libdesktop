@@ -34,7 +34,7 @@ jobs:
           mkdir build
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 
           brew update
-          sudo apt-get install xdg-user-dirs xdg-user-dirs-gtk gettext tzdata locales libsqlcipher-dev -y
+          sudo apt-get install xdg-user-dirs xdg-user-dirs-gtk gettext tzdata locales libsqlcipher-dev linux-libc-dev -y
           brew install gcc@15 cmake
           xdg-user-dirs-update
           xdg-user-dirs-gtk-update
@@ -51,7 +51,7 @@ jobs:
         with:
           pkgs: curl gettext-libintl glib gtest libarchive libsecret maddy nlohmann-json openssl
           triplet: ${{ matrix.variant.triplet }}
-          revision: 432412eecac55981cf608cc12e5b4bd91768ec57
+          revision: aa40adda5352e87655b8583cfb2451d5e9e276fd
           token: ${{ github.token }}
           cache-key: ${{ matrix.variant.triplet }}
       - name: "Build"
