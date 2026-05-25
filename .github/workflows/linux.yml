@@ -40,9 +40,8 @@ jobs:
           submodules: recursive
       - name: "Unlock Keyring"
         run: |
-          export $(dbus-launch)
-          echo "" | gnome-keyring-daemon --unlock --components=secrets --no-lock-memory
-          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> $GITHUB_ENV
+          dbus-launch --sh-syntax
+          echo "" | gnome-keyring-daemon --unlock
       - name: "Build"
         working-directory: ${{github.workspace}}/build
         run: |

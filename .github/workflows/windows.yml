@@ -34,7 +34,7 @@ jobs:
       - name: "Setup Environment"
         run: mkdir build
       - name: "Vcpkg"
-        uses: johnwason/vcpkg-action@v7
+        uses: johnwason/vcpkg-action@v8
         id: vcpkg
         with:
           pkgs: curl gettext-libintl gtest libarchive maddy nlohmann-json openssl
