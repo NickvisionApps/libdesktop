@@ -32,6 +32,7 @@ jobs:
       - name: "Setup Environment"
         run: |
           mkdir build
+          brew update
           brew install python-setuptools sqlcipher
       - name: "Vcpkg"
         uses: johnwason/vcpkg-action@v7

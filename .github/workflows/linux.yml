@@ -33,6 +33,7 @@ jobs:
         run: |
           mkdir build
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 
+          brew update
           sudo apt-get install xdg-user-dirs xdg-user-dirs-gtk gettext tzdata locales libsqlcipher-dev -y
           brew install gcc@15 cmake
           xdg-user-dirs-update
