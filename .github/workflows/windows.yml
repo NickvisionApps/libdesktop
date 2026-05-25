@@ -35,7 +35,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
-          pkgs: curl gettext-libintl gtest libarchive maddy nlohmann_json openssl
+          pkgs: curl gettext-libintl gtest libarchive maddy nlohmann-json openssl
           triplet: ${{ matrix.variant.triplet }}
           revision: 432412eecac55981cf608cc12e5b4bd91768ec57
           token: ${{ github.token }}
