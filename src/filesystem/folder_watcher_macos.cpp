@@ -33,7 +33,7 @@ namespace desktop::filesystem
 			CFRelease(paths);
 			if (!m_stream)
 			{
-				throw std::runtime_error("Unable to initalize filesystem event");
+				throw std::runtime_error("Unable to initialize filesystem event");
 			}
 			m_queue = dispatch_queue_create("desktop.filesystem.folder_watcher", DISPATCH_QUEUE_SERIAL);
 			FSEventStreamSetDispatchQueue(m_stream, m_queue);

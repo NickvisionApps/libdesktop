@@ -19,7 +19,7 @@ namespace desktop::filesystem
 			m_inotify_fd = inotify_init1(IN_CLOEXEC);
 			if (m_inotify_fd < 0)
 			{
-				throw std::runtime_error("Unable to initalize watcher");
+				throw std::runtime_error("Unable to initialize watcher");
 			}
 			constexpr uint32_t MASK{ IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MOVED_FROM | IN_MOVED_TO | IN_MOVE_SELF | IN_MODIFY | IN_ATTRIB |
 				                     IN_CLOSE_WRITE };
@@ -27,14 +27,14 @@ namespace desktop::filesystem
 			if (m_watch_fd < 0)
 			{
 				::close(m_inotify_fd);
-				throw std::runtime_error("Unable to initalize watcher");
+				throw std::runtime_error("Unable to initialize watcher");
 			}
 			int pipe_fds[2];
 			if (::pipe(pipe_fds) < 0)
 			{
 				inotify_rm_watch(m_inotify_fd, m_watch_fd);
 				::close(m_inotify_fd);
-				throw std::runtime_error("Unable to initalize watcher");
+				throw std::runtime_error("Unable to initialize watcher");
 			}
 			m_pipe_r = pipe_fds[0];
 			m_pipe_w = pipe_fds[1];
