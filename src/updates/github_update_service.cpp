@@ -155,7 +155,7 @@ namespace desktop::updates
 			http_response response{ m_http_service->get(std::format("https://api.github.com/repos/{}/{}/releases", m_owner, m_repo)) };
 			if (response.is_success())
 			{
-				nlohmann::json json{ response.get_content_as_json() };
+				nlohmann::json json = response.get_content_as_json();
 				std::ofstream file{ m_cache_releases_path };
 				file << json.dump(4);
 				for (const nlohmann::json& release : json)

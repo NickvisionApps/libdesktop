@@ -13,8 +13,9 @@ namespace desktop::updates
 		version();
 		~version() = default;
 		version(int major, int minor, int patch);
+		version(int major, int minor, int patch, int preview);
 		version(int major, int minor, int patch, const std::string& preview);
-		version(const std::string& s);
+		version(std::string v);
 		version(const version&) = default;
 		version(version&&) = default;
 		int get_major() const;

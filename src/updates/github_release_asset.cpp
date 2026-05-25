@@ -6,7 +6,7 @@ namespace desktop::updates
 	    : m_url{ json.value("url", "") },
 	      m_name{ json.value("name", "") },
 	      m_size{ json.value("size", int64_t{ 0 }) },
-	      m_digest{ json.value("digest", "") },
+	      m_digest{ json["digest"].is_null() ? "" : json.value("digest", "") },
 	      m_browser_download_url{ json.value("browser_download_url", "") }
 	{
 	}

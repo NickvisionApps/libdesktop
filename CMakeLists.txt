@@ -285,6 +285,7 @@ if (BUILD_TESTING)
     include(GoogleTest)
 
     add_executable(${PROJECT_NAME}_tests
+        "tests/github_update_service.cpp"
         "tests/hosting.cpp"
         "tests/http_service.cpp"
         "tests/logger.cpp"

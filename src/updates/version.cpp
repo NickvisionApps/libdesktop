@@ -20,6 +20,15 @@ namespace desktop::updates
 		build_str();
 	}
 
+	version::version(int major, int minor, int patch, int preview)
+	    : m_major{ major },
+	      m_minor{ minor },
+	      m_patch{ patch },
+	      m_preview{ std::to_string(preview) }
+	{
+		build_str();
+	}
+
 	version::version(int major, int minor, int patch, const std::string& preview)
 	    : m_major{ major },
 	      m_minor{ minor },
@@ -33,12 +42,11 @@ namespace desktop::updates
 		build_str();
 	}
 
-	version::version(const std::string& s)
+	version::version(std::string v)
 	    : m_major{ 0 },
 	      m_minor{ 0 },
 	      m_patch{ 0 }
 	{
-		std::string v{ s };
 		if (!v.empty() && v[0] == 'v')
 		{
 			v.erase(0, 1);
@@ -52,12 +60,21 @@ namespace desktop::updates
 		std::size_t dot1{ v.find('.') };
 		if (dot1 == std::string::npos)
 		{
-			throw std::invalid_argument(std::format("Invalid version ({}) expected format: major.minor.build-preview", s));
+			throw std::invalid_argument(std::format("Invalid version ({}) expected format: major.minor.build-preview", v));
 		}
 		std::size_t dot2{ v.find('.', dot1 + 1) };
 		if (dot2 == std::string::npos)
 		{
-			throw std::invalid_argument(std::format("Invalid version ({}) expected format: major.minor.build-preview", s));
+			throw std::invalid_argument(std::format("Invalid version ({}) expected format: major.minor.build-preview", v));
+		}
+		std::size_t dot3{ v.find('.', dot2 + 1) };
+		if (dot3 != std::string::npos)
+		{
+			if (m_preview.empty())
+			{
+				m_preview = v.substr(dot3 + 1);
+			}
+			v = v.substr(0, dot3);
 		}
 		m_major = std::stoi(v.substr(0, dot1));
 		m_minor = std::stoi(v.substr(dot1 + 1, dot2 - dot1 - 1));

@@ -4,7 +4,7 @@
 
 using namespace desktop::app;
 
-TEST(Logging, DebugNoFile)
+TEST(Logger, DebugNoFile)
 {
 	logger log{ log_type::debug };
 	ASSERT_TRUE(log.debug("Test"));
@@ -14,7 +14,7 @@ TEST(Logging, DebugNoFile)
 	ASSERT_TRUE(log.critical("Test"));
 }
 
-TEST(Logging, InfoNoFile)
+TEST(Logger, InfoNoFile)
 {
 	logger log{ log_type::info };
 	ASSERT_FALSE(log.debug("Test"));
@@ -24,7 +24,7 @@ TEST(Logging, InfoNoFile)
 	ASSERT_TRUE(log.critical("Test"));
 }
 
-TEST(Logging, WarnNoFile)
+TEST(Logger, WarnNoFile)
 {
 	logger log{ log_type::warn };
 	ASSERT_FALSE(log.debug("Test"));
@@ -34,7 +34,7 @@ TEST(Logging, WarnNoFile)
 	ASSERT_TRUE(log.critical("Test"));
 }
 
-TEST(Logging, ErrorNoFile)
+TEST(Logger, ErrorNoFile)
 {
 	logger log{ log_type::error };
 	ASSERT_FALSE(log.debug("Test"));
@@ -44,7 +44,7 @@ TEST(Logging, ErrorNoFile)
 	ASSERT_TRUE(log.critical("Test"));
 }
 
-TEST(Logging, CriticalNoFile)
+TEST(Logger, CriticalNoFile)
 {
 	logger log{ log_type::critical };
 	ASSERT_FALSE(log.debug("Test"));
@@ -54,7 +54,7 @@ TEST(Logging, CriticalNoFile)
 	ASSERT_TRUE(log.critical("Test"));
 }
 
-TEST(Logging, DebugFile)
+TEST(Logger, DebugFile)
 {
 	if (std::filesystem::exists("debug.log"))
 	{
@@ -72,7 +72,7 @@ TEST(Logging, DebugFile)
 	ASSERT_FALSE(std::filesystem::exists("debug.log"));
 }
 
-TEST(Logging, InfoFile)
+TEST(Logger, InfoFile)
 {
 	if (std::filesystem::exists("info.log"))
 	{
@@ -90,7 +90,7 @@ TEST(Logging, InfoFile)
 	ASSERT_FALSE(std::filesystem::exists("info.log"));
 }
 
-TEST(Logging, WarnFile)
+TEST(Logger, WarnFile)
 {
 	if (std::filesystem::exists("warn.log"))
 	{
@@ -108,7 +108,7 @@ TEST(Logging, WarnFile)
 	ASSERT_FALSE(std::filesystem::exists("warn.log"));
 }
 
-TEST(Logging, ErrorFile)
+TEST(Logger, ErrorFile)
 {
 	if (std::filesystem::exists("error.log"))
 	{
@@ -126,7 +126,7 @@ TEST(Logging, ErrorFile)
 	ASSERT_FALSE(std::filesystem::exists("error.log"));
 }
 
-TEST(Logging, CriticalFile)
+TEST(Logger, CriticalFile)
 {
 	if (std::filesystem::exists("critical.log"))
 	{
