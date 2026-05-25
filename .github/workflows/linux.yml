@@ -28,8 +28,6 @@ jobs:
     steps:
       - name: "Setup Environment"
         run: |
-          mkdir -p "${{github.workspace}}/build"
-          mkdir -p "${{github.workspace}}/install"
           dnf install -y curl cmake dbus-x11 gcc gcc-c++ gettext-devel git glib2-devel gnome-keyring gtest-devel json-devel libarchive-devel libsecret libsecret-devel ninja-build openssl-devel pkgconfig
           git clone --branch 1.6.0 https://github.com/progsource/maddy /tmp/maddy
           cmake -S /tmp/maddy -B /tmp/maddy/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
@@ -40,16 +38,14 @@ jobs:
         with:
           submodules: recursive
       - name: "Build"
-        working-directory: ${{github.workspace}}/build
         run: |
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_CXX_STANDARD=20
-          cmake --build . --parallel
+          mkdir -p "${{github.workspace}}/build"
+          cmake -S "${{github.workspace}}" -B "${{github.workspace}}/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_CXX_STANDARD=20
+          cmake --build "${{github.workspace}}/build" --parallel
       - name: "Install"
-        working-directory: ${{github.workspace}}/build
-        run: cmake --install .
+        run: cmake --install "${{github.workspace}}/build"
       - name: "Test"
-        working-directory: ${{github.workspace}}/build
-        run: ctest --output-on-failure
+        run: ctest --test-dir "${{github.workspace}}/build" --output-on-failure
       - name: Upload
         uses: actions/upload-artifact@v7
         with:
