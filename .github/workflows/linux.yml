@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: "Setup Environment"
         run: |
-          dnf install -y curl cmake dbus-x11 gcc gcc-c++ gettext-devel git glib2-devel gnome-keyring gtest-devel json-devel libarchive-devel libcurl-devel libsecret libsecret-devel ninja-build openssl-devel pkgconfig
+          dnf install -y curl cmake dbus-x11 gcc gcc-c++ gettext-devel git glib2-devel gnome-keyring gmock-devel gtest-devel json-devel libarchive-devel libcurl-devel libsecret libsecret-devel ninja-build openssl-devel pkgconfig
           git clone --branch 1.6.0 https://github.com/progsource/maddy /tmp/maddy
           cmake -S /tmp/maddy -B /tmp/maddy/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
           cmake --build /tmp/maddy/build
