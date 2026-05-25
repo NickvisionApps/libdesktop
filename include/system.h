@@ -1,0 +1,10 @@
+#pragma once
+
+#include "system/dependency_search_option.h"
+#include "system/deployment_mode.h"
+#include "system/environment.h"
+#include "system/executable_service.h"
+#include "system/power_service.h"
+#include "system/process.h"
+#include "system/process_result.h"
+#include "system/process_status.h"

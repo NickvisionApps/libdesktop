@@ -1,0 +1,60 @@
+#pragma once
+
+#include <atomic>
+#include <format>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <vector>
+#include "app/app_info.h"
+
+namespace desktop::app
+{
+	class translation_service
+	{
+	public:
+		using dependencies = std::tuple<app_info>;
+		translation_service(const std::shared_ptr<app_info>& info);
+		~translation_service() = default;
+		translation_service(const translation_service&) = delete;
+		translation_service(translation_service&&) = delete;
+		const std::string& get_language() const;
+		bool set_language(const std::string& language);
+		const std::vector<std::string>& get_available_languages() const;
+		const char* _(const char* msgid) const noexcept;
+		const char* _n(const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;
+		const char* _p(const char* context, const char* msgid) const noexcept;
+		const char* _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n) const noexcept;
+		template <typename... Args>
+		std::string _(const char* msgid, const Args&&... args) const noexcept
+		{
+			return std::vformat(_(msgid), std::make_format_args(args...));
+		}
+		template <typename... Args>
+		std::string _n(const char* msgid, const char* msgid_plural, unsigned long n, const Args&&... args) const noexcept
+		{
+			return std::vformat(_n(msgid, msgid_plural, n), std::make_format_args(args...));
+		}
+		template <typename... Args>
+		std::string _p(const char* context, const char* msgid, const Args&&... args) const noexcept
+		{
+			return std::vformat(_p(context, msgid), std::make_format_args(args...));
+		}
+		template <typename... Args>
+		std::string _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n, const Args&&... args) const noexcept
+		{
+			return std::vformat(_pn(context, msgid, msgid_plural, n), std::make_format_args(args...));
+		}
+		translation_service& operator=(const translation_service&) = delete;
+		translation_service& operator=(translation_service&&) = delete;
+
+	private:
+		std::string m_domain_name;
+		std::string m_language;
+		std::atomic<bool> m_translations_off;
+		mutable std::mutex m_mutex;
+		mutable std::vector<std::string> m_available_languages;
+	};
+}

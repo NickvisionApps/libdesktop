@@ -1,0 +1,588 @@
+#include "system/process.h"
+#include <windows.h>
+#include <chrono>
+#include <cstddef>
+#include <mutex>
+#include <span>
+#include <thread>
+#include <tlhelp32.h>
+#include <vector>
+
+static constexpr std::chrono::milliseconds process_wait_timeout{ 50 };
+
+static void close_handle(HANDLE& handle) noexcept
+{
+	if (handle != nullptr)
+	{
+		CloseHandle(handle);
+		handle = nullptr;
+	}
+}
+
+static std::vector<DWORD> get_job_processes(HANDLE job)
+{
+	std::vector<DWORD> process_ids;
+	std::size_t buffer_size{ sizeof(JOBOBJECT_BASIC_PROCESS_ID_LIST) + (255 * sizeof(ULONG_PTR)) };
+	std::vector<std::byte> buffer_storage(buffer_size);
+	JOBOBJECT_BASIC_PROCESS_ID_LIST* buffer{ reinterpret_cast<JOBOBJECT_BASIC_PROCESS_ID_LIST*>(buffer_storage.data()) };
+	if (QueryInformationJobObject(job, JobObjectBasicProcessIdList, buffer, static_cast<DWORD>(buffer_size), nullptr) != FALSE)
+	{
+		std::span<const ULONG_PTR> process_list{ buffer->ProcessIdList, buffer->NumberOfProcessIdsInList };
+		process_ids.reserve(process_list.size());
+		for (ULONG_PTR pid : process_list)
+		{
+			process_ids.push_back(static_cast<DWORD>(pid));
+		}
+	}
+	return process_ids;
+}
+
+static std::wstring quote_argument(const std::wstring& value)
+{
+	if (value.empty())
+	{
+		return L"\"\"";
+	}
+	bool needs_quotes{ false };
+	for (const wchar_t ch : value)
+	{
+		if (ch == L' ' || ch == L'\t' || ch == L'"')
+		{
+			needs_quotes = true;
+			break;
+		}
+	}
+	if (!needs_quotes)
+	{
+		return value;
+	}
+	std::wstring quoted;
+	quoted.push_back(L'"');
+	std::size_t backslash_count{ 0 };
+	for (const wchar_t ch : value)
+	{
+		if (ch == L'\\')
+		{
+			++backslash_count;
+			continue;
+		}
+		if (ch == L'"')
+		{
+			quoted.append((backslash_count * 2) + 1, L'\\');
+			quoted.push_back(L'"');
+			backslash_count = 0;
+			continue;
+		}
+		if (backslash_count > 0)
+		{
+			quoted.append(backslash_count, L'\\');
+			backslash_count = 0;
+		}
+		quoted.push_back(ch);
+	}
+	if (backslash_count > 0)
+	{
+		quoted.append(backslash_count * 2, L'\\');
+	}
+	quoted.push_back(L'"');
+	return quoted;
+}
+
+static bool update_threads(HANDLE job, bool resume)
+{
+	std::vector<DWORD> process_ids{ get_job_processes(job) };
+	HANDLE snapshot{ CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0) };
+	if (snapshot == INVALID_HANDLE_VALUE)
+	{
+		return false;
+	}
+	THREADENTRY32 entry{};
+	entry.dwSize = sizeof(THREADENTRY32);
+	for (bool has_entry{ Thread32First(snapshot, &entry) != FALSE }; has_entry; has_entry = (Thread32Next(snapshot, &entry) != FALSE))
+	{
+		for (DWORD process_id : process_ids)
+		{
+			if (entry.th32OwnerProcessID != process_id)
+			{
+				continue;
+			}
+			HANDLE thread{ OpenThread(THREAD_SUSPEND_RESUME, FALSE, entry.th32ThreadID) };
+			if (thread == nullptr)
+			{
+				continue;
+			}
+			if (resume)
+			{
+				ResumeThread(thread);
+			}
+			else
+			{
+				SuspendThread(thread);
+			}
+			CloseHandle(thread);
+			break;
+		}
+	}
+	CloseHandle(snapshot);
+	return true;
+}
+
+static std::wstring utf8_to_wstring(const std::string& value)
+{
+	if (value.empty())
+	{
+		return {};
+	}
+	const int size{ MultiByteToWideChar(CP_UTF8, 0, value.c_str(), static_cast<int>(value.size()), nullptr, 0) };
+	if (size <= 0)
+	{
+		return {};
+	}
+	std::wstring result(static_cast<std::size_t>(size), L'\0');
+	if (MultiByteToWideChar(CP_UTF8, 0, value.c_str(), static_cast<int>(value.size()), result.data(), size) <= 0)
+	{
+		return {};
+	}
+	return result;
+}
+
+namespace desktop::system
+{
+	class process::impl
+	{
+	public:
+		impl(process& process);
+		~impl();
+		impl(const impl&) = delete;
+		impl(impl&&) = delete;
+		impl& operator=(const impl&) = delete;
+		impl& operator=(impl&&) = delete;
+		int get_exit_code() const;
+		const std::string& get_standard_error() const;
+		const std::string& get_standard_output() const;
+		process_status get_status() const;
+		bool input(std::string_view data) const;
+		bool kill();
+		bool pause();
+		bool resume();
+		bool start();
+		int wait_for_exit();
+
+	private:
+		mutable std::mutex m_mutex;
+		process& m_process;
+		process_status m_status{ process_status::created };
+		int m_exit_code{ -1 };
+		std::string m_standard_output;
+		std::string m_standard_error;
+		std::thread m_watch_thread;
+		HANDLE m_stdout_read{ nullptr };
+		HANDLE m_stdout_write{ nullptr };
+		HANDLE m_stderr_read{ nullptr };
+		HANDLE m_stderr_write{ nullptr };
+		HANDLE m_stdin_read{ nullptr };
+		HANDLE m_stdin_write{ nullptr };
+		HANDLE m_job{ nullptr };
+		PROCESS_INFORMATION m_process_information;
+		std::string append_pipe_output(std::string& buffer, HANDLE pipe);
+		void cleanup() noexcept;
+		void watch() noexcept;
+	};
+
+	process::impl::impl(process& process)
+	    : m_process{ process },
+	      m_process_information{}
+	{
+	}
+
+	process::impl::~impl()
+	{
+		if (m_watch_thread.joinable())
+		{
+			m_watch_thread.join();
+		}
+		cleanup();
+	}
+
+	std::string process::impl::append_pipe_output(std::string& buffer, HANDLE pipe)
+	{
+		size_t old_size{ buffer.size() };
+		while (true)
+		{
+			DWORD available{ 0 };
+			if (PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) == FALSE || available == 0)
+			{
+				break;
+			}
+			std::vector<char> chunk(available);
+			DWORD read{ 0 };
+			if (ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) == FALSE || read == 0)
+			{
+				break;
+			}
+			std::scoped_lock lock{ m_mutex };
+			buffer.append(chunk.data(), read);
+		}
+		return buffer.substr(old_size);
+	}
+
+	void process::impl::cleanup() noexcept
+	{
+		close_handle(m_stdout_read);
+		close_handle(m_stdout_write);
+		close_handle(m_stderr_read);
+		close_handle(m_stderr_write);
+		close_handle(m_stdin_read);
+		close_handle(m_stdin_write);
+		close_handle(m_process_information.hProcess);
+		close_handle(m_process_information.hThread);
+		close_handle(m_job);
+	}
+
+	int process::impl::get_exit_code() const
+	{
+		std::scoped_lock lock{ m_mutex };
+		return m_exit_code;
+	}
+
+	const std::string& process::impl::get_standard_error() const
+	{
+		std::scoped_lock lock{ m_mutex };
+		return m_standard_error;
+	}
+
+	const std::string& process::impl::get_standard_output() const
+	{
+		std::scoped_lock lock{ m_mutex };
+		return m_standard_output;
+	}
+
+	process_status process::impl::get_status() const
+	{
+		std::scoped_lock lock{ m_mutex };
+		return m_status;
+	}
+
+	bool process::impl::input(std::string_view data) const
+	{
+		HANDLE stdin_write{ nullptr };
+		{
+			std::scoped_lock lock{ m_mutex };
+			if (m_status != process_status::running)
+			{
+				return false;
+			}
+			stdin_write = m_stdin_write;
+		}
+		const char* current{ data.data() };
+		std::size_t remaining{ data.size() };
+		while (remaining > 0)
+		{
+			DWORD written{ 0 };
+			const DWORD chunk_size{ remaining > static_cast<std::size_t>(MAXDWORD) ? MAXDWORD : static_cast<DWORD>(remaining) };
+			if (WriteFile(stdin_write, current, chunk_size, &written, nullptr) == FALSE)
+			{
+				return false;
+			}
+			current += written;
+			remaining -= written;
+		}
+		return true;
+	}
+
+	bool process::impl::kill()
+	{
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::running && m_status != process_status::paused)
+		{
+			return false;
+		}
+		if (TerminateJobObject(m_job, 1) == FALSE)
+		{
+			return false;
+		}
+		m_status = process_status::killed;
+		return true;
+	}
+
+	bool process::impl::pause()
+	{
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::running)
+		{
+			return false;
+		}
+		bool res{ update_threads(m_job, false) };
+		m_status = process_status::paused;
+		return res;
+	}
+
+	bool process::impl::resume()
+	{
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::paused)
+		{
+			return false;
+		}
+		bool res{ update_threads(m_job, true) };
+		m_status = process_status::running;
+		return res;
+	}
+
+	bool process::impl::start()
+	{
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::created)
+		{
+			return false;
+		}
+		if (!m_process.m_working_directory.empty() &&
+		    (!std::filesystem::exists(m_process.m_working_directory) || !std::filesystem::is_directory(m_process.m_working_directory)))
+		{
+			return false;
+		}
+		try
+		{
+			SECURITY_ATTRIBUTES security_attributes{ .nLength = sizeof(SECURITY_ATTRIBUTES), .lpSecurityDescriptor = nullptr, .bInheritHandle = TRUE };
+			if (CreatePipe(&m_stdout_read, &m_stdout_write, &security_attributes, 0) == FALSE ||
+			    SetHandleInformation(m_stdout_read, HANDLE_FLAG_INHERIT, 0) == FALSE ||
+			    CreatePipe(&m_stderr_read, &m_stderr_write, &security_attributes, 0) == FALSE ||
+			    SetHandleInformation(m_stderr_read, HANDLE_FLAG_INHERIT, 0) == FALSE ||
+			    CreatePipe(&m_stdin_read, &m_stdin_write, &security_attributes, 0) == FALSE ||
+			    SetHandleInformation(m_stdin_write, HANDLE_FLAG_INHERIT, 0) == FALSE)
+			{
+				cleanup();
+				return false;
+			}
+			m_job = CreateJobObjectW(nullptr, nullptr);
+			if (m_job == nullptr)
+			{
+				cleanup();
+				return false;
+			}
+			JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{ .BasicLimitInformation = { .LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE |
+				                                                                                  JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION } };
+			if (SetInformationJobObject(m_job, JobObjectExtendedLimitInformation, &limits, sizeof(limits)) == FALSE)
+			{
+				cleanup();
+				return false;
+			}
+			STARTUPINFOW startup_info{ .cb = sizeof(STARTUPINFOW),
+				                       .dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW,
+				                       .wShowWindow = SW_HIDE,
+				                       .hStdInput = m_stdin_read,
+				                       .hStdOutput = m_stdout_write,
+				                       .hStdError = m_stderr_write };
+			std::wstring command_line{ quote_argument(m_process.m_path.wstring()) };
+			for (const std::string& argument : m_process.m_arguments)
+			{
+				command_line += L" ";
+				command_line += quote_argument(utf8_to_wstring(argument));
+			}
+			std::vector<wchar_t> command_line_buffer(command_line.begin(), command_line.end());
+			command_line_buffer.push_back(L'\0');
+			const std::wstring working_directory_str{ m_process.m_working_directory.empty() ? std::wstring{} : m_process.m_working_directory.wstring() };
+			if (CreateProcessW(nullptr, command_line_buffer.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP, nullptr,
+			                   working_directory_str.empty() ? nullptr : working_directory_str.c_str(), &startup_info, &m_process_information) == FALSE)
+			{
+				cleanup();
+				return false;
+			}
+			close_handle(m_stdout_write);
+			close_handle(m_stderr_write);
+			close_handle(m_stdin_read);
+			if (AssignProcessToJobObject(m_job, m_process_information.hProcess) == FALSE)
+			{
+				TerminateProcess(m_process_information.hProcess, 1);
+				return false;
+			}
+			m_status = process_status::running;
+			m_exit_code = -1;
+			m_standard_output.clear();
+			m_standard_error.clear();
+			m_watch_thread = std::thread(&impl::watch, this);
+		}
+		catch (...)
+		{
+			if (m_process_information.hProcess != nullptr)
+			{
+				TerminateProcess(m_process_information.hProcess, 1);
+			}
+			cleanup();
+			m_status = process_status::created;
+			m_exit_code = -1;
+			return false;
+		}
+		return true;
+	}
+
+	int process::impl::wait_for_exit()
+	{
+		{
+			std::scoped_lock lock{ m_mutex };
+			if (m_status == process_status::created)
+			{
+				return -1;
+			}
+		}
+		if (m_watch_thread.joinable())
+		{
+			m_watch_thread.join();
+		}
+		std::scoped_lock lock{ m_mutex };
+		return m_exit_code;
+	}
+
+	void process::impl::watch() noexcept
+	{
+		try
+		{
+			DWORD wait_result{ WAIT_TIMEOUT };
+			DWORD process_exit_code{ STILL_ACTIVE };
+			while (true)
+			{
+				wait_result = WaitForSingleObject(m_process_information.hProcess, static_cast<DWORD>(process_wait_timeout.count()));
+				m_process.m_output_received_event.invoke(m_process, { append_pipe_output(m_standard_output, m_stdout_read) });
+				m_process.m_error_received_event.invoke(m_process, { append_pipe_output(m_standard_error, m_stderr_read) });
+				if (wait_result == WAIT_OBJECT_0)
+				{
+					break;
+				}
+				if (wait_result == WAIT_FAILED)
+				{
+					process_exit_code = static_cast<DWORD>(-1);
+					break;
+				}
+			}
+			m_process.m_output_received_event.invoke(m_process, { append_pipe_output(m_standard_output, m_stdout_read) });
+			m_process.m_error_received_event.invoke(m_process, { append_pipe_output(m_standard_error, m_stderr_read) });
+			int exit_code{ -1 };
+			{
+				std::scoped_lock lock{ m_mutex };
+				if (process_exit_code == STILL_ACTIVE && GetExitCodeProcess(m_process_information.hProcess, &process_exit_code) == FALSE)
+				{
+					process_exit_code = static_cast<DWORD>(-1);
+				}
+				m_exit_code = static_cast<int>(process_exit_code);
+				if (m_status != process_status::killed)
+				{
+					m_status = process_status::completed;
+				}
+				exit_code = m_exit_code;
+			}
+			m_process.m_exited_event.invoke(m_process, { exit_code });
+		}
+		catch (...)
+		{
+		}
+	}
+
+	process::process(std::filesystem::path path, std::vector<std::string> arguments)
+	    : m_impl{ std::make_unique<impl>(*this) },
+	      m_path{ std::move(path) },
+	      m_arguments{ std::move(arguments) }
+	{
+	}
+
+	process::~process() = default;
+
+	const events::event<process, events::param_event_args<int>>& process::get_exited_event() const
+	{
+		return m_exited_event;
+	}
+
+	const events::event<process, events::param_event_args<std::string>>& process::get_output_received_event() const
+	{
+		return m_output_received_event;
+	}
+
+	const events::event<process, events::param_event_args<std::string>>& process::get_error_received_event() const
+	{
+		return m_error_received_event;
+	}
+
+	const std::vector<std::string>& process::get_arguments() const
+	{
+		return m_arguments;
+	}
+
+	int process::get_exit_code() const
+	{
+		return m_impl->get_exit_code();
+	}
+
+	const std::filesystem::path& process::get_path() const
+	{
+		return m_path;
+	}
+
+	const std::string& process::get_standard_error() const
+	{
+		return m_impl->get_standard_error();
+	}
+
+	const std::string& process::get_standard_output() const
+	{
+		return m_impl->get_standard_output();
+	}
+
+	process_result process::get_result() const
+	{
+		return { m_impl->get_standard_output(), m_impl->get_standard_error(), m_impl->get_exit_code() };
+	}
+
+	process_status process::get_status() const
+	{
+		return m_impl->get_status();
+	}
+
+	const std::filesystem::path& process::get_working_directory() const
+	{
+		return m_working_directory;
+	}
+
+	bool process::write(std::string_view data) const
+	{
+		return m_impl->input(data);
+	}
+
+	bool process::write_line(const std::string& data) const
+	{
+		return m_impl->input(data + "\r\n");
+	}
+
+	bool process::kill()
+	{
+		return m_impl->kill();
+	}
+
+	bool process::pause()
+	{
+		return m_impl->pause();
+	}
+
+	bool process::resume()
+	{
+		return m_impl->resume();
+	}
+
+	bool process::set_working_directory(const std::filesystem::path& path)
+	{
+		if (m_impl->get_status() != process_status::created)
+		{
+			return false;
+		}
+		m_working_directory = path;
+		return true;
+	}
+
+	bool process::start()
+	{
+		return m_impl->start();
+	}
+
+	int process::wait_for_exit() const
+	{
+		return m_impl->wait_for_exit();
+	}
+}

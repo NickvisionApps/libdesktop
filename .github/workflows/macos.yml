@@ -1,0 +1,60 @@
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [ "review_requested", "ready_for_review" ]
+  workflow_dispatch:
+name: macOS
+permissions:
+  contents: read
+env:
+  GITHUB_ACTIONS: true
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+jobs:
+  build:
+    name: "Build on macOS"
+    strategy:
+      matrix:
+        variant:
+          - arch: x64
+            runner: macos-15-intel
+            triplet: x64-osx
+          - arch: arm64
+            runner: macos-latest
+            triplet: arm64-osx
+    runs-on: ${{ matrix.variant.runner }}
+    steps:
+      - name: "Checkout"  
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: "Setup Environment"
+        run: |
+          mkdir build
+          brew install python-setuptools sqlcipher
+      - name: "Vcpkg"
+        uses: johnwason/vcpkg-action@v7
+        id: vcpkg
+        with:
+          pkgs: curl gettext-libintl glib gtest libarchive maddy nlohmann_json openssl
+          triplet: ${{ matrix.variant.triplet }}
+          revision: 432412eecac55981cf608cc12e5b4bd91768ec57
+          token: ${{ github.token }}
+          cache-key: ${{ matrix.variant.triplet }}
+      - name: "Build"
+        working-directory: ${{github.workspace}}/build
+        run: |
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_CXX_STANDARD=20
+          cmake --build . --parallel
+      - name: "Install"
+        working-directory: ${{github.workspace}}/build
+        run: cmake --install .
+      - name: "Test"
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{github.workspace}}/install
+          name: macOS-${{ matrix.variant.arch }}-Release

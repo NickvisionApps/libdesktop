@@ -1,0 +1,180 @@
+#include "system/environment.h"
+#include <windows.h>
+#include <array>
+#include <cstdlib>
+#include <sstream>
+#include <unordered_map>
+#include "filesystem/user_directories.h"
+#include "helpers/string_manip.h"
+#include "system/process.h"
+
+using namespace desktop::filesystem;
+using namespace desktop::helpers;
+
+static bool search_in(const std::filesystem::path& dep, std::filesystem::path& result, const std::filesystem::path& dir)
+{
+	if (dir.string().find(R"(AppData\Local\Microsoft\WindowsApps)") != std::string::npos)
+	{
+		return false;
+	}
+	std::filesystem::path candidate{ dir / dep };
+	if (!std::filesystem::exists(candidate))
+	{
+		return false;
+	}
+	result = candidate;
+	return true;
+}
+
+namespace desktop::system
+{
+	process_result environment::execute(const std::string& command)
+	{
+		if (command.empty())
+		{
+			return {};
+		}
+		process proc{ find_dependency("cmd.exe", dependency_search_option::global), { "/c", command } };
+		if (proc.start())
+		{
+			proc.wait_for_exit();
+			return proc.get_result();
+		}
+		return {};
+	}
+
+	const std::filesystem::path& environment::find_dependency(std::string_view name, dependency_search_option option)
+	{
+		static std::unordered_map<std::string, std::filesystem::path> dependencies;
+		std::filesystem::path dep{ name };
+		if (!dep.has_extension())
+		{
+			dep += ".exe";
+		}
+		std::string key{ dep.string() + "|" + std::to_string(static_cast<int>(option)) };
+		std::unordered_map<std::string, std::filesystem::path>::const_iterator it{ dependencies.find(key) };
+		if (it != dependencies.end() && std::filesystem::exists(it->second))
+		{
+			return it->second;
+		}
+		dependencies[key] = std::filesystem::path();
+		std::filesystem::path& result{ dependencies[key] };
+		if (option == dependency_search_option::global || option == dependency_search_option::app)
+		{
+			search_in(dep, result, get_executable_directory());
+		}
+		if (result.empty() && (option == dependency_search_option::global || option == dependency_search_option::system))
+		{
+			for (const std::filesystem::path& dir : get_path_variable())
+			{
+				if (search_in(dep, result, dir))
+				{
+					break;
+				}
+			}
+		}
+		if (result.empty() && option == dependency_search_option::local)
+		{
+			search_in(dep, result, user_directories::get_local_data());
+		}
+		return result;
+	}
+
+	std::string environment::get_debugging_information()
+	{
+		std::ostringstream builder;
+		builder << "Operating System: Windows\n";
+		builder << "Deployment Mode: Local\n";
+		builder << "Locale: " << get_locale() << "\n";
+		builder << "Running From: " << get_executable_directory().string() << "\n";
+		return builder.str();
+	}
+
+	deployment_mode environment::get_deployment_mode()
+	{
+		return deployment_mode::local;
+	}
+
+	std::filesystem::path environment::get_executable_directory()
+	{
+		return get_executable_path().parent_path();
+	}
+
+	std::filesystem::path environment::get_executable_path()
+	{
+		std::array<wchar_t, MAX_PATH> path{};
+		DWORD len{ GetModuleFileNameW(nullptr, path.data(), MAX_PATH) };
+		if (len > 0)
+		{
+			return std::filesystem::path{ std::wstring(path.data(), len) };
+		}
+		return {};
+	}
+
+	std::string environment::get_locale()
+	{
+		LCID lcid{ GetThreadLocale() };
+		std::array<wchar_t, LOCALE_NAME_MAX_LENGTH> name{};
+		if (LCIDToLocaleName(lcid, name.data(), LOCALE_NAME_MAX_LENGTH, 0) > 0)
+		{
+			return string_manip::str(std::wstring(name.data()));
+		}
+		return {};
+	}
+
+	std::vector<std::filesystem::path> environment::get_path_variable()
+	{
+		std::string env{ get_variable("PATH") };
+		if (!env.empty())
+		{
+			return string_manip::split<std::filesystem::path>(env, ';');
+		}
+		return {};
+	}
+
+	bool environment::clear_variable(const std::string& name)
+	{
+		return _putenv_s(name.c_str(), "") == 0;
+	}
+
+	std::string environment::get_variable(const std::string& name)
+	{
+		char* res{ std::getenv(name.c_str()) };
+		return res != nullptr ? std::string{ res } : std::string{};
+	}
+
+	bool environment::has_variable(const std::string& name)
+	{
+		return std::getenv(name.c_str()) != nullptr;
+	}
+
+	bool environment::set_variable(const std::string& name, const std::string& value)
+	{
+		return _putenv_s(name.c_str(), value.c_str()) == 0;
+	}
+
+	bool environment::test_variable(const std::string& name)
+	{
+		std::string value{ string_manip::lower(get_variable(name)) };
+		if (value.empty())
+		{
+			return false;
+		}
+		return value == "true" || value == "1" || value == "yes" || value == "on" || value == "t" || value == "y" || value == "enable" || value == "enabled";
+	}
+
+	std::string environment::get_last_system_error_message()
+	{
+		DWORD id{ GetLastError() };
+		if (id == 0)
+		{
+			return {};
+		}
+		LPSTR buffer{ nullptr };
+		size_t size{ FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, id,
+			                        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPSTR>(&buffer), 0, nullptr) };
+		std::string message{ buffer, size };
+		LocalFree(buffer);
+		return message;
+	}
+}

@@ -1,0 +1,71 @@
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [ "review_requested", "ready_for_review" ]
+  workflow_dispatch:
+name: Linux
+permissions:
+  contents: read
+env:
+  GITHUB_ACTIONS: true
+  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+jobs:
+  build:
+    name: "Build on Linux"
+    strategy:
+      matrix:
+        variant:
+          - arch: x64
+            runner: ubuntu-latest
+            triplet: x64-linux
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            triplet: arm64-linux
+    runs-on: ${{ matrix.variant.runner }}
+    steps:
+      - name: "Checkout"  
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: "Setup Environment"
+        run: |
+          mkdir build
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 
+          sudo apt-get install xdg-user-dirs xdg-user-dirs-gtk gettext tzdata locales libsqlcipher-dev -y
+          brew install gcc@15 cmake
+          xdg-user-dirs-update
+          xdg-user-dirs-gtk-update
+          sudo locale-gen en_US.UTF-8
+          sudo update-locale LANG=en_US.UTF-8
+          sudo update-alternatives --install /usr/bin/gcc gcc /home/linuxbrew/.linuxbrew/bin/gcc-15 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /home/linuxbrew/.linuxbrew/bin/g++-15 100
+          sudo update-alternatives --install /usr/bin/cmake cmake /home/linuxbrew/.linuxbrew/bin/cmake 100
+      - name: "Unlock Keyring"
+        uses: t1m0thyj/unlock-keyring@v1
+      - name: "Vcpkg"
+        uses: johnwason/vcpkg-action@v7
+        id: vcpkg
+        with:
+          pkgs: curl gettext-libintl glib gtest libarchive libsecret maddy nlohmann_json openssl
+          triplet: ${{ matrix.variant.triplet }}
+          revision: 432412eecac55981cf608cc12e5b4bd91768ec57
+          token: ${{ github.token }}
+          cache-key: ${{ matrix.variant.triplet }}
+      - name: "Build"
+        working-directory: ${{github.workspace}}/build
+        run: |
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install -DCMAKE_CXX_STANDARD=20
+          cmake --build . --parallel
+      - name: "Install"
+        working-directory: ${{github.workspace}}/build
+        run: cmake --install .
+      - name: "Test"
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{github.workspace}}/install
+          name: Linux-${{ matrix.variant.arch }}-Release
