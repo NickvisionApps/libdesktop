@@ -10,7 +10,6 @@ permissions:
   contents: read
 env:
   GITHUB_ACTIONS: true
-  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 jobs:
   build:
     name: "Build on macOS"

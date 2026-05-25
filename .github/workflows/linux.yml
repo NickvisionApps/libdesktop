@@ -10,7 +10,6 @@ permissions:
   contents: read
 env:
   GITHUB_ACTIONS: true
-  VCPKG_ROOT: ${{ github.workspace }}/vcpkg
 jobs:
   build:
     name: "Build on Linux"
@@ -30,7 +29,7 @@ jobs:
       - name: "Setup Environment"
         run: |
           mkdir build
-          dnf install -y curl cmake dbus-daemon gcc gcc-c++ gettext-devel git glib2-devel gnome-keyring gtest-devel json-devel libarchive-devel libsecret libsecret-devel ninja-build openssl-devel pkgconfig
+          dnf install -y curl cmake dbus-x11 gcc gcc-c++ gettext-devel git glib2-devel gnome-keyring gtest-devel json-devel libarchive-devel libsecret libsecret-devel ninja-build openssl-devel pkgconfig
           git clone --branch 1.6.0 https://github.com/progsource/maddy /tmp/maddy
           cmake -S /tmp/maddy -B /tmp/maddy/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
           cmake --build /tmp/maddy/build
@@ -42,7 +41,7 @@ jobs:
       - name: "Unlock Keyring"
         run: |
           export $(dbus-launch)
-          echo "" | gnome-keyring-daemon --unlock --components=secrets
+          echo "" | gnome-keyring-daemon --unlock --components=secrets --no-lock-memory
           echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> $GITHUB_ENV
       - name: "Build"
         working-directory: ${{github.workspace}}/build
