@@ -40,8 +40,7 @@ jobs:
           submodules: recursive
       - name: "Unlock Keyring"
         run: |
-          dbus-launch --sh-syntax
-          echo "" | gnome-keyring-daemon --unlock
+          eval $(dbus-launch --sh-syntax) && echo "" | gnome-keyring-daemon --unlock
       - name: "Build"
         working-directory: ${{github.workspace}}/build
         run: |
