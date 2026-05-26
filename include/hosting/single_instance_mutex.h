@@ -21,7 +21,7 @@ namespace desktop::hosting
 	private:
 		class impl;
 		friend class impl;
-		std::string m_name;
 		std::unique_ptr<impl> m_impl;
+		std::string m_name;
 	};
 }

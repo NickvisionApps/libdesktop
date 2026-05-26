@@ -5,7 +5,6 @@
 #include <string>
 
 static std::mutex s_registry_mutex{};
-
 static std::set<std::string> s_locked_names{};
 
 namespace desktop::hosting
@@ -79,8 +78,8 @@ namespace desktop::hosting
 	}
 
 	single_instance_mutex::single_instance_mutex(std::string name)
-	    : m_name{ std::move(name) },
-	      m_impl{ std::make_unique<impl>(*this) }
+	    : m_impl{ std::make_unique<impl>(*this) },
+	      m_name{ std::move(name) }
 	{
 	}
 

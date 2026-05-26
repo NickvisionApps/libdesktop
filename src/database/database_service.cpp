@@ -507,10 +507,7 @@ namespace desktop::database
 				m_db = nullptr;
 				throw std::runtime_error("Unable to open sqlite database");
 			}
-			else
-			{
-				m_in_memory = true;
-			}
+			m_in_memory = true;
 		}
 		else if (!password.empty())
 		{
@@ -523,10 +520,7 @@ namespace desktop::database
 					m_db = nullptr;
 					throw std::runtime_error("Unable to open sqlite database");
 				}
-				else
-				{
-					m_in_memory = true;
-				}
+				m_in_memory = true;
 			}
 			else
 			{

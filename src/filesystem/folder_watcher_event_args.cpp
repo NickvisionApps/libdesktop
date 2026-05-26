@@ -4,7 +4,7 @@ namespace desktop::filesystem
 {
 	folder_watcher_event_args::folder_watcher_event_args(std::filesystem::path full_path, folder_watcher_change_flag change_flag)
 	    : m_full_path{ std::move(full_path) },
-	      m_name{ full_path.filename().string() },
+	      m_name{ m_full_path.filename().string() },
 	      m_change_flag{ change_flag }
 	{
 	}
