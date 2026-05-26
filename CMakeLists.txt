@@ -125,7 +125,6 @@ add_library(${PROJECT_NAME}
     "src/app/arguments_service.cpp"
     "src/app/configuration_saved_event_args.cpp"
     "src/app/configuration_service.cpp"
-    "src/app/ipc_service.cpp"
     "src/app/keyring_service.cpp"
     "src/app/logger.cpp"
     "src/app/translation_service.cpp"
@@ -160,6 +159,7 @@ add_library(${PROJECT_NAME}
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/app/ipc_service_windows.cpp"
         "src/filesystem/folder_watcher_windows.cpp"
         "src/filesystem/user_directories_windows.cpp"
         "src/hosting/single_instance_mutex_windows.cpp"
@@ -171,6 +171,7 @@ if(WIN32)
         "src/system/process_windows.cpp")
 elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/app/ipc_service_unix.cpp"
         "src/filesystem/folder_watcher_macos.cpp"
         "src/filesystem/user_directories_macos.cpp"
         "src/hosting/single_instance_mutex_unix.cpp"
@@ -182,6 +183,7 @@ elseif(APPLE)
         "src/system/process_unix.cpp")
 elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/app/ipc_service_unix.cpp"
         "src/filesystem/folder_watcher_linux.cpp"
         "src/filesystem/user_directories_linux.cpp"
         "src/hosting/single_instance_mutex_unix.cpp"
