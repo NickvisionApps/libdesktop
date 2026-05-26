@@ -8,6 +8,7 @@
 #include <thread>
 #include <tuple>
 #include "app/app_info.h"
+#include "single_instance_mutex.h"
 
 namespace desktop::hosting
 {
@@ -22,7 +23,7 @@ namespace desktop::hosting
 		std::chrono::seconds get_uptime() const;
 		void request_restart() noexcept;
 		void request_stop() noexcept;
-		std::exception_ptr run();
+		std::exception_ptr run(bool single_instance);
 		lifetime_service& operator=(const lifetime_service&) = delete;
 		lifetime_service& operator=(lifetime_service&&) = delete;
 
@@ -35,6 +36,7 @@ namespace desktop::hosting
 		void run_once();
 		mutable std::mutex m_mutex;
 		bool m_graphical;
+		single_instance_mutex m_single;
 		std::chrono::steady_clock::time_point m_start_time;
 		std::stop_source m_stop_source;
 		bool m_should_restart{ false };

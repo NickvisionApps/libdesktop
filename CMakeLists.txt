@@ -88,6 +88,7 @@ add_library(${PROJECT_NAME}
     "include/hosting/host.h"
     "include/hosting/host_options.h"
     "include/hosting/lifetime_service.h"
+    "include/hosting/single_instance_mutex.h"
     "include/network/download_progress.h"
     "include/network/http_response.h"
     "include/network/http_service.h"
@@ -159,6 +160,7 @@ if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/folder_watcher_windows.cpp"
         "src/filesystem/user_directories_windows.cpp"
+        "src/hosting/single_instance_mutex_windows.cpp"
         "src/network/network_monitor_windows.cpp"
         "src/notifications/notification_service_windows.cpp"
         "src/secrets/secret_service_windows.cpp"
@@ -169,6 +171,7 @@ elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/folder_watcher_macos.cpp"
         "src/filesystem/user_directories_macos.cpp"
+        "src/hosting/single_instance_mutex_unix.cpp"
         "src/network/network_monitor_macos.cpp"
         "src/notifications/notification_service_macos.cpp"
         "src/secrets/secret_service_macos.cpp"
@@ -179,6 +182,7 @@ elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
         "src/filesystem/folder_watcher_linux.cpp"
         "src/filesystem/user_directories_linux.cpp"
+        "src/hosting/single_instance_mutex_unix.cpp"
         "src/network/network_monitor_linux.cpp"
         "src/notifications/notification_service_linux.cpp"
         "src/secrets/secret_service_linux.cpp"

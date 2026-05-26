@@ -46,7 +46,7 @@ namespace desktop::hosting
 
 	std::exception_ptr host::run()
 	{
-		return m_services->get_required<lifetime_service>()->run();
+		return m_services->get_required<lifetime_service>()->run(m_options.is_single_instance());
 	}
 
 	void host::use_github_updates()

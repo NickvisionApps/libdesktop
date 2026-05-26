@@ -1,4 +1,5 @@
 #include <chrono>
+#include <future>
 #include <gtest/gtest.h>
 #include <libdesktop.h>
 #include <stdexcept>
@@ -24,11 +25,18 @@ public:
 	{
 		m_logger->info("Starting");
 	}
+
 	~console_lifetime_service() override = default;
+
+	std::promise<void>& get_running_promise()
+	{
+		return m_running;
+	}
 
 protected:
 	void on_startup_and_run() override
 	{
+		m_running.set_value();
 		m_logger->info("Running");
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		m_logger->info("Finishing");
@@ -45,6 +53,7 @@ protected:
 
 private:
 	std::shared_ptr<logger> m_logger;
+	std::promise<void> m_running;
 };
 
 class erroneous_lifetime_service : public lifetime_service
@@ -190,12 +199,54 @@ TEST(Hosting, Restarts)
 
 TEST(Hosting, Runs)
 {
-	host host{ info, std::span<char*>{} };
-	host.use_logging();
-	host.get_services()->add<lifetime_service, console_lifetime_service>(service_scope::singleton);
-	std::exception_ptr ptr;
-	ASSERT_NO_THROW(ptr = host.run());
-	ASSERT_FALSE(ptr);
+	host h1{ info, std::span<char*>{} };
+	h1.use_logging();
+	h1.get_services()->add<lifetime_service, console_lifetime_service>(service_scope::singleton);
+	host h2{ info, std::span<char*>{} };
+	h2.use_logging();
+	h2.get_services()->add<lifetime_service, console_lifetime_service>(service_scope::singleton);
+	std::exception_ptr ptr1;
+	std::exception_ptr ptr2;
+	std::thread t1{ [&ptr1, &h1]()
+	{
+		ptr1 = h1.run();
+	} };
+	std::thread t2{ [&ptr2, &h2]()
+	{
+		ptr2 = h2.run();
+	} };
+	ASSERT_NO_THROW(t1.join());
+	ASSERT_NO_THROW(t2.join());
+	ASSERT_FALSE(ptr1);
+	ASSERT_FALSE(ptr2);
+}
+
+TEST(Hosting, RunsSingle)
+{
+	host_options options{ info, std::span<char*>{} };
+	options.set_single_instance(true);
+	host h1{ options };
+	h1.use_logging();
+	h1.get_services()->add<lifetime_service, console_lifetime_service>(service_scope::singleton);
+	host h2{ options };
+	h2.use_logging();
+	h2.get_services()->add<lifetime_service, console_lifetime_service>(service_scope::singleton);
+	std::shared_ptr<console_lifetime_service> h1_lifetime{ std::static_pointer_cast<console_lifetime_service>(h1.get_services()->get<lifetime_service>()) };
+	std::exception_ptr ptr1;
+	std::exception_ptr ptr2;
+	std::thread t1{ [&ptr1, &h1]()
+	{
+		ptr1 = h1.run();
+	} };
+	h1_lifetime->get_running_promise().get_future().wait();
+	std::thread t2{ [&ptr2, &h2]()
+	{
+		ptr2 = h2.run();
+	} };
+	ASSERT_NO_THROW(t1.join());
+	ASSERT_NO_THROW(t2.join());
+	ASSERT_FALSE(ptr1);
+	ASSERT_TRUE(ptr2);
 }
 
 TEST(Hosting, Stops)
