@@ -3,6 +3,7 @@
 #include <windows.h>
 #endif
 #include "hosting/single_instance_mutex.h"
+#include "hosting/single_instance_running_error.h"
 
 using namespace desktop::app;
 
@@ -66,7 +67,7 @@ namespace desktop::hosting
 		{
 			if (!m_single.lock())
 			{
-				m_exception = std::make_exception_ptr(std::runtime_error("An instance of this single-instance application is already running"));
+				m_exception = std::make_exception_ptr(single_instance_running_error());
 				return m_exception;
 			}
 		}

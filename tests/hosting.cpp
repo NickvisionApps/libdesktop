@@ -247,6 +247,18 @@ TEST(Hosting, RunsSingle)
 	ASSERT_NO_THROW(t2.join());
 	ASSERT_FALSE(ptr1);
 	ASSERT_TRUE(ptr2);
+	try
+	{
+		std::rethrow_exception(ptr2);
+	}
+	catch (const single_instance_running_error& e)
+	{
+		ASSERT_TRUE(true);
+	}
+	catch (...)
+	{
+		ASSERT_TRUE(false);
+	}
 }
 
 TEST(Hosting, Stops)
