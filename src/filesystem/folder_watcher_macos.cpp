@@ -92,14 +92,15 @@ namespace desktop::filesystem
 		for (std::size_t i{ 0 }; i < num_events; ++i)
 		{
 			std::filesystem::path full_path{ paths[i] };
+			bool exists{ std::filesystem::exists(full_path) };
 			folder_watcher_change_flag flag{ folder_watcher_change_flag::modified };
-			if (flags[i] & kFSEventStreamEventFlagItemCreated)
-			{
-				flag = folder_watcher_change_flag::added;
-			}
-			else if (flags[i] & kFSEventStreamEventFlagItemRemoved)
+			if (!exists)
 			{
 				flag = folder_watcher_change_flag::removed;
+			}
+			else if (flags[i] & kFSEventStreamEventFlagItemCreated)
+			{
+				flag = folder_watcher_change_flag::added;
 			}
 			else if (flags[i] & kFSEventStreamEventFlagItemRenamed)
 			{

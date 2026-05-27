@@ -297,6 +297,7 @@ if (BUILD_TESTING)
     add_executable(${PROJECT_NAME}_tests
         "tests/environment.cpp"
         "tests/events.cpp"
+        "tests/folder_watcher.cpp"
         "tests/github_update_service.cpp"
         "tests/hash.cpp"
         "tests/hosting.cpp"

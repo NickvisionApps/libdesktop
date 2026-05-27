@@ -1,8 +1,6 @@
 #include "app/ipc_service.h"
 #include <windows.h>
 #include <array>
-#include <condition_variable>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -96,9 +94,9 @@ namespace desktop::app
 			return false;
 		}
 		DWORD written{ 0 };
-		bool ok{ static_cast<bool>(WriteFile(pipe, message.c_str(), static_cast<DWORD>(message.size()), &written, nullptr)) };
+		BOOL ok{ WriteFile(pipe, message.c_str(), static_cast<DWORD>(message.size()), &written, nullptr) };
 		CloseHandle(pipe);
-		return ok;
+		return ok != 0;
 	}
 
 	void ipc_service::impl::listen_loop()
@@ -135,16 +133,16 @@ namespace desktop::app
 			{
 				DWORD bytes{ 0 };
 				ResetEvent(overlapped.hEvent);
-				bool ok{ static_cast<bool>(ReadFile(m_pipe, buffer.data(), static_cast<DWORD>(buffer.size()), &bytes, &overlapped)) };
+				BOOL ok{ ReadFile(m_pipe, buffer.data(), static_cast<DWORD>(buffer.size()), &bytes, &overlapped) };
 				if (!ok && GetLastError() == ERROR_IO_PENDING)
 				{
-					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), , wait_handles.data(), FALSE, INFINITE) };
+					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), wait_handles.data(), FALSE, INFINITE) };
 					if (wait != WAIT_OBJECT_0)
 					{
 						CloseHandle(overlapped.hEvent);
 						return;
 					}
-					ok = static_cast<bool>(GetOverlappedResult(m_pipe, &overlapped, &bytes, FALSE));
+					ok = GetOverlappedResult(m_pipe, &overlapped, &bytes, FALSE);
 				}
 				if (!ok || bytes == 0)
 				{
