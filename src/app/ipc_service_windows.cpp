@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
-#include "helpers/string_manip.h"
 
 static constexpr DWORD s_buffer_size{ 4096 };
 
@@ -39,21 +38,32 @@ namespace desktop::app
 	ipc_service::impl::impl(ipc_service& owner)
 	    : m_owner{ owner }
 	{
-		std::wstring pipe_name{ string_manip::wstr("\\\\.\\pipe\\" + m_owner.m_app_info->get_id()) };
-		HANDLE pipe{ CreateNamedPipeW(pipe_name.c_str(), PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-			                          PIPE_UNLIMITED_INSTANCES, s_buffer_size, s_buffer_size, 0, nullptr) };
-		if (pipe != INVALID_HANDLE_VALUE)
+		std::string pipe_name{ "\\\\.\\pipe\\" + m_owner.m_app_info->get_id() };
+		HANDLE existing = CreateFileA(pipe_name.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+		if (existing != INVALID_HANDLE_VALUE)
 		{
-			m_host = true;
-			m_pipe = pipe;
-			m_terminate_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-			if (!m_terminate_event)
-			{
-				CloseHandle(m_pipe);
-				throw std::runtime_error("Unable to create terminate event");
-			}
-			m_thread = std::thread(&impl::listen_loop, this);
+			CloseHandle(existing);
+			return;
 		}
+		if (GetLastError() == ERROR_PIPE_BUSY)
+		{
+			return;
+		}
+		HANDLE pipe{ CreateNamedPipeA(pipe_name.c_str(), PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, 1,
+			                          s_buffer_size, s_buffer_size, 0, nullptr) };
+		if (pipe == INVALID_HANDLE_VALUE)
+		{
+			throw std::runtime_error("Unable to create pipe");
+		}
+		m_host = true;
+		m_pipe = pipe;
+		m_terminate_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		if (!m_terminate_event)
+		{
+			CloseHandle(m_pipe);
+			throw std::runtime_error("Unable to create terminate event");
+		}
+		m_thread = std::thread(&impl::listen_loop, this);
 	}
 
 	ipc_service::impl::~impl()
@@ -80,14 +90,12 @@ namespace desktop::app
 
 	bool ipc_service::impl::send_message(const std::string& message)
 	{
-		std::wstring pipe_name{ string_manip::wstr("\\\\.\\pipe\\" + m_owner.m_app_info->get_id()) };
-		HANDLE pipe{ CreateFileW(pipe_name.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr) };
+		std::string pipe_name{ "\\\\.\\pipe\\" + m_owner.m_app_info->get_id() };
+		HANDLE pipe{ CreateFileA(pipe_name.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr) };
 		if (pipe == INVALID_HANDLE_VALUE)
 		{
 			return false;
 		}
-		DWORD mode{ PIPE_READMODE_MESSAGE };
-		SetNamedPipeHandleState(pipe, &mode, nullptr, nullptr);
 		DWORD written{ 0 };
 		bool ok{ static_cast<bool>(WriteFile(pipe, message.c_str(), static_cast<DWORD>(message.size()), &written, nullptr)) };
 		CloseHandle(pipe);
@@ -107,20 +115,31 @@ namespace desktop::app
 		while (true)
 		{
 			ResetEvent(overlapped.hEvent);
-			ConnectNamedPipe(m_pipe, &overlapped);
-			DWORD wait{ WaitForMultipleObjects(2, wait_handles.data(), FALSE, INFINITE) };
-			if (wait != WAIT_OBJECT_0)
+			BOOL connected{ ConnectNamedPipe(m_pipe, &overlapped) };
+			if (!connected)
 			{
-				break;
+				DWORD error = GetLastError();
+				if (error == ERROR_IO_PENDING)
+				{
+					DWORD wait = WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), wait_handles.data(), FALSE, INFINITE);
+					if (wait != WAIT_OBJECT_0)
+					{
+						break;
+					}
+				}
+				else if (error != ERROR_PIPE_CONNECTED)
+				{
+					break;
+				}
 			}
-			DWORD bytes{ 0 };
 			while (true)
 			{
+				DWORD bytes{ 0 };
 				ResetEvent(overlapped.hEvent);
 				bool ok{ static_cast<bool>(ReadFile(m_pipe, buffer.data(), static_cast<DWORD>(buffer.size()), &bytes, &overlapped)) };
 				if (!ok && GetLastError() == ERROR_IO_PENDING)
 				{
-					wait = WaitForMultipleObjects(2, wait_handles.data(), FALSE, INFINITE);
+					wait = WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), , wait_handles.data(), FALSE, INFINITE);
 					if (wait != WAIT_OBJECT_0)
 					{
 						CloseHandle(overlapped.hEvent);

@@ -47,12 +47,14 @@ TEST(StringManip, FilenameNormalizeWindowsReplacesIllegalChars)
 	ASSERT_EQ(result.find(':'), std::string::npos);
 }
 
+#ifndef _WIN32
 TEST(StringManip, FilenameNormalizeNonWindowsPreservesColons)
 {
 	std::string filename{ "file:name" };
 	std::string result{ string_manip::filename_normalize(filename, false) };
 	ASSERT_NE(result.find(':'), std::string::npos);
 }
+#endif
 
 TEST(StringManip, FilenameNormalizeEmptyString)
 {

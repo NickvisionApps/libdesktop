@@ -295,6 +295,7 @@ if (BUILD_TESTING)
     include(GoogleTest)
 
     add_executable(${PROJECT_NAME}_tests
+        "tests/events.cpp"
         "tests/github_update_service.cpp"
         "tests/hash.cpp"
         "tests/hosting.cpp"
@@ -303,6 +304,7 @@ if (BUILD_TESTING)
         "tests/logger.cpp"
         "tests/main.cpp"
         "tests/network_monitor.cpp"
+        "tests/process.cpp"
         "tests/string_manip.cpp"
         "tests/user_directories.cpp"
         "tests/uuid.cpp")
