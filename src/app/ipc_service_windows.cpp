@@ -117,10 +117,10 @@ namespace desktop::app
 			BOOL connected{ ConnectNamedPipe(m_pipe, &overlapped) };
 			if (!connected)
 			{
-				DWORD error = GetLastError();
+				DWORD error{ GetLastError() };
 				if (error == ERROR_IO_PENDING)
 				{
-					DWORD wait = WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), wait_handles.data(), FALSE, INFINITE);
+					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), wait_handles.data(), FALSE, INFINITE) };
 					if (wait != WAIT_OBJECT_0)
 					{
 						break;
@@ -138,7 +138,7 @@ namespace desktop::app
 				bool ok{ static_cast<bool>(ReadFile(m_pipe, buffer.data(), static_cast<DWORD>(buffer.size()), &bytes, &overlapped)) };
 				if (!ok && GetLastError() == ERROR_IO_PENDING)
 				{
-					wait = WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), , wait_handles.data(), FALSE, INFINITE);
+					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), , wait_handles.data(), FALSE, INFINITE) };
 					if (wait != WAIT_OBJECT_0)
 					{
 						CloseHandle(overlapped.hEvent);

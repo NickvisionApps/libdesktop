@@ -305,6 +305,7 @@ if (BUILD_TESTING)
         "tests/logger.cpp"
         "tests/main.cpp"
         "tests/network_monitor.cpp"
+        "tests/power_service.cpp"
         "tests/process.cpp"
         "tests/string_manip.cpp"
         "tests/user_directories.cpp"
