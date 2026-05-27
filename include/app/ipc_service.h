@@ -13,7 +13,7 @@ namespace desktop::app
 	public:
 		using dependencies = std::tuple<app_info>;
 		ipc_service(std::shared_ptr<app_info> app_info);
-		~ipc_service() = default;
+		~ipc_service();
 		ipc_service(const ipc_service&) = delete;
 		ipc_service(ipc_service&&) = delete;
 		const events::event<ipc_service, events::param_event_args<std::string>>& get_message_received_event() const;

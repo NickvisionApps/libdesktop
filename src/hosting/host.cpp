@@ -54,8 +54,8 @@ namespace desktop::hosting
 		m_services->add<update_service, github_update_service>(service_scope::singleton);
 	}
 
-	void host::use_logging(app::log_type minimum)
+	void host::use_logging(app::log_type minimum, const std::filesystem::path& path)
 	{
-		m_services->add<logger>(service_scope::singleton, minimum, m_options.get_log_path());
+		m_services->add<logger>(service_scope::singleton, minimum, path);
 	}
 }

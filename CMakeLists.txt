@@ -296,11 +296,14 @@ if (BUILD_TESTING)
 
     add_executable(${PROJECT_NAME}_tests
         "tests/github_update_service.cpp"
+        "tests/hash.cpp"
         "tests/hosting.cpp"
         "tests/http_service.cpp"
+        "tests/ipc_service.cpp"
         "tests/logger.cpp"
         "tests/main.cpp"
         "tests/network_monitor.cpp"
+        "tests/string_manip.cpp"
         "tests/user_directories.cpp")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)

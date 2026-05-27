@@ -29,14 +29,4 @@ namespace desktop::hosting
 	{
 		m_single_instance = single;
 	}
-
-	const std::filesystem::path& host_options::get_log_path() const
-	{
-		return m_log_path;
-	}
-
-	void host_options::set_log_path(const std::filesystem::path& log_path)
-	{
-		m_log_path = log_path;
-	}
 }

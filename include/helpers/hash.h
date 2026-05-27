@@ -6,8 +6,8 @@
 
 namespace desktop::helpers::hash
 {
-	std::string sha256(const std::filesystem::path& file_path);
-	std::string sha256(std::string_view data);
-	std::string sha512(const std::filesystem::path& file_path);
-	std::string sha512(std::string_view data);
+	std::string sha256_from_file(const std::filesystem::path& file_path);
+	std::string sha256_from_string(std::string_view data);
+	std::string sha512_from_file(const std::filesystem::path& file_path);
+	std::string sha512_from_string(std::string_view data);
 }
