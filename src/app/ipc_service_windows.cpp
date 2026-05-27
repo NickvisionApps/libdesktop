@@ -10,7 +10,6 @@
 static constexpr DWORD s_buffer_size{ 4096 };
 
 using namespace desktop::events;
-using namespace desktop::helpers;
 
 namespace desktop::app
 {
