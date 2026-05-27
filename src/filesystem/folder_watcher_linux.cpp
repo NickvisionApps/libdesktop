@@ -1,6 +1,8 @@
 #include "filesystem/folder_watcher.h"
+#include <atomic>
 #include <climits>
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #include <stdexcept>
 #include <sys/inotify.h>
@@ -33,8 +35,8 @@ namespace desktop::filesystem
 		std::thread m_thread;
 		mutable std::mutex m_wait_mutex;
 		mutable std::condition_variable m_wait_cv;
+		mutable uint64_t m_seq{ 0 };
 		mutable folder_watcher_change_flag m_last_flag{ folder_watcher_change_flag::any };
-		mutable bool m_notified{ false };
 	};
 
 	folder_watcher::impl::impl(folder_watcher& owner)
@@ -82,15 +84,21 @@ namespace desktop::filesystem
 	void folder_watcher::impl::wait_for_change(folder_watcher_change_flag flag) const
 	{
 		std::unique_lock<std::mutex> lk{ m_wait_mutex };
+		uint64_t start_seq{ m_seq };
 		m_wait_cv.wait(lk, [&]
 		{
-			return m_notified && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
+			return m_seq != start_seq && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
 		});
-		m_notified = false;
 	}
 
 	void folder_watcher::impl::fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
 	{
+		{
+			std::scoped_lock lk{ m_wait_mutex };
+			m_last_flag = flag;
+			++m_seq;
+		}
+		m_wait_cv.notify_all();
 		folder_watcher_event_args args{ full_path, flag };
 		switch (flag)
 		{
@@ -107,12 +115,6 @@ namespace desktop::filesystem
 			break;
 		}
 		m_owner.m_changed_event.invoke(m_owner, args);
-		{
-			std::scoped_lock lk{ m_wait_mutex };
-			m_last_flag = flag;
-			m_notified = true;
-		}
-		m_wait_cv.notify_all();
 	}
 
 	void folder_watcher::impl::watch_loop()

@@ -101,49 +101,80 @@ namespace desktop::app
 
 	void ipc_service::impl::listen_loop()
 	{
-		OVERLAPPED overlapped{};
-		overlapped.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		if (!overlapped.hEvent)
+		HANDLE connect_event{ CreateEventW(nullptr, TRUE, FALSE, nullptr) };
+		if (!connect_event)
 		{
 			return;
 		}
-		std::array<HANDLE, 2> wait_handles{ overlapped.hEvent, m_terminate_event };
+		std::array<HANDLE, 2> connect_wait{ connect_event, m_terminate_event };
 		std::string buffer(s_buffer_size, '\0');
 		while (true)
 		{
-			ResetEvent(overlapped.hEvent);
-			BOOL connected{ ConnectNamedPipe(m_pipe, &overlapped) };
+			OVERLAPPED connect_ov{};
+			connect_ov.hEvent = connect_event;
+			ResetEvent(connect_event);
+			BOOL connected{ ConnectNamedPipe(m_pipe, &connect_ov) };
 			if (!connected)
 			{
-				DWORD error{ GetLastError() };
-				if (error == ERROR_IO_PENDING)
+				DWORD err{ GetLastError() };
+				if (err == ERROR_IO_PENDING)
 				{
-					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), wait_handles.data(), FALSE, INFINITE) };
+					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(connect_wait.size()), connect_wait.data(), FALSE, INFINITE) };
 					if (wait != WAIT_OBJECT_0)
 					{
+						CancelIoEx(m_pipe, &connect_ov);
 						break;
 					}
+					DWORD dummy{};
+					if (!GetOverlappedResult(m_pipe, &connect_ov, &dummy, FALSE))
+					{
+						DisconnectNamedPipe(m_pipe);
+						continue;
+					}
 				}
-				else if (error != ERROR_PIPE_CONNECTED)
+				else if (err != ERROR_PIPE_CONNECTED)
 				{
-					break;
+					DisconnectNamedPipe(m_pipe);
+					continue;
 				}
 			}
 			while (true)
 			{
-				DWORD bytes{ 0 };
-				ResetEvent(overlapped.hEvent);
-				BOOL ok{ ReadFile(m_pipe, buffer.data(), static_cast<DWORD>(buffer.size()), &bytes, &overlapped) };
-				if (!ok && GetLastError() == ERROR_IO_PENDING)
+				OVERLAPPED read_ov{};
+				read_ov.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+				if (!read_ov.hEvent)
 				{
-					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), wait_handles.data(), FALSE, INFINITE) };
-					if (wait != WAIT_OBJECT_0)
-					{
-						CloseHandle(overlapped.hEvent);
-						return;
-					}
-					ok = GetOverlappedResult(m_pipe, &overlapped, &bytes, FALSE);
+					break;
 				}
+				std::array<HANDLE, 2> read_wait{ read_ov.hEvent, m_terminate_event };
+				DWORD bytes{ 0 };
+				BOOL ok{ ReadFile(m_pipe, buffer.data(), static_cast<DWORD>(buffer.size()), nullptr, &read_ov) };
+				if (!ok)
+				{
+					DWORD err{ GetLastError() };
+					if (err == ERROR_IO_PENDING)
+					{
+						DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(read_wait.size()), read_wait.data(), FALSE, INFINITE) };
+						if (wait != WAIT_OBJECT_0)
+						{
+							CancelIoEx(m_pipe, &read_ov);
+							CloseHandle(read_ov.hEvent);
+							CloseHandle(connect_event);
+							return;
+						}
+						ok = GetOverlappedResult(m_pipe, &read_ov, &bytes, FALSE);
+					}
+					else
+					{
+						CloseHandle(read_ov.hEvent);
+						break;
+					}
+				}
+				else
+				{
+					GetOverlappedResult(m_pipe, &read_ov, &bytes, FALSE);
+				}
+				CloseHandle(read_ov.hEvent);
 				if (!ok || bytes == 0)
 				{
 					break;
@@ -152,7 +183,7 @@ namespace desktop::app
 			}
 			DisconnectNamedPipe(m_pipe);
 		}
-		CloseHandle(overlapped.hEvent);
+		CloseHandle(connect_event);
 	}
 
 	ipc_service::ipc_service(std::shared_ptr<app_info> app_info)

@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
@@ -47,8 +48,8 @@ namespace desktop::filesystem
 		std::thread m_thread;
 		mutable std::mutex m_wait_mutex;
 		mutable std::condition_variable m_wait_cv;
+		mutable uint64_t m_seq{ 0 };
 		mutable folder_watcher_change_flag m_last_flag{ folder_watcher_change_flag::any };
-		mutable bool m_notified{ false };
 	};
 
 	folder_watcher::impl::impl(folder_watcher& owner)
@@ -76,15 +77,21 @@ namespace desktop::filesystem
 	void folder_watcher::impl::wait_for_change(folder_watcher_change_flag flag) const
 	{
 		std::unique_lock<std::mutex> lk{ m_wait_mutex };
+		uint64_t start_seq{ m_seq };
 		m_wait_cv.wait(lk, [&]
 		{
-			return m_notified && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
+			return m_seq != start_seq && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
 		});
-		m_notified = false;
 	}
 
 	void folder_watcher::impl::fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
 	{
+		{
+			std::scoped_lock lk{ m_wait_mutex };
+			m_last_flag = flag;
+			++m_seq;
+		}
+		m_wait_cv.notify_all();
 		folder_watcher_event_args args{ full_path, flag };
 		switch (flag)
 		{
@@ -101,12 +108,6 @@ namespace desktop::filesystem
 			break;
 		}
 		m_owner.m_changed_event.invoke(m_owner, args);
-		{
-			std::scoped_lock lk{ m_wait_mutex };
-			m_last_flag = flag;
-			m_notified = true;
-		}
-		m_wait_cv.notify_all();
 	}
 
 	void folder_watcher::impl::watch_loop()
@@ -125,41 +126,45 @@ namespace desktop::filesystem
 			return;
 		}
 		std::vector<BYTE> buffer(1024 * 256);
-		DWORD bytes{ 0 };
-		bool pending{ false };
-		HANDLE wait_handles[2]{ overlapped.hEvent, m_terminate_event };
+		std::array<HANDLE, 2> wait_handles{ overlapped.hEvent, m_terminate_event };
 		while (true)
 		{
-			pending = ReadDirectoryChangesW(folder, buffer.data(), static_cast<DWORD>(buffer.size()), FALSE,
-			                                FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES |
-			                                    FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS,
-			                                &bytes, &overlapped, nullptr);
-			if (WaitForMultipleObjects(2, wait_handles, FALSE, INFINITE) != WAIT_OBJECT_0)
-			{
-				break;
-			}
-			if (!GetOverlappedResult(folder, &overlapped, &bytes, TRUE) || bytes == 0)
-			{
-				break;
-			}
-			pending = false;
 			ResetEvent(overlapped.hEvent);
-			FILE_NOTIFY_INFORMATION* info{ reinterpret_cast<FILE_NOTIFY_INFORMATION*>(buffer.data()) };
+			DWORD bytes{ 0 };
+			BOOL ok{ ReadDirectoryChangesW(folder, buffer.data(), static_cast<DWORD>(buffer.size()), FALSE,
+				                           FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES |
+				                               FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS,
+				                           nullptr, &overlapped, nullptr) };
+			if (!ok)
+			{
+				break;
+			}
+			DWORD wait_result{ WaitForMultipleObjects(2, wait_handles.data(), FALSE, INFINITE) };
+			if (wait_result == WAIT_OBJECT_0 + 1)
+			{
+				CancelIoEx(folder, &overlapped);
+				break;
+			}
+			if (wait_result != WAIT_OBJECT_0)
+			{
+				break;
+			}
+			if (!GetOverlappedResult(folder, &overlapped, &bytes, FALSE) || bytes == 0)
+			{
+				continue;
+			}
+			BYTE* ptr{ buffer.data() };
 			while (true)
 			{
+				FILE_NOTIFY_INFORMATION* info{ reinterpret_cast<FILE_NOTIFY_INFORMATION*>(ptr) };
 				std::wstring rel{ info->FileName, info->FileNameLength / sizeof(WCHAR) };
 				fire(m_owner.m_path / rel, action_to_flag(info->Action));
 				if (info->NextEntryOffset == 0)
 				{
 					break;
 				}
-				info = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(reinterpret_cast<BYTE*>(info) + info->NextEntryOffset);
+				ptr += info->NextEntryOffset;
 			}
-		}
-		if (pending)
-		{
-			CancelIo(folder);
-			GetOverlappedResult(folder, &overlapped, &bytes, TRUE);
 		}
 		CloseHandle(overlapped.hEvent);
 		CloseHandle(folder);

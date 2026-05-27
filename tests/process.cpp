@@ -259,8 +259,8 @@ TEST(Process, StdinOutput)
 {
 	process p{ passthrough_exe, passthrough_args };
 	p.start();
-	p.write_line("ping");
-	std::this_thread::sleep_for(std::chrono::milliseconds(200));
+	ASSERT_TRUE(p.write_line("ping"));
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	p.kill();
 	p.wait_for_exit();
 	ASSERT_NE(p.get_standard_output().find("ping"), std::string::npos);

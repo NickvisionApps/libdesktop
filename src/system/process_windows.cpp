@@ -297,6 +297,7 @@ namespace desktop::system
 		{
 			return false;
 		}
+		close_handle(m_stdin_write);
 		if (TerminateJobObject(m_job, 1) == FALSE)
 		{
 			return false;
@@ -425,6 +426,7 @@ namespace desktop::system
 				return -1;
 			}
 		}
+		close_handle(m_stdin_write);
 		if (m_watch_thread.joinable())
 		{
 			m_watch_thread.join();
