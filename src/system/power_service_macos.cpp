@@ -1,7 +1,19 @@
 #include "system/power_service.h"
+#include <IOKit/pwr_mgt/IOPMLib.h>
 
 namespace desktop::system
 {
+	class power_service::state
+	{
+	public:
+		IOPMAssertionID cookie{ kIOPMNullAssertionID };
+	};
+
+	power_service::power_service()
+	    : m_state{ std::make_unique<state>() }
+	{
+	}
+
 	power_service::~power_service()
 	{
 		allow_suspend();
@@ -20,11 +32,11 @@ namespace desktop::system
 		{
 			return true;
 		}
-		if (IOPMAssertionRelease(m_cookie) != kIOReturnSuccess)
+		if (IOPMAssertionRelease(m_state->cookie) != kIOReturnSuccess)
 		{
 			return false;
 		}
-		m_cookie = kIOPMNullAssertionID;
+		m_state->cookie = kIOPMNullAssertionID;
 		m_suspended = false;
 		return true;
 	}
@@ -36,7 +48,7 @@ namespace desktop::system
 		{
 			return true;
 		}
-		if (IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep, kIOPMAssertionLevelOn, CFSTR("Preventing suspend"), &m_cookie) !=
+		if (IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep, kIOPMAssertionLevelOn, CFSTR("Preventing suspend"), &m_state->cookie) !=
 		    kIOReturnSuccess)
 		{
 			return false;

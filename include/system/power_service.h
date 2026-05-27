@@ -1,16 +1,13 @@
 #pragma once
 
 #include <mutex>
-#ifdef __APPLE__
-#include <IOKit/pwr_mgt/IOPMLib.h>
-#endif
 
 namespace desktop::system
 {
 	class power_service
 	{
 	public:
-		power_service() = default;
+		power_service();
 		~power_service();
 		power_service(const power_service&) = delete;
 		power_service(power_service&&) = delete;
@@ -21,12 +18,10 @@ namespace desktop::system
 		power_service& operator=(power_service&&) = delete;
 
 	private:
+		class state;
+		friend class state;
 		mutable std::mutex m_mutex;
+		std::unique_ptr<state> m_state{ nullptr };
 		bool m_suspended{ false };
-#ifdef __linux__
-		unsigned int m_cookie{ 0 };
-#elif defined(__APPLE__)
-		IOPMAssertionID m_cookie{ kIOPMNullAssertionID };
-#endif
 	};
 }

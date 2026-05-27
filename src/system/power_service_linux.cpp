@@ -3,6 +3,17 @@
 
 namespace desktop::system
 {
+	class power_service::state
+	{
+	public:
+		unsigned int cookie{ 0 };
+	};
+
+	power_service::power_service()
+	    : m_state{ std::make_unique<state>() }
+	{
+	}
+
 	power_service::~power_service()
 	{
 		allow_suspend();
@@ -29,7 +40,7 @@ namespace desktop::system
 			g_error_free(error);
 			return false;
 		}
-		GVariant* result{ g_dbus_proxy_call_sync(proxy, "UnInhibit", g_variant_new("(u)", m_cookie), G_DBUS_CALL_FLAGS_NONE, -1, nullptr, &error) };
+		GVariant* result{ g_dbus_proxy_call_sync(proxy, "UnInhibit", g_variant_new("(u)", m_state->cookie), G_DBUS_CALL_FLAGS_NONE, -1, nullptr, &error) };
 		if (error)
 		{
 			g_error_free(error);
@@ -38,7 +49,7 @@ namespace desktop::system
 		}
 		g_variant_unref(result);
 		g_object_unref(proxy);
-		m_cookie = 0;
+		m_state->cookie = 0;
 		m_suspended = false;
 		return true;
 	}
@@ -66,7 +77,7 @@ namespace desktop::system
 			g_object_unref(proxy);
 			return false;
 		}
-		g_variant_get(result, "(u)", &m_cookie);
+		g_variant_get(result, "(u)", &m_state->cookie);
 		g_variant_unref(result);
 		g_object_unref(proxy);
 		m_suspended = true;
