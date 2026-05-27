@@ -2,6 +2,8 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
 #include <condition_variable>
+#include <cstdint>
+#include <dispatch/dispatch.h>
 #include <mutex>
 #include <span>
 #include <stdexcept>
@@ -20,16 +22,16 @@ namespace desktop::filesystem
 		void wait_for_change(folder_watcher_change_flag flag) const;
 
 	private:
-		static void fs_callback(ConstFSEventStreamRef, void* client_info, std::size_t num_events, void* event_paths,
-		                        const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId[]) noexcept;
+		static void fs_callback(ConstFSEventStreamRef stream_ref, void* client_info, std::size_t num_events, void* event_paths,
+		                        const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId event_ids[]) noexcept;
 		void fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag);
 		folder_watcher& m_owner;
 		FSEventStreamRef m_stream{ nullptr };
 		dispatch_queue_t m_queue{ nullptr };
 		mutable std::mutex m_wait_mutex;
 		mutable std::condition_variable m_wait_cv;
+		mutable uint64_t m_seq{ 0 };
 		mutable folder_watcher_change_flag m_last_flag{ folder_watcher_change_flag::any };
-		mutable bool m_notified{ false };
 	};
 
 	folder_watcher::impl::impl(folder_watcher& owner)
@@ -57,44 +59,63 @@ namespace desktop::filesystem
 			throw std::runtime_error("Unable to initialize filesystem event");
 		}
 		m_queue = dispatch_queue_create("desktop.filesystem.folder_watcher", DISPATCH_QUEUE_SERIAL);
+		if (!m_queue)
+		{
+			FSEventStreamInvalidate(m_stream);
+			FSEventStreamRelease(m_stream);
+			throw std::runtime_error("Unable to create dispatch queue");
+		}
 		FSEventStreamSetDispatchQueue(m_stream, m_queue);
-		FSEventStreamStart(m_stream);
+		if (!FSEventStreamStart(m_stream))
+		{
+			FSEventStreamSetDispatchQueue(m_stream, nullptr);
+			FSEventStreamInvalidate(m_stream);
+			FSEventStreamRelease(m_stream);
+#if !OS_OBJECT_USE_OBJC
+			dispatch_release(m_queue);
+#endif
+			throw std::runtime_error("Unable to start filesystem event stream");
+		}
 	}
 
 	folder_watcher::impl::~impl()
 	{
-		FSEventStreamStop(m_stream);
-		FSEventStreamSetDispatchQueue(m_stream, nullptr);
-		FSEventStreamInvalidate(m_stream);
-		FSEventStreamRelease(m_stream);
+		if (m_stream)
+		{
+			FSEventStreamStop(m_stream);
+			FSEventStreamSetDispatchQueue(m_stream, nullptr);
+			FSEventStreamInvalidate(m_stream);
+			FSEventStreamRelease(m_stream);
+		}
+#if !OS_OBJECT_USE_OBJC
 		if (m_queue)
 		{
 			dispatch_release(m_queue);
 		}
+#endif
 	}
 
 	void folder_watcher::impl::wait_for_change(folder_watcher_change_flag flag) const
 	{
 		std::unique_lock<std::mutex> lk{ m_wait_mutex };
+		uint64_t start_seq{ m_seq };
 		m_wait_cv.wait(lk, [&]
 		{
-			return m_notified && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
+			return m_seq != start_seq && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
 		});
-		m_notified = false;
 	}
 
 	void folder_watcher::impl::fs_callback(ConstFSEventStreamRef, void* client_info, std::size_t num_events, void* event_paths,
 	                                       const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId[]) noexcept
 	{
 		impl* self{ static_cast<impl*>(client_info) };
-		std::span<char*> paths{ std::span<char*>{ static_cast<char**>(event_paths), num_events } };
-		std::span<const FSEventStreamEventFlags> flags{ std::span<const FSEventStreamEventFlags>{ event_flags, num_events } };
+		std::span<char*> paths{ static_cast<char**>(event_paths), num_events };
+		std::span<const FSEventStreamEventFlags> flags{ event_flags, num_events };
 		for (std::size_t i{ 0 }; i < num_events; ++i)
 		{
 			std::filesystem::path full_path{ paths[i] };
-			bool exists{ std::filesystem::exists(full_path) };
 			folder_watcher_change_flag flag{ folder_watcher_change_flag::modified };
-			if (!exists)
+			if (!std::filesystem::exists(full_path))
 			{
 				flag = folder_watcher_change_flag::removed;
 			}
@@ -106,12 +127,22 @@ namespace desktop::filesystem
 			{
 				flag = folder_watcher_change_flag::renamed;
 			}
+			else if (flags[i] & kFSEventStreamEventFlagItemModified)
+			{
+				flag = folder_watcher_change_flag::modified;
+			}
 			self->fire(full_path, flag);
 		}
 	}
 
 	void folder_watcher::impl::fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
 	{
+		{
+			std::scoped_lock lk{ m_wait_mutex };
+			m_last_flag = flag;
+			++m_seq;
+		}
+		m_wait_cv.notify_all();
 		folder_watcher_event_args args{ full_path, flag };
 		switch (flag)
 		{
@@ -128,12 +159,6 @@ namespace desktop::filesystem
 			break;
 		}
 		m_owner.m_changed_event.invoke(m_owner, args);
-		{
-			std::scoped_lock lk{ m_wait_mutex };
-			m_last_flag = flag;
-			m_notified = true;
-		}
-		m_wait_cv.notify_all();
 	}
 
 	folder_watcher::folder_watcher(std::filesystem::path path)
