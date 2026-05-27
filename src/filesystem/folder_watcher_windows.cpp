@@ -1,5 +1,6 @@
 #include "filesystem/folder_watcher.h"
 #include <windows.h>
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
