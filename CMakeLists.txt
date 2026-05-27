@@ -304,7 +304,8 @@ if (BUILD_TESTING)
         "tests/main.cpp"
         "tests/network_monitor.cpp"
         "tests/string_manip.cpp"
-        "tests/user_directories.cpp")
+        "tests/user_directories.cpp"
+        "tests/uuid.cpp")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)
 
