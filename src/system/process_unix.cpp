@@ -21,6 +21,30 @@ static void close_fd(int& fd) noexcept
 	}
 }
 
+static std::string read_available(int fd, std::string& buffer)
+{
+	std::size_t old_size{ buffer.size() };
+	std::array<char, 4096> chunk{};
+	while (true)
+	{
+		ssize_t bytes{ ::read(fd, chunk.data(), chunk.size()) };
+		if (bytes > 0)
+		{
+			buffer.append(chunk.data(), static_cast<std::size_t>(bytes));
+			continue;
+		}
+		if (bytes == 0 || errno == EAGAIN || errno == EWOULDBLOCK)
+		{
+			break;
+		}
+		if (errno != EINTR)
+		{
+			break;
+		}
+	}
+	return buffer.substr(old_size);
+}
+
 static bool send_signal(pid_t pid, int signal)
 {
 	bool delivered{ false };
@@ -43,335 +67,37 @@ static bool send_signal(pid_t pid, int signal)
 	return delivered;
 }
 
-static void set_nonblocking(int fd)
-{
-	int flags{ fcntl(fd, F_GETFL, 0) };
-	if (flags < 0)
-	{
-		return;
-	}
-	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
-
 namespace desktop::system
 {
-	class process::impl
+	class process::state
 	{
 	public:
-		impl(process& process);
-		~impl();
-		impl(const impl&) = delete;
-		impl(impl&&) = delete;
-		impl& operator=(const impl&) = delete;
-		impl& operator=(impl&&) = delete;
-		int get_exit_code() const;
-		const std::string& get_standard_error() const;
-		const std::string& get_standard_output() const;
-		process_status get_status() const;
-		bool input(std::string_view data) const;
-		bool kill();
-		bool pause();
-		bool resume();
-		bool start();
-		int wait_for_exit();
-
-	private:
-		mutable std::mutex m_mutex;
-		process& m_process;
-		process_status m_status{ process_status::created };
-		int m_exit_code{ -1 };
-		std::string m_standard_output;
-		std::string m_standard_error;
-		std::thread m_watch_thread;
-		pid_t m_pid{ -1 };
-		std::array<int, 2> m_stdout_pipe{ -1, -1 };
-		std::array<int, 2> m_stderr_pipe{ -1, -1 };
-		std::array<int, 2> m_stdin_pipe{ -1, -1 };
-		void cleanup() noexcept;
-		std::string read_available(int fd, std::string& buffer);
-		void watch() noexcept;
+		pid_t pid{ -1 };
+		std::array<int, 2> stdout_pipe{ -1, -1 };
+		std::array<int, 2> stderr_pipe{ -1, -1 };
+		std::array<int, 2> stdin_pipe{ -1, -1 };
 	};
 
-	process::impl::impl(process& process)
-	    : m_process{ process }
-	{
-	}
-
-	process::impl::~impl()
-	{
-		if (m_watch_thread.joinable())
-		{
-			m_watch_thread.join();
-		}
-		cleanup();
-	}
-
-	void process::impl::cleanup() noexcept
-	{
-		close_fd(m_stdout_pipe[0]);
-		close_fd(m_stdout_pipe[1]);
-		close_fd(m_stderr_pipe[0]);
-		close_fd(m_stderr_pipe[1]);
-		close_fd(m_stdin_pipe[0]);
-		close_fd(m_stdin_pipe[1]);
-	}
-
-	int process::impl::get_exit_code() const
-	{
-		std::scoped_lock lock{ m_mutex };
-		return m_exit_code;
-	}
-
-	const std::string& process::impl::get_standard_error() const
-	{
-		std::scoped_lock lock{ m_mutex };
-		return m_standard_error;
-	}
-
-	const std::string& process::impl::get_standard_output() const
-	{
-		std::scoped_lock lock{ m_mutex };
-		return m_standard_output;
-	}
-
-	process_status process::impl::get_status() const
-	{
-		std::scoped_lock lock{ m_mutex };
-		return m_status;
-	}
-
-	bool process::impl::input(std::string_view data) const
-	{
-		int fd{ -1 };
-		{
-			std::scoped_lock lock{ m_mutex };
-			if (m_status != process_status::running)
-			{
-				return false;
-			}
-			fd = m_stdin_pipe[1];
-		}
-		const char* p{ data.data() };
-		std::size_t remaining{ data.size() };
-		while (remaining > 0)
-		{
-			ssize_t written{ ::write(fd, p, remaining) };
-			if (written < 0)
-			{
-				if (errno == EINTR)
-				{
-					continue;
-				}
-				return false;
-			}
-			p += written;
-			remaining -= static_cast<std::size_t>(written);
-		}
-		return true;
-	}
-
-	bool process::impl::kill()
-	{
-		std::scoped_lock lock{ m_mutex };
-		if (m_status == process_status::created || m_status == process_status::completed || m_status == process_status::killed)
-		{
-			return false;
-		}
-		if (m_pid <= 0)
-		{
-			return false;
-		}
-		if (!send_signal(m_pid, SIGTERM))
-		{
-			return false;
-		}
-		m_status = process_status::killed;
-		return true;
-	}
-
-	bool process::impl::pause()
-	{
-		std::scoped_lock lock{ m_mutex };
-		if (m_status != process_status::running)
-		{
-			return false;
-		}
-		if (m_pid <= 0)
-		{
-			return false;
-		}
-		if (!send_signal(m_pid, SIGSTOP))
-		{
-			return false;
-		}
-		m_status = process_status::paused;
-		return true;
-	}
-
-	bool process::impl::resume()
-	{
-		std::scoped_lock lock{ m_mutex };
-		if (m_status != process_status::paused)
-		{
-			return false;
-		}
-		if (m_pid <= 0)
-		{
-			return false;
-		}
-		if (!send_signal(m_pid, SIGCONT))
-		{
-			return false;
-		}
-		m_status = process_status::running;
-		return true;
-	}
-
-	std::string process::impl::read_available(int fd, std::string& buffer)
-	{
-		std::size_t old_size{ buffer.size() };
-		std::array<char, 4096> chunk{};
-		while (true)
-		{
-			ssize_t bytes{ ::read(fd, chunk.data(), chunk.size()) };
-			if (bytes > 0)
-			{
-				std::scoped_lock lock{ m_mutex };
-				buffer.append(chunk.data(), static_cast<std::size_t>(bytes));
-				continue;
-			}
-			if (bytes == 0 || errno == EAGAIN || errno == EWOULDBLOCK)
-			{
-				break;
-			}
-			if (errno != EINTR)
-			{
-				break;
-			}
-		}
-		return buffer.substr(old_size);
-	}
-
-	bool process::impl::start()
-	{
-		std::scoped_lock lock{ m_mutex };
-		if (m_status != process_status::created)
-		{
-			return false;
-		}
-		if (!m_process.m_working_directory.empty() &&
-		    (!std::filesystem::exists(m_process.m_working_directory) || !std::filesystem::is_directory(m_process.m_working_directory)))
-		{
-			return false;
-		}
-		if (pipe(m_stdout_pipe.data()) < 0 || pipe(m_stderr_pipe.data()) < 0 || pipe(m_stdin_pipe.data()) < 0)
-		{
-			cleanup();
-			return false;
-		}
-		m_pid = fork();
-		if (m_pid < 0)
-		{
-			cleanup();
-			return false;
-		}
-		if (m_pid == 0)
-		{
-			setpgid(0, 0);
-			dup2(m_stdout_pipe[1], STDOUT_FILENO);
-			dup2(m_stderr_pipe[1], STDERR_FILENO);
-			dup2(m_stdin_pipe[0], STDIN_FILENO);
-			cleanup();
-			if (!m_process.m_working_directory.empty())
-			{
-				chdir(m_process.m_working_directory.string().c_str());
-			}
-			std::vector<std::string> args{ m_process.m_arguments };
-			std::vector<char*> argv;
-			argv.reserve(args.size() + 2);
-			std::string exe{ m_process.m_path.string() };
-			argv.push_back(exe.data());
-			for (auto& a : args)
-			{
-				argv.push_back(a.data());
-			}
-			argv.push_back(nullptr);
-			execvp(m_process.m_path.string().c_str(), argv.data());
-			_exit(127);
-		}
-		setpgid(m_pid, m_pid);
-		close_fd(m_stdout_pipe[1]);
-		close_fd(m_stderr_pipe[1]);
-		close_fd(m_stdin_pipe[0]);
-		set_nonblocking(m_stdout_pipe[0]);
-		set_nonblocking(m_stderr_pipe[0]);
-		m_status = process_status::running;
-		m_exit_code = -1;
-		m_standard_output.clear();
-		m_standard_error.clear();
-		m_watch_thread = std::thread(&impl::watch, this);
-		return true;
-	}
-
-	int process::impl::wait_for_exit()
-	{
-		{
-			std::scoped_lock lock{ m_mutex };
-			if (m_status == process_status::created)
-			{
-				return -1;
-			}
-		}
-		if (m_watch_thread.joinable())
-		{
-			m_watch_thread.join();
-		}
-		std::scoped_lock lock{ m_mutex };
-		return m_exit_code;
-	}
-
-	void process::impl::watch() noexcept
-	{
-		int status_value{ 0 };
-		bool exited{ false };
-		while (!exited)
-		{
-			pid_t r{ waitpid(m_pid, &status_value, WNOHANG | WUNTRACED | WCONTINUED) };
-			if (r == m_pid)
-			{
-				std::scoped_lock lock{ m_mutex };
-				if (WIFEXITED(status_value) || WIFSIGNALED(status_value))
-				{
-					exited = true;
-				}
-			}
-			m_process.m_output_received_event.invoke(m_process, { read_available(m_stdout_pipe[0], m_standard_output) });
-			m_process.m_error_received_event.invoke(m_process, { read_available(m_stderr_pipe[0], m_standard_error) });
-			if (!exited)
-			{
-				std::this_thread::sleep_for(process_wait_timeout);
-			}
-		}
-		waitpid(m_pid, &status_value, 0);
-		{
-			std::scoped_lock lock{ m_mutex };
-			m_exit_code = WIFEXITED(status_value) ? WEXITSTATUS(status_value) : -1;
-			if (m_status != process_status::killed)
-			{
-				m_status = process_status::completed;
-			}
-		}
-		m_process.m_exited_event.invoke(m_process, { m_exit_code });
-	}
-
 	process::process(std::filesystem::path path, std::vector<std::string> arguments)
-	    : m_impl{ std::make_unique<impl>(*this) },
+	    : m_state{ std::make_unique<state>() },
 	      m_path{ std::move(path) },
 	      m_arguments{ std::move(arguments) }
 	{
 	}
 
-	process::~process() = default;
+	process::~process()
+	{
+		if (m_watcher.joinable())
+		{
+			m_watcher.join();
+		}
+		close_fd(m_state->stdout_pipe[0]);
+		close_fd(m_state->stdout_pipe[1]);
+		close_fd(m_state->stderr_pipe[0]);
+		close_fd(m_state->stderr_pipe[1]);
+		close_fd(m_state->stdin_pipe[0]);
+		close_fd(m_state->stdin_pipe[1]);
+	}
 
 	const events::event<process, events::param_event_args<int>>& process::get_exited_event() const
 	{
@@ -395,7 +121,8 @@ namespace desktop::system
 
 	int process::get_exit_code() const
 	{
-		return m_impl->get_exit_code();
+		std::scoped_lock lock{ m_mutex };
+		return m_exit_code;
 	}
 
 	const std::filesystem::path& process::get_path() const
@@ -403,24 +130,28 @@ namespace desktop::system
 		return m_path;
 	}
 
-	const std::string& process::get_standard_error() const
+	std::string process::get_standard_error() const
 	{
-		return m_impl->get_standard_error();
+		std::scoped_lock lock{ m_mutex };
+		return m_standard_error;
 	}
 
-	const std::string& process::get_standard_output() const
+	std::string process::get_standard_output() const
 	{
-		return m_impl->get_standard_output();
+		std::scoped_lock lock{ m_mutex };
+		return m_standard_output;
 	}
 
 	process_result process::get_result() const
 	{
-		return { m_impl->get_standard_output(), m_impl->get_standard_error(), m_impl->get_exit_code() };
+		std::scoped_lock lock{ m_mutex };
+		return { m_standard_output, m_standard_error, m_exit_code };
 	}
 
 	process_status process::get_status() const
 	{
-		return m_impl->get_status();
+		std::scoped_lock lock{ m_mutex };
+		return m_status;
 	}
 
 	const std::filesystem::path& process::get_working_directory() const
@@ -430,32 +161,99 @@ namespace desktop::system
 
 	bool process::write(std::string_view data) const
 	{
-		return m_impl->input(data);
+		std::unique_lock lock{ m_mutex };
+		int fd{ -1 };
+		if (m_status != process_status::running)
+		{
+			return false;
+		}
+		fd = m_state->stdin_pipe[1];
+		lock.unlock();
+		const char* p{ data.data() };
+		std::size_t remaining{ data.size() };
+		while (remaining > 0)
+		{
+			ssize_t written{ ::write(fd, p, remaining) };
+			if (written < 0)
+			{
+				if (errno == EINTR)
+				{
+					continue;
+				}
+				return false;
+			}
+			p += written;
+			remaining -= static_cast<std::size_t>(written);
+		}
+		return true;
 	}
 
 	bool process::write_line(const std::string& data) const
 	{
-		return m_impl->input(data + "\n");
+		return write(data + "\n");
 	}
 
 	bool process::kill()
 	{
-		return m_impl->kill();
+		std::scoped_lock lock{ m_mutex };
+		if (m_status == process_status::created || m_status == process_status::completed || m_status == process_status::killed)
+		{
+			return false;
+		}
+		if (m_state->pid <= 0)
+		{
+			return false;
+		}
+		if (!send_signal(m_state->pid, SIGTERM))
+		{
+			return false;
+		}
+		m_status = process_status::killed;
+		return true;
 	}
 
 	bool process::pause()
 	{
-		return m_impl->pause();
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::running)
+		{
+			return false;
+		}
+		if (m_state->pid <= 0)
+		{
+			return false;
+		}
+		if (!send_signal(m_state->pid, SIGSTOP))
+		{
+			return false;
+		}
+		m_status = process_status::paused;
+		return true;
 	}
 
 	bool process::resume()
 	{
-		return m_impl->resume();
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::paused)
+		{
+			return false;
+		}
+		if (m_state->pid <= 0)
+		{
+			return false;
+		}
+		if (!send_signal(m_state->pid, SIGCONT))
+		{
+			return false;
+		}
+		m_status = process_status::running;
+		return true;
 	}
 
 	bool process::set_working_directory(const std::filesystem::path& path)
 	{
-		if (m_impl->get_status() != process_status::created)
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::created)
 		{
 			return false;
 		}
@@ -465,11 +263,153 @@ namespace desktop::system
 
 	bool process::start()
 	{
-		return m_impl->start();
+		std::scoped_lock lock{ m_mutex };
+		if (m_status != process_status::created)
+		{
+			return false;
+		}
+		if (!m_working_directory.empty() && (!std::filesystem::exists(m_working_directory) || !std::filesystem::is_directory(m_working_directory)))
+		{
+			return false;
+		}
+		if (pipe(m_state->stdout_pipe.data()) < 0 || pipe(m_state->stderr_pipe.data()) < 0 || pipe(m_state->stdin_pipe.data()) < 0)
+		{
+			close_fd(m_state->stdout_pipe[0]);
+			close_fd(m_state->stdout_pipe[1]);
+			close_fd(m_state->stderr_pipe[0]);
+			close_fd(m_state->stderr_pipe[1]);
+			close_fd(m_state->stdin_pipe[0]);
+			close_fd(m_state->stdin_pipe[1]);
+			return false;
+		}
+		m_state->pid = fork();
+		if (m_state->pid < 0)
+		{
+			close_fd(m_state->stdout_pipe[0]);
+			close_fd(m_state->stdout_pipe[1]);
+			close_fd(m_state->stderr_pipe[0]);
+			close_fd(m_state->stderr_pipe[1]);
+			close_fd(m_state->stdin_pipe[0]);
+			close_fd(m_state->stdin_pipe[1]);
+			return false;
+		}
+		if (m_state->pid == 0)
+		{
+			setpgid(0, 0);
+			dup2(m_state->stdout_pipe[1], STDOUT_FILENO);
+			dup2(m_state->stderr_pipe[1], STDERR_FILENO);
+			dup2(m_state->stdin_pipe[0], STDIN_FILENO);
+			close_fd(m_state->stdout_pipe[0]);
+			close_fd(m_state->stdout_pipe[1]);
+			close_fd(m_state->stderr_pipe[0]);
+			close_fd(m_state->stderr_pipe[1]);
+			close_fd(m_state->stdin_pipe[0]);
+			close_fd(m_state->stdin_pipe[1]);
+			if (!m_working_directory.empty())
+			{
+				chdir(m_working_directory.string().c_str());
+			}
+			std::vector<std::string> args{ m_arguments };
+			std::vector<char*> argv;
+			argv.reserve(args.size() + 2);
+			std::string exe{ m_path.string() };
+			argv.push_back(exe.data());
+			for (auto& a : args)
+			{
+				argv.push_back(a.data());
+			}
+			argv.push_back(nullptr);
+			execvp(m_path.string().c_str(), argv.data());
+			_exit(127);
+		}
+		setpgid(m_state->pid, m_state->pid);
+		close_fd(m_state->stdout_pipe[1]);
+		close_fd(m_state->stderr_pipe[1]);
+		close_fd(m_state->stdin_pipe[0]);
+		int flags{ fcntl(m_state->stdout_pipe[0], F_GETFL, 0) };
+		if (flags >= 0)
+		{
+			fcntl(m_state->stdout_pipe[0], F_SETFL, flags | O_NONBLOCK);
+		}
+		flags = fcntl(m_state->stderr_pipe[0], F_GETFL, 0);
+		if (flags >= 0)
+		{
+			fcntl(m_state->stderr_pipe[0], F_SETFL, flags | O_NONBLOCK);
+		}
+		m_status = process_status::running;
+		m_exit_code = -1;
+		m_standard_output.clear();
+		m_standard_error.clear();
+		m_watcher = std::thread(&process::watch, this);
+		return true;
 	}
 
-	int process::wait_for_exit() const
+	int process::wait_for_exit()
 	{
-		return m_impl->wait_for_exit();
+		std::unique_lock lock{ m_mutex };
+		if (m_status == process_status::created)
+		{
+			return -1;
+		}
+		lock.unlock();
+		if (m_watcher.joinable())
+		{
+			m_watcher.join();
+		}
+		lock.lock();
+		return m_exit_code;
+	}
+
+	void process::watch()
+	{
+		int status_value{ 0 };
+		bool exited{ false };
+		while (!exited)
+		{
+			pid_t r{ waitpid(m_state->pid, &status_value, WNOHANG | WUNTRACED | WCONTINUED) };
+			if (r == m_state->pid)
+			{
+				if (WIFEXITED(status_value) || WIFSIGNALED(status_value))
+				{
+					exited = true;
+				}
+			}
+			std::unique_lock lock{ m_mutex };
+			std::string new_output{ read_available(m_state->stdout_pipe[0], m_standard_output) };
+			std::string new_error{ read_available(m_state->stderr_pipe[0], m_standard_error) };
+			lock.unlock();
+			if (!new_output.empty())
+			{
+				m_output_received_event.invoke(*this, { new_output });
+			}
+			if (!new_error.empty())
+			{
+				m_error_received_event.invoke(*this, { new_error });
+			}
+			if (!exited)
+			{
+				std::this_thread::sleep_for(process_wait_timeout);
+			}
+		}
+		std::unique_lock lock{ m_mutex };
+		std::string new_output{ read_available(m_state->stdout_pipe[0], m_standard_output) };
+		std::string new_error{ read_available(m_state->stderr_pipe[0], m_standard_error) };
+		lock.unlock();
+		if (!new_output.empty())
+		{
+			m_output_received_event.invoke(*this, { new_output });
+		}
+		if (!new_error.empty())
+		{
+			m_error_received_event.invoke(*this, { new_error });
+		}
+		lock.lock();
+		m_exit_code = WIFEXITED(status_value) ? WEXITSTATUS(status_value) : -1;
+		if (m_status != process_status::killed)
+		{
+			m_status = process_status::completed;
+		}
+		lock.unlock();
+		m_exited_event.invoke(*this, { m_exit_code });
 	}
 }
