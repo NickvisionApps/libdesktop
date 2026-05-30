@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include "events/event.h"
 #include "folder_watcher_change_flag.h"
 #include "folder_watcher_event_args.h"

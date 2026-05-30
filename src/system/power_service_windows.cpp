@@ -3,7 +3,7 @@
 
 namespace desktop::system
 {
-	class state
+	class power_service::state
 	{
 	};
 
