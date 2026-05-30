@@ -1,15 +1,9 @@
 #include "filesystem/folder_watcher.h"
 #include <windows.h>
 #include <array>
-#include <atomic>
-#include <condition_variable>
-#include <cstdint>
-#include <mutex>
 #include <stdexcept>
 #include <thread>
 #include <vector>
-
-using namespace desktop::events;
 
 namespace desktop::filesystem
 {
@@ -30,109 +24,31 @@ namespace desktop::filesystem
 		}
 	}
 
-	class folder_watcher::impl
+	class folder_watcher::state
 	{
 	public:
-		impl(folder_watcher& owner);
-		~impl();
-		impl(const impl&) = delete;
-		impl(impl&&) = delete;
-		impl& operator=(const impl&) = delete;
-		impl& operator=(impl&&) = delete;
-		void wait_for_change(folder_watcher_change_flag flag) const;
+		HANDLE folder{ INVALID_HANDLE_VALUE };
+		HANDLE terminate_event{ nullptr };
+		std::thread thread;
 
-	private:
-		void fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag);
-		void watch_loop();
-		folder_watcher& m_owner;
-		HANDLE m_terminate_event{ nullptr };
-		std::thread m_thread;
-		mutable std::mutex m_wait_mutex;
-		mutable std::condition_variable m_wait_cv;
-		mutable uint64_t m_seq{ 0 };
-		mutable folder_watcher_change_flag m_last_flag{ folder_watcher_change_flag::any };
+		static void watcher(folder_watcher* watcher);
 	};
 
-	folder_watcher::impl::impl(folder_watcher& owner)
-	    : m_owner{ owner }
+	void folder_watcher::state::watcher(folder_watcher* watcher)
 	{
-		m_terminate_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		if (!m_terminate_event)
-		{
-			throw std::runtime_error("Unable to create watcher event");
-		}
-		m_thread = std::thread(&impl::watch_loop, this);
-	}
-
-	folder_watcher::impl::~impl()
-	{
-		SetEvent(m_terminate_event);
-		m_wait_cv.notify_all();
-		if (m_thread.joinable())
-		{
-			m_thread.join();
-		}
-		CloseHandle(m_terminate_event);
-	}
-
-	void folder_watcher::impl::wait_for_change(folder_watcher_change_flag flag) const
-	{
-		std::unique_lock<std::mutex> lk{ m_wait_mutex };
-		uint64_t start_seq{ m_seq };
-		m_wait_cv.wait(lk, [&]
-		{
-			return m_seq != start_seq && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
-		});
-	}
-
-	void folder_watcher::impl::fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
-	{
-		{
-			std::scoped_lock lk{ m_wait_mutex };
-			m_last_flag = flag;
-			++m_seq;
-		}
-		m_wait_cv.notify_all();
-		folder_watcher_event_args args{ full_path, flag };
-		switch (flag)
-		{
-		case folder_watcher_change_flag::added:
-			m_owner.m_created_event.invoke(m_owner, args);
-			break;
-		case folder_watcher_change_flag::removed:
-			m_owner.m_deleted_event.invoke(m_owner, args);
-			break;
-		case folder_watcher_change_flag::renamed:
-			m_owner.m_renamed_event.invoke(m_owner, args);
-			break;
-		default:
-			break;
-		}
-		m_owner.m_changed_event.invoke(m_owner, args);
-	}
-
-	void folder_watcher::impl::watch_loop()
-	{
-		HANDLE folder{ CreateFileW(m_owner.m_path.c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,
-			                       FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr) };
-		if (folder == INVALID_HANDLE_VALUE)
-		{
-			return;
-		}
 		OVERLAPPED overlapped{};
 		overlapped.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
 		if (!overlapped.hEvent)
 		{
-			CloseHandle(folder);
 			return;
 		}
 		std::vector<BYTE> buffer(1024 * 256);
-		std::array<HANDLE, 2> wait_handles{ overlapped.hEvent, m_terminate_event };
+		std::array<HANDLE, 2> wait_handles{ overlapped.hEvent, watcher->m_state->terminate_event };
 		while (true)
 		{
 			ResetEvent(overlapped.hEvent);
 			DWORD bytes{ 0 };
-			BOOL ok{ ReadDirectoryChangesW(folder, buffer.data(), static_cast<DWORD>(buffer.size()), FALSE,
+			BOOL ok{ ReadDirectoryChangesW(watcher->m_state->folder, buffer.data(), static_cast<DWORD>(buffer.size()), FALSE,
 				                           FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES |
 				                               FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS,
 				                           nullptr, &overlapped, nullptr) };
@@ -143,14 +59,14 @@ namespace desktop::filesystem
 			DWORD wait_result{ WaitForMultipleObjects(2, wait_handles.data(), FALSE, INFINITE) };
 			if (wait_result == WAIT_OBJECT_0 + 1)
 			{
-				CancelIoEx(folder, &overlapped);
+				CancelIoEx(watcher->m_state->folder, &overlapped);
 				break;
 			}
 			if (wait_result != WAIT_OBJECT_0)
 			{
 				break;
 			}
-			if (!GetOverlappedResult(folder, &overlapped, &bytes, FALSE) || bytes == 0)
+			if (!GetOverlappedResult(watcher->m_state->folder, &overlapped, &bytes, FALSE) || bytes == 0)
 			{
 				continue;
 			}
@@ -159,7 +75,7 @@ namespace desktop::filesystem
 			{
 				FILE_NOTIFY_INFORMATION* info{ reinterpret_cast<FILE_NOTIFY_INFORMATION*>(ptr) };
 				std::wstring rel{ info->FileName, info->FileNameLength / sizeof(WCHAR) };
-				fire(m_owner.m_path / rel, action_to_flag(info->Action));
+				watcher->fire(watcher->m_path / rel, action_to_flag(info->Action));
 				if (info->NextEntryOffset == 0)
 				{
 					break;
@@ -168,44 +84,108 @@ namespace desktop::filesystem
 			}
 		}
 		CloseHandle(overlapped.hEvent);
-		CloseHandle(folder);
 	}
 
 	folder_watcher::folder_watcher(std::filesystem::path path)
-	    : m_path{ std::move(path) },
-	      m_impl{ std::make_unique<impl>(*this) }
+	    : m_state{ std::make_unique<state>() },
+	      m_path{ std::move(path) }
 	{
+		m_state->folder = CreateFileW(m_path.c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,
+		                              FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
+		if (m_state->folder == INVALID_HANDLE_VALUE)
+		{
+			throw std::runtime_error("Unable to open folder");
+		}
+		m_state->terminate_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		if (!m_state->terminate_event)
+		{
+			CloseHandle(m_state->folder);
+			throw std::runtime_error("Unable to create terminate event");
+		}
+		m_state->thread = std::thread(&state::watcher, this);
 	}
 
-	folder_watcher::~folder_watcher() = default;
+	folder_watcher::~folder_watcher()
+	{
+		if (m_state->terminate_event)
+		{
+			SetEvent(m_state->terminate_event);
+		}
+		m_cv.notify_all();
+		if (m_state->thread.joinable())
+		{
+			m_state->thread.join();
+		}
+		if (m_state->terminate_event)
+		{
+			CloseHandle(m_state->terminate_event);
+		}
+		if (m_state->folder != INVALID_HANDLE_VALUE)
+		{
+			CloseHandle(m_state->folder);
+		}
+	}
 
 	const std::filesystem::path& folder_watcher::get_path() const
 	{
 		return m_path;
 	}
 
-	const event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_changed_event() const
+	const events::event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_changed_event() const
 	{
 		return m_changed_event;
 	}
 
-	const event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_created_event() const
+	const events::event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_created_event() const
 	{
 		return m_created_event;
 	}
 
-	const event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_deleted_event() const
+	const events::event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_deleted_event() const
 	{
 		return m_deleted_event;
 	}
 
-	const event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_renamed_event() const
+	const events::event<folder_watcher, folder_watcher_event_args>& folder_watcher::get_renamed_event() const
 	{
 		return m_renamed_event;
 	}
 
-	void folder_watcher::wait_for_change(folder_watcher_change_flag change_flag) const
+	void folder_watcher::fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
 	{
-		m_impl->wait_for_change(change_flag);
+		std::unique_lock lock{ m_mutex };
+		m_last_flag = flag;
+		lock.unlock();
+		m_cv.notify_all();
+		folder_watcher_event_args args{ full_path, flag };
+		switch (flag)
+		{
+		case folder_watcher_change_flag::added:
+			m_created_event.invoke(*this, args);
+			return;
+		case folder_watcher_change_flag::removed:
+			m_deleted_event.invoke(*this, args);
+			return;
+		case folder_watcher_change_flag::renamed:
+			m_renamed_event.invoke(*this, args);
+			return;
+		default:
+			m_changed_event.invoke(*this, args);
+			return;
+		}
+	}
+
+	void folder_watcher::wait_for_change(folder_watcher_change_flag flag) const
+	{
+		std::unique_lock lock{ m_mutex };
+		m_cv.wait(lock, [this, flag]()
+		{
+			if (!m_last_flag.has_value())
+			{
+				return false;
+			}
+			return flag == folder_watcher_change_flag::any || flag == *m_last_flag;
+		});
+		m_last_flag = std::nullopt;
 	}
 }

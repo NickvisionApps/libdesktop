@@ -29,7 +29,7 @@ namespace desktop::network
 			nw_path_monitor_set_queue(m_monitor, m_queue);
 			nw_path_monitor_set_update_handler(m_monitor, ^(nw_path_t path) { handle_path_update(path); });
 			nw_path_monitor_start(m_monitor);
-			std::unique_lock<std::mutex> lock{ m_mutex };
+			std::unique_lock lock{ m_mutex };
 			m_first_update_arrived.wait(lock, [this]
 			{
 				return m_received_first_update;
@@ -85,7 +85,7 @@ namespace desktop::network
 				new_state = network_state::disconnected;
 				break;
 			}
-			std::unique_lock<std::mutex> lock{ m_mutex };
+			std::unique_lock lock{ m_mutex };
 			bool first_update{ !m_received_first_update };
 			m_received_first_update = true;
 			bool changed{ m_current_state != new_state };

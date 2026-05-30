@@ -72,7 +72,7 @@ namespace desktop::app
 		}
 		int imported{ 0 };
 		ensure_table();
-		std::unique_lock<std::mutex> lock{ m_mutex };
+		std::unique_lock lock{ m_mutex };
 		m_db->begin_transaction();
 		for (nlohmann::json::iterator it = j.begin(); it != j.end(); ++it)
 		{
