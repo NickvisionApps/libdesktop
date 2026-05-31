@@ -9,6 +9,7 @@
 #include <tuple>
 #include <vector>
 #include "app/app_info.h"
+#include "helpers/string_manip.h"
 
 namespace desktop::app
 {
@@ -46,6 +47,26 @@ namespace desktop::app
 		std::string _pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n, const Args&&... args) const noexcept
 		{
 			return std::vformat(_pn(context, msgid, msgid_plural, n), std::make_format_args(args...));
+		}
+		template <typename... Args>
+		std::wstring w_(const char* msgid, const Args&&... args) const noexcept
+		{
+			return helpers::string_manip::wstr(std::vformat(_(msgid), std::make_format_args(args...)));
+		}
+		template <typename... Args>
+		std::wstring w_n(const char* msgid, const char* msgid_plural, unsigned long n, const Args&&... args) const noexcept
+		{
+			return helpers::string_manip::wstr(std::vformat(_n(msgid, msgid_plural, n), std::make_format_args(args...)));
+		}
+		template <typename... Args>
+		std::wstring w_p(const char* context, const char* msgid, const Args&&... args) const noexcept
+		{
+			return helpers::string_manip::wstr(std::vformat(_p(context, msgid), std::make_format_args(args...)));
+		}
+		template <typename... Args>
+		std::wstring w_pn(const char* context, const char* msgid, const char* msgid_plural, unsigned long n, const Args&&... args) const noexcept
+		{
+			return helpers::string_manip::wstr(std::vformat(_pn(context, msgid, msgid_plural, n), std::make_format_args(args...)));
 		}
 		translation_service& operator=(const translation_service&) = delete;
 		translation_service& operator=(translation_service&&) = delete;

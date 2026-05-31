@@ -30,6 +30,8 @@ project("libdesktop" LANGUAGES C CXX VERSION 2025.5.0 DESCRIPTION "A cross-platf
 
 option(BUILD_SHARED_LIBS "Build libdesktop as a shared library" OFF)
 option(BUILD_TESTING "Build tests" ON)
+option(ENABLE_CLANG_FORMAT "Enable clang-format analysis" ON)
+option(ENABLE_CLANG_TIDY "Enable clang-tidy analysis" ON)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -197,18 +199,20 @@ endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
-if(CLANG_TIDY)
+if(ENABLE_CLANG_TIDY AND CLANG_TIDY)
     message(NOTICE "Found clang-tidy")
     if(MSVC)
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=/EHsc")
+    elseif(LINUX)
+        set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions --extra-arg=-std=c++20")
     else()
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions")
     endif()
-else()
+elseif(ENABLE_CLANG_TIDY)
     message(WARNING "Unable to find clang-tidy")
 endif()
 
-if(CLANG_FORMAT)
+if(ENABLE_CLANG_FORMAT AND CLANG_FORMAT)
     message(NOTICE "Found clang-format")
     file(GLOB_RECURSE FORMAT_SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/include/*.h"
@@ -219,7 +223,7 @@ if(CLANG_FORMAT)
         COMMAND ${CLANG_FORMAT} -i ${FORMAT_SOURCE_FILES}
         COMMENT "Running clang-format")
     add_dependencies(${PROJECT_NAME} format)
-else()
+elseif(ENABLE_CLANG_FORMAT)
     message(WARNING "Unable to find clang-format")
 endif()
 

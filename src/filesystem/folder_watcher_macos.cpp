@@ -1,4 +1,5 @@
 #include "filesystem/folder_watcher.h"
+#include <algorithm>
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
 #include <dispatch/dispatch.h>
@@ -13,16 +14,16 @@ namespace desktop::filesystem
 		FSEventStreamRef stream{ nullptr };
 		dispatch_queue_t queue{ nullptr };
 
-		static void callback(ConstFSEventStreamRef stream, void* client_info, std::size_t num_events, void* event_paths,
+		static void callback(ConstFSEventStreamRef stream, void* client_info, std::size_t num_queue, void* event_paths,
 		                     const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId ids[]);
 	};
 
-	void folder_watcher::state::callback(ConstFSEventStreamRef stream, void* client_info, std::size_t num_events, void* event_paths,
+	void folder_watcher::state::callback(ConstFSEventStreamRef stream, void* client_info, std::size_t num_queue, void* event_paths,
 	                                     const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId ids[])
 	{
 		folder_watcher* watcher{ static_cast<folder_watcher*>(client_info) };
-		std::span<char*> paths{ static_cast<char**>(event_paths), num_events };
-		for (std::size_t i{ 0 }; i < num_events; i++)
+		std::span<char*> paths{ static_cast<char**>(event_paths), num_queue };
+		for (std::size_t i{ 0 }; i < num_queue; i++)
 		{
 			std::filesystem::path full_path{ paths[i] };
 			if (event_flags[i] & kFSEventStreamEventFlagItemRemoved || !std::filesystem::exists(full_path))
@@ -91,6 +92,9 @@ namespace desktop::filesystem
 
 	folder_watcher::~folder_watcher()
 	{
+		std::unique_lock lock{ m_mutex };
+		m_stopping = true;
+		lock.unlock();
 		if (m_state->stream)
 		{
 			FSEventStreamStop(m_state->stream);
@@ -134,7 +138,7 @@ namespace desktop::filesystem
 	void folder_watcher::fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
 	{
 		std::unique_lock lock{ m_mutex };
-		m_last_flag = flag;
+		m_queue.push_back(flag);
 		lock.unlock();
 		m_cv.notify_all();
 		folder_watcher_event_args args{ full_path, flag };
@@ -155,17 +159,33 @@ namespace desktop::filesystem
 		}
 	}
 
-	void folder_watcher::wait_for_change(folder_watcher_change_flag flag) const
+	bool folder_watcher::wait_for_change(folder_watcher_change_flag flag) const
 	{
 		std::unique_lock lock{ m_mutex };
-		m_cv.wait(lock, [this, flag]()
+		while (true)
 		{
-			if (!m_last_flag.has_value())
+			if (m_stopping)
 			{
 				return false;
 			}
-			return flag == folder_watcher_change_flag::any || flag == *m_last_flag;
-		});
-		m_last_flag = std::nullopt;
+			if (flag == folder_watcher_change_flag::any)
+			{
+				if (!m_queue.empty())
+				{
+					m_queue.pop_front();
+					return true;
+				}
+			}
+			else
+			{
+				std::deque<folder_watcher_change_flag>::iterator it{ std::find(m_queue.begin(), m_queue.end(), flag) };
+				if (it != m_queue.end())
+				{
+					m_queue.erase(m_queue.begin(), std::next(it));
+					return true;
+				}
+			}
+			m_cv.wait(lock);
+		}
 	}
 }
