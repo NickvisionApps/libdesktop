@@ -465,7 +465,7 @@ namespace desktop::system
 		return m_exit_code;
 	}
 
-	void process::watch() noexcept
+	void process::watch()
 	{
 		try
 		{

@@ -22,23 +22,22 @@ namespace desktop::filesystem
 	{
 		folder_watcher* watcher{ static_cast<folder_watcher*>(client_info) };
 		std::span<char*> paths{ static_cast<char**>(event_paths), num_events };
-		std::span<const FSEventStreamEventFlags> flags{ event_flags, num_events };
-		for (std::size_t i{ 0 }; i < num_events; ++i)
+		for (std::size_t i{ 0 }; i < num_events; i++)
 		{
 			std::filesystem::path full_path{ paths[i] };
-			if (!std::filesystem::exists(full_path))
+			if (event_flags[i] & kFSEventStreamEventFlagItemRemoved || !std::filesystem::exists(full_path))
 			{
 				watcher->fire(full_path, folder_watcher_change_flag::removed);
 			}
-			else if (flags[i] & kFSEventStreamEventFlagItemCreated)
-			{
-				watcher->fire(full_path, folder_watcher_change_flag::added);
-			}
-			else if (flags[i] & kFSEventStreamEventFlagItemRenamed)
+			if (event_flags[i] & kFSEventStreamEventFlagItemRenamed)
 			{
 				watcher->fire(full_path, folder_watcher_change_flag::renamed);
 			}
-			else
+			if (event_flags[i] & kFSEventStreamEventFlagItemCreated)
+			{
+				watcher->fire(full_path, folder_watcher_change_flag::added);
+			}
+			if (event_flags[i] & kFSEventStreamEventFlagItemModified)
 			{
 				watcher->fire(full_path, folder_watcher_change_flag::modified);
 			}

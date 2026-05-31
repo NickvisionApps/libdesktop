@@ -3,6 +3,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <libdesktop.h>
+#include <optional>
 #include <thread>
 
 using namespace desktop::events;
@@ -16,16 +17,12 @@ protected:
 		m_test_directory = std::filesystem::temp_directory_path() / "libdesktop_folder_watcher_tests";
 		std::filesystem::remove_all(m_test_directory);
 		std::filesystem::create_directories(m_test_directory);
+		m_test_directory = std::filesystem::canonical(m_test_directory);
 	}
 
 	void TearDown() override
 	{
 		std::filesystem::remove_all(m_test_directory);
-	}
-
-	void wait()
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	}
 
 	std::filesystem::path m_test_directory;
@@ -40,7 +37,7 @@ TEST_F(FolderWatcherTests, GetPath)
 TEST_F(FolderWatcherTests, CreateFileFiresCreatedEvent)
 {
 	folder_watcher watcher{ m_test_directory };
-	bool fired{ false };
+	std::optional<bool> fired{ std::nullopt };
 	watcher.get_created_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args& args)
 	{
 		if (args.get_name() == "created.txt")
@@ -50,7 +47,10 @@ TEST_F(FolderWatcherTests, CreateFileFiresCreatedEvent)
 	});
 	std::ofstream file{ (m_test_directory / "created.txt").string() };
 	file << "hello";
-	wait();
+	while (!fired.has_value())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_TRUE(fired);
 }
 
@@ -62,7 +62,7 @@ TEST_F(FolderWatcherTests, ModifyFileFiresChangedEvent)
 		file << "before";
 	}
 	folder_watcher watcher{ m_test_directory };
-	bool fired{ false };
+	std::optional<bool> fired{ std::nullopt };
 	watcher.get_changed_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args& args)
 	{
 		if (args.get_name() == "changed.txt")
@@ -74,7 +74,10 @@ TEST_F(FolderWatcherTests, ModifyFileFiresChangedEvent)
 		std::ofstream file{ file_path.string(), std::ios::app };
 		file << "after";
 	}
-	wait();
+	while (!fired.has_value())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_TRUE(fired);
 }
 
@@ -86,7 +89,7 @@ TEST_F(FolderWatcherTests, DeleteFileFiresDeletedEvent)
 		file << "test";
 	}
 	folder_watcher watcher{ m_test_directory };
-	bool fired{ false };
+	std::optional<bool> fired{ std::nullopt };
 	watcher.get_deleted_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args& args)
 	{
 		if (args.get_name() == "deleted.txt")
@@ -95,7 +98,10 @@ TEST_F(FolderWatcherTests, DeleteFileFiresDeletedEvent)
 		}
 	});
 	std::filesystem::remove(file_path);
-	wait();
+	while (!fired.has_value())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_TRUE(fired);
 }
 
@@ -108,13 +114,16 @@ TEST_F(FolderWatcherTests, RenameFileFiresRenamedEvent)
 		file << "test";
 	}
 	folder_watcher watcher{ m_test_directory };
-	bool fired{ false };
+	std::optional<bool> fired{ std::nullopt };
 	watcher.get_renamed_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args&)
 	{
 		fired = true;
 	});
 	std::filesystem::rename(original, renamed);
-	wait();
+	while (!fired.has_value())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_TRUE(fired);
 }
 
@@ -124,15 +133,21 @@ TEST_F(FolderWatcherTests, EventArgsContainCorrectPath)
 	std::filesystem::path received;
 	watcher.get_created_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args& args)
 	{
-		received = args.get_full_path();
+		if (args.get_full_path() == m_test_directory / "path_test.txt")
+		{
+			received = args.get_full_path();
+		}
 	});
 	std::filesystem::path expected{ m_test_directory / "path_test.txt" };
 	{
 		std::ofstream file{ expected.string() };
 		file << "test";
 	}
-	wait();
-	ASSERT_EQ(received.filename(), expected.filename());
+	while (received.empty())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
+	ASSERT_EQ(received, expected);
 }
 
 TEST_F(FolderWatcherTests, EventArgsContainCorrectName)
@@ -141,13 +156,19 @@ TEST_F(FolderWatcherTests, EventArgsContainCorrectName)
 	std::string received;
 	watcher.get_created_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args& args)
 	{
-		received = args.get_name();
+		if (args.get_name() == "name_test.txt")
+		{
+			received = args.get_name();
+		}
 	});
 	{
-		std::ofstream file{ (m_test_directory / "name_test.txt").string() };
+		std::ofstream file{ m_test_directory / "name_test.txt" };
 		file << "test";
 	}
-	wait();
+	while (received.empty())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_EQ(received, "name_test.txt");
 }
 
@@ -163,7 +184,10 @@ TEST_F(FolderWatcherTests, EventArgsContainCorrectFlag)
 		std::ofstream file{ (m_test_directory / "flag_test.txt").string() };
 		file << "test";
 	}
-	wait();
+	while (received == folder_watcher_change_flag::any)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_EQ(received, folder_watcher_change_flag::added);
 }
 
@@ -171,17 +195,22 @@ TEST_F(FolderWatcherTests, MultipleHandlersFire)
 {
 	folder_watcher watcher{ m_test_directory };
 	int count{ 0 };
-	auto handler = [&](const folder_watcher&, const folder_watcher_event_args&)
+	watcher.get_created_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args&)
 	{
 		++count;
-	};
-	watcher.get_created_event().add_handler(handler);
-	watcher.get_created_event().add_handler(handler);
+	});
+	watcher.get_created_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args&)
+	{
+		++count;
+	});
 	{
 		std::ofstream file{ (m_test_directory / "multi.txt").string() };
 		file << "test";
 	}
-	wait();
+	while (count < 2)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_GE(count, 2);
 }
 
@@ -225,15 +254,18 @@ TEST_F(FolderWatcherTests, CreatedEventSenderMatchesWatcher)
 		std::ofstream file{ (m_test_directory / "sender.txt").string() };
 		file << "test";
 	}
-	wait();
+	while (sender == nullptr)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 	ASSERT_EQ(sender, &watcher);
 }
 
 TEST_F(FolderWatcherTests, RemovedHandlerDoesNotFire)
 {
 	folder_watcher watcher{ m_test_directory };
-	bool fired{ false };
-	auto id = watcher.get_created_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args&)
+	std::optional<bool> fired{ std::nullopt };
+	event_id id = watcher.get_created_event().add_handler([&](const folder_watcher&, const folder_watcher_event_args&)
 	{
 		fired = true;
 	});
@@ -242,6 +274,6 @@ TEST_F(FolderWatcherTests, RemovedHandlerDoesNotFire)
 		std::ofstream file{ (m_test_directory / "removed.txt").string() };
 		file << "test";
 	}
-	wait();
+	std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	ASSERT_FALSE(fired);
 }

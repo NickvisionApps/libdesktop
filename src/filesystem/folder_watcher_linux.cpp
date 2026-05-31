@@ -57,13 +57,13 @@ namespace desktop::filesystem
 				inotify_event* ev{ reinterpret_cast<inotify_event*>(&buf[i]) };
 				i += static_cast<ssize_t>(sizeof(inotify_event)) + ev->len;
 				std::filesystem::path full_path{ ev->len > 0 ? watcher->m_path / ev->name : watcher->m_path };
-				if (ev->mask & (IN_MOVED_FROM | IN_MOVE_SELF))
-				{
-					watcher->fire(full_path, folder_watcher_change_flag::renamed);
-				}
-				else if (ev->mask & (IN_DELETE | IN_DELETE_SELF))
+				if (ev->mask & (IN_DELETE | IN_DELETE_SELF))
 				{
 					watcher->fire(full_path, folder_watcher_change_flag::removed);
+				}
+				else if (ev->mask & (IN_MOVED_FROM | IN_MOVE_SELF))
+				{
+					watcher->fire(full_path, folder_watcher_change_flag::renamed);
 				}
 				else if (ev->mask & (IN_CREATE | IN_MOVED_TO))
 				{
