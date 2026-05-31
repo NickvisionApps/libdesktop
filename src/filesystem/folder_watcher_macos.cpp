@@ -1,7 +1,7 @@
 #include "filesystem/folder_watcher.h"
-#include <algorithm>
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
+#include <algorithm>
 #include <dispatch/dispatch.h>
 #include <span>
 #include <stdexcept>
