@@ -5,8 +5,7 @@ namespace desktop::hosting
 {
 	host_options::host_options(std::shared_ptr<app::app_info> app_info, std::span<char*> argv)
 	    : m_app_info{ std::move(app_info) },
-	      m_argv{ argv },
-	      m_single_instance{ false }
+	      m_argv{ argv }
 	{
 	}
 

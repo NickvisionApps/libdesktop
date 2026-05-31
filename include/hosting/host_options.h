@@ -23,6 +23,6 @@ namespace desktop::hosting
 	private:
 		std::shared_ptr<app::app_info> m_app_info;
 		std::span<char*> m_argv;
-		bool m_single_instance;
+		bool m_single_instance{ false };
 	};
 }
