@@ -3,6 +3,12 @@
 
 namespace desktop::system
 {
+	class power_service::state
+	{
+	};
+
+	power_service::power_service() = default;
+
 	power_service::~power_service()
 	{
 		allow_suspend();

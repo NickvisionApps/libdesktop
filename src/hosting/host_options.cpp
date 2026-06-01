@@ -9,23 +9,23 @@ namespace desktop::hosting
 	{
 	}
 
-	std::span<char*> host_options::get_argv() const
-	{
-		return m_argv;
-	}
-
 	const std::shared_ptr<app::app_info>& host_options::get_app_info() const
 	{
 		return m_app_info;
 	}
 
-	const std::filesystem::path& host_options::get_log_path() const
+	std::span<char*> host_options::get_argv() const
 	{
-		return m_log_path;
+		return m_argv;
 	}
 
-	void host_options::set_log_path(const std::filesystem::path& log_path)
+	bool host_options::is_single_instance() const
 	{
-		m_log_path = log_path;
+		return m_single_instance;
+	}
+
+	void host_options::set_single_instance(bool single)
+	{
+		m_single_instance = single;
 	}
 }

@@ -157,7 +157,7 @@ namespace desktop::app
 		{
 			database::database_value db_value{ "value", value };
 			ensure_table();
-			std::unique_lock<std::mutex> lock{ m_mutex };
+			std::unique_lock lock{ m_mutex };
 			m_cache[name] = db_value.str();
 			m_db->replace_into_table("configuration", { { "name", name }, db_value });
 			lock.unlock();
@@ -169,7 +169,7 @@ namespace desktop::app
 			std::string json_str{ nlohmann::json(value).dump() };
 			database::database_value db_value{ "value", json_str };
 			ensure_table();
-			std::unique_lock<std::mutex> lock{ m_mutex };
+			std::unique_lock lock{ m_mutex };
 			m_cache[name] = db_value.str();
 			m_db->replace_into_table("configuration", { { "name", name }, db_value });
 			lock.unlock();

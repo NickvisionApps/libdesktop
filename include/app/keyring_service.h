@@ -3,6 +3,7 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <tuple>
 #include <vector>
 #include "database/database_service.h"
 #include "secrets/credential.h"

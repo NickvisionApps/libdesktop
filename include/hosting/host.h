@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <exception>
+#include <filesystem>
 #include <memory>
 #include "app/log_type.h"
 #include "host_options.h"
@@ -35,9 +36,9 @@ namespace desktop::hosting
 			m_services->add<lifetime_service, T>(services::service_scope::singleton);
 		}
 #ifdef NDEBUG
-		void use_logging(app::log_type minimum = app::log_type::info);
+		void use_logging(app::log_type minimum = app::log_type::info, const std::filesystem::path& path = {});
 #else
-		void use_logging(app::log_type minimum = app::log_type::debug);
+		void use_logging(app::log_type minimum = app::log_type::debug, const std::filesystem::path& path = {});
 #endif
 		host& operator=(const host&) = default;
 		host& operator=(host&&) noexcept = default;

@@ -3,10 +3,15 @@
 
 using namespace desktop::app;
 using namespace desktop::network;
+using namespace desktop::system;
 using namespace desktop::updates;
 
 TEST(GithubUpdateService, ParabolicStable)
 {
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		GTEST_SKIP() << "Unable to use GitHub API in CI/CD";
+	}
 	std::shared_ptr<app_info> parabolic_info{ std::make_shared<app_info>("org.nickvision.tubeconverter", "Parabolic", "Parabolic", false) };
 	std::shared_ptr<http_service> http{ std::make_shared<http_service>() };
 	ASSERT_TRUE(parabolic_info);
@@ -20,6 +25,10 @@ TEST(GithubUpdateService, ParabolicStable)
 
 TEST(GithubUpdateService, ParabolicPreview)
 {
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		GTEST_SKIP() << "Unable to use GitHub API in CI/CD";
+	}
 	std::shared_ptr<app_info> parabolic_info{ std::make_shared<app_info>("org.nickvision.tubeconverter", "Parabolic", "Parabolic", false) };
 	std::shared_ptr<http_service> http{ std::make_shared<http_service>() };
 	ASSERT_TRUE(parabolic_info);
@@ -33,6 +42,10 @@ TEST(GithubUpdateService, ParabolicPreview)
 
 TEST(GithubUpdateService, Ytdlp)
 {
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		GTEST_SKIP() << "Unable to use GitHub API in CI/CD";
+	}
 	std::shared_ptr<http_service> http{ std::make_shared<http_service>() };
 	ASSERT_TRUE(http);
 	github_update_service update{ "yt-dlp", "yt-dlp", http };
@@ -43,6 +56,10 @@ TEST(GithubUpdateService, Ytdlp)
 
 TEST(GithubUpdateService, YtdlpPreview)
 {
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		GTEST_SKIP() << "Unable to use GitHub API in CI/CD";
+	}
 	std::shared_ptr<http_service> http{ std::make_shared<http_service>() };
 	ASSERT_TRUE(http);
 	github_update_service update{ "yt-dlp", "yt-dlp-nightly-builds", http };
@@ -53,6 +70,10 @@ TEST(GithubUpdateService, YtdlpPreview)
 
 TEST(GithubUpdateService, Deno)
 {
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		GTEST_SKIP() << "Unable to use GitHub API in CI/CD";
+	}
 	std::shared_ptr<http_service> http{ std::make_shared<http_service>() };
 	ASSERT_TRUE(http);
 	github_update_service update{ "denoland", "deno", http };

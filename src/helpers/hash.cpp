@@ -59,22 +59,22 @@ static std::string digest(const EVP_MD* algorithm, std::string_view data)
 
 namespace desktop::helpers
 {
-	std::string hash::sha256(const std::filesystem::path& file_path)
+	std::string hash::sha256_from_file(const std::filesystem::path& file_path)
 	{
 		return digest(EVP_sha256(), file_path);
 	}
 
-	std::string hash::sha256(std::string_view data)
+	std::string hash::sha256_from_string(std::string_view data)
 	{
 		return digest(EVP_sha256(), data);
 	}
 
-	std::string hash::sha512(const std::filesystem::path& file_path)
+	std::string hash::sha512_from_file(const std::filesystem::path& file_path)
 	{
 		return digest(EVP_sha512(), file_path);
 	}
 
-	std::string hash::sha512(std::string_view data)
+	std::string hash::sha512_from_string(std::string_view data)
 	{
 		return digest(EVP_sha512(), data);
 	}

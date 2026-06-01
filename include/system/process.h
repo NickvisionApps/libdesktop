@@ -2,8 +2,10 @@
 
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 #include "events/event.h"
 #include "events/param_event_args.h"
@@ -25,8 +27,8 @@ namespace desktop::system
 		const std::vector<std::string>& get_arguments() const;
 		int get_exit_code() const;
 		const std::filesystem::path& get_path() const;
-		const std::string& get_standard_error() const;
-		const std::string& get_standard_output() const;
+		std::string get_standard_error() const;
+		std::string get_standard_output() const;
 		process_result get_result() const;
 		process_status get_status() const;
 		const std::filesystem::path& get_working_directory() const;
@@ -37,17 +39,24 @@ namespace desktop::system
 		bool resume();
 		bool set_working_directory(const std::filesystem::path& path);
 		bool start();
-		int wait_for_exit() const;
+		int wait_for_exit();
 		process& operator=(const process&) = delete;
 		process& operator=(process&&) noexcept = delete;
 
 	private:
-		class impl;
-		friend class impl;
-		std::unique_ptr<impl> m_impl;
+		void watch();
+		class state;
+		friend class state;
+		mutable std::mutex m_mutex;
+		std::unique_ptr<state> m_state;
 		std::filesystem::path m_path;
 		std::vector<std::string> m_arguments;
 		std::filesystem::path m_working_directory;
+		process_status m_status{ process_status::created };
+		int m_exit_code{ -1 };
+		std::string m_standard_output;
+		std::string m_standard_error;
+		std::thread m_watcher;
 		events::event<process, events::param_event_args<int>> m_exited_event;
 		events::event<process, events::param_event_args<std::string>> m_output_received_event;
 		events::event<process, events::param_event_args<std::string>> m_error_received_event;

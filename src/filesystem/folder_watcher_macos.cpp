@@ -1,136 +1,114 @@
 #include "filesystem/folder_watcher.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
-#include <condition_variable>
-#include <mutex>
+#include <dispatch/dispatch.h>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 
 namespace desktop::filesystem
 {
-	class folder_watcher::impl
+	class folder_watcher::state
 	{
 	public:
-		impl(folder_watcher& owner)
-		    : m_owner{ owner }
-		{
-			std::string path_str{ owner.m_path.string() };
-			CFStringRef cf_path{ CFStringCreateWithCString(kCFAllocatorDefault, path_str.c_str(), kCFStringEncodingUTF8) };
-			if (!cf_path)
-			{
-				throw std::runtime_error("Unable to create string");
-			}
-			CFArrayRef paths{ CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void**>(&cf_path), 1, &kCFTypeArrayCallBacks) };
-			CFRelease(cf_path);
-			if (!paths)
-			{
-				throw std::runtime_error("Unable to create array");
-			}
-			FSEventStreamContext context{};
-			context.info = this;
-			m_stream = FSEventStreamCreate(kCFAllocatorDefault, &impl::fs_callback, &context, paths, kFSEventStreamEventIdSinceNow, 0.25,
-			                               kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer);
-			CFRelease(paths);
-			if (!m_stream)
-			{
-				throw std::runtime_error("Unable to initalize filesystem event");
-			}
-			m_queue = dispatch_queue_create("desktop.filesystem.folder_watcher", DISPATCH_QUEUE_SERIAL);
-			FSEventStreamSetDispatchQueue(m_stream, m_queue);
-			FSEventStreamStart(m_stream);
-		}
+		FSEventStreamRef stream{ nullptr };
+		dispatch_queue_t queue{ nullptr };
 
-		~impl()
-		{
-			FSEventStreamStop(m_stream);
-			FSEventStreamSetDispatchQueue(m_stream, nullptr);
-			FSEventStreamInvalidate(m_stream);
-			FSEventStreamRelease(m_stream);
-			if (m_queue)
-			{
-				dispatch_release(m_queue);
-			}
-		}
-
-		void wait_for_change(folder_watcher_change_flag flag) const
-		{
-			std::unique_lock<std::mutex> lk{ m_wait_mutex };
-			m_wait_cv.wait(lk, [&]
-			{
-				return m_notified && (flag == folder_watcher_change_flag::any || m_last_flag == flag);
-			});
-			m_notified = false;
-		}
-
-	private:
-		static void fs_callback(ConstFSEventStreamRef, void* client_info, std::size_t num_events, void* event_paths,
-		                        const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId[]) noexcept
-		{
-			impl* self{ static_cast<impl*>(client_info) };
-			std::span<char*> paths{ std::span<char*>{ static_cast<char**>(event_paths), num_events } };
-			std::span<const FSEventStreamEventFlags> flags{ std::span<const FSEventStreamEventFlags>{ event_flags, num_events } };
-			for (std::size_t i{ 0 }; i < num_events; ++i)
-			{
-				std::filesystem::path full_path{ paths[i] };
-				folder_watcher_change_flag flag{ folder_watcher_change_flag::modified };
-				if (flags[i] & kFSEventStreamEventFlagItemCreated)
-				{
-					flag = folder_watcher_change_flag::added;
-				}
-				else if (flags[i] & kFSEventStreamEventFlagItemRemoved)
-				{
-					flag = folder_watcher_change_flag::removed;
-				}
-				else if (flags[i] & kFSEventStreamEventFlagItemRenamed)
-				{
-					flag = folder_watcher_change_flag::renamed;
-				}
-				self->fire(full_path, flag);
-			}
-		}
-
-		void fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
-		{
-			folder_watcher_event_args args{ full_path, flag };
-			switch (flag)
-			{
-			case folder_watcher_change_flag::added:
-				m_owner.m_created_event.invoke(m_owner, args);
-				break;
-			case folder_watcher_change_flag::removed:
-				m_owner.m_deleted_event.invoke(m_owner, args);
-				break;
-			case folder_watcher_change_flag::renamed:
-				m_owner.m_renamed_event.invoke(m_owner, args);
-				break;
-			default:
-				break;
-			}
-			m_owner.m_changed_event.invoke(m_owner, args);
-			{
-				std::scoped_lock lk{ m_wait_mutex };
-				m_last_flag = flag;
-				m_notified = true;
-			}
-			m_wait_cv.notify_all();
-		}
-
-		folder_watcher& m_owner;
-		FSEventStreamRef m_stream{ nullptr };
-		dispatch_queue_t m_queue{ nullptr };
-		mutable std::mutex m_wait_mutex;
-		mutable std::condition_variable m_wait_cv;
-		mutable folder_watcher_change_flag m_last_flag{ folder_watcher_change_flag::any };
-		mutable bool m_notified{ false };
+		static void callback(ConstFSEventStreamRef stream, void* client_info, std::size_t num_queue, void* event_paths,
+		                     const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId ids[]);
 	};
 
-	folder_watcher::folder_watcher(std::filesystem::path path)
-	    : m_path{ std::move(path) },
-	      m_impl{ std::make_unique<impl>(*this) }
+	void folder_watcher::state::callback(ConstFSEventStreamRef stream, void* client_info, std::size_t num_queue, void* event_paths,
+	                                     const FSEventStreamEventFlags event_flags[], const FSEventStreamEventId ids[])
 	{
+		folder_watcher* watcher{ static_cast<folder_watcher*>(client_info) };
+		std::span<char*> paths{ static_cast<char**>(event_paths), num_queue };
+		for (std::size_t i{ 0 }; i < num_queue; i++)
+		{
+			std::filesystem::path full_path{ paths[i] };
+			if (event_flags[i] & kFSEventStreamEventFlagItemRemoved || !std::filesystem::exists(full_path))
+			{
+				watcher->fire(full_path, folder_watcher_change_flag::removed);
+			}
+			if (event_flags[i] & kFSEventStreamEventFlagItemRenamed)
+			{
+				watcher->fire(full_path, folder_watcher_change_flag::renamed);
+			}
+			if (event_flags[i] & kFSEventStreamEventFlagItemCreated)
+			{
+				watcher->fire(full_path, folder_watcher_change_flag::added);
+			}
+			if (event_flags[i] & kFSEventStreamEventFlagItemModified)
+			{
+				watcher->fire(full_path, folder_watcher_change_flag::modified);
+			}
+		}
 	}
 
-	folder_watcher::~folder_watcher() = default;
+	folder_watcher::folder_watcher(std::filesystem::path path)
+	    : m_state{ std::make_unique<state>() },
+	      m_path{ std::move(path) }
+	{
+		std::string str{ m_path.string() };
+		CFStringRef cf_path{ CFStringCreateWithCString(kCFAllocatorDefault, str.c_str(), kCFStringEncodingUTF8) };
+		if (!cf_path)
+		{
+			throw std::runtime_error("Unable to create string");
+		}
+		CFArrayRef paths{ CFArrayCreate(kCFAllocatorDefault, reinterpret_cast<const void**>(&cf_path), 1, &kCFTypeArrayCallBacks) };
+		CFRelease(cf_path);
+		if (!paths)
+		{
+			throw std::runtime_error("Unable to create array");
+		}
+		FSEventStreamContext context{};
+		context.info = this;
+		m_state->stream = FSEventStreamCreate(kCFAllocatorDefault, &state::callback, &context, paths, kFSEventStreamEventIdSinceNow, 0.25,
+		                                      kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer);
+		CFRelease(paths);
+		if (!m_state->stream)
+		{
+			throw std::runtime_error("Unable to initialize filesystem event");
+		}
+		m_state->queue = dispatch_queue_create("desktop.filesystem.folder_watcher", DISPATCH_QUEUE_SERIAL);
+		if (!m_state->queue)
+		{
+			FSEventStreamInvalidate(m_state->stream);
+			FSEventStreamRelease(m_state->stream);
+			throw std::runtime_error("Unable to create dispatch queue");
+		}
+		FSEventStreamSetDispatchQueue(m_state->stream, m_state->queue);
+		if (!FSEventStreamStart(m_state->stream))
+		{
+			FSEventStreamSetDispatchQueue(m_state->stream, nullptr);
+			FSEventStreamInvalidate(m_state->stream);
+			FSEventStreamRelease(m_state->stream);
+#if !OS_OBJECT_USE_OBJC
+			dispatch_release(m_state->queue);
+#endif
+			throw std::runtime_error("Unable to start filesystem event stream");
+		}
+	}
+
+	folder_watcher::~folder_watcher()
+	{
+		std::unique_lock lock{ m_mutex };
+		m_stopping = true;
+		lock.unlock();
+		if (m_state->stream)
+		{
+			FSEventStreamStop(m_state->stream);
+			FSEventStreamSetDispatchQueue(m_state->stream, nullptr);
+			FSEventStreamInvalidate(m_state->stream);
+			FSEventStreamRelease(m_state->stream);
+		}
+#if !OS_OBJECT_USE_OBJC
+		if (m_state->queue)
+		{
+			dispatch_release(m_state->queue);
+		}
+#endif
+	}
 
 	const std::filesystem::path& folder_watcher::get_path() const
 	{
@@ -157,8 +135,57 @@ namespace desktop::filesystem
 		return m_renamed_event;
 	}
 
-	void folder_watcher::wait_for_change(folder_watcher_change_flag change_flag) const
+	void folder_watcher::fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag)
 	{
-		m_impl->wait_for_change(change_flag);
+		std::unique_lock lock{ m_mutex };
+		m_queue.push_back(flag);
+		lock.unlock();
+		m_cv.notify_all();
+		folder_watcher_event_args args{ full_path, flag };
+		switch (flag)
+		{
+		case folder_watcher_change_flag::added:
+			m_created_event.invoke(*this, args);
+			return;
+		case folder_watcher_change_flag::removed:
+			m_deleted_event.invoke(*this, args);
+			return;
+		case folder_watcher_change_flag::renamed:
+			m_renamed_event.invoke(*this, args);
+			return;
+		default:
+			m_changed_event.invoke(*this, args);
+			return;
+		}
+	}
+
+	bool folder_watcher::wait_for_change(folder_watcher_change_flag flag) const
+	{
+		std::unique_lock lock{ m_mutex };
+		while (true)
+		{
+			if (m_stopping)
+			{
+				return false;
+			}
+			if (flag == folder_watcher_change_flag::any)
+			{
+				if (!m_queue.empty())
+				{
+					m_queue.pop_front();
+					return true;
+				}
+			}
+			else
+			{
+				std::deque<folder_watcher_change_flag>::iterator it{ std::ranges::find(m_queue, flag) };
+				if (it != m_queue.end())
+				{
+					m_queue.erase(m_queue.begin(), std::next(it));
+					return true;
+				}
+			}
+			m_cv.wait(lock);
+		}
 	}
 }

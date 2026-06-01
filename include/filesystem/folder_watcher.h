@@ -1,7 +1,11 @@
 #pragma once
 
+#include <condition_variable>
+#include <deque>
 #include <filesystem>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include "events/event.h"
 #include "folder_watcher_change_flag.h"
 #include "folder_watcher_event_args.h"
@@ -20,15 +24,20 @@ namespace desktop::filesystem
 		const events::event<folder_watcher, folder_watcher_event_args>& get_created_event() const;
 		const events::event<folder_watcher, folder_watcher_event_args>& get_deleted_event() const;
 		const events::event<folder_watcher, folder_watcher_event_args>& get_renamed_event() const;
-		void wait_for_change(folder_watcher_change_flag change_flag) const;
+		bool wait_for_change(folder_watcher_change_flag flag) const;
 		folder_watcher& operator=(const folder_watcher&) = delete;
 		folder_watcher& operator=(folder_watcher&&) = delete;
 
 	private:
-		class impl;
-		friend class impl;
+		void fire(const std::filesystem::path& full_path, folder_watcher_change_flag flag);
+		class state;
+		friend class state;
+		mutable std::mutex m_mutex;
+		mutable std::condition_variable m_cv;
+		mutable std::deque<folder_watcher_change_flag> m_queue;
+		std::unique_ptr<state> m_state{ nullptr };
 		std::filesystem::path m_path;
-		std::unique_ptr<impl> m_impl;
+		bool m_stopping{ false };
 		events::event<folder_watcher, folder_watcher_event_args> m_changed_event;
 		events::event<folder_watcher, folder_watcher_event_args> m_created_event;
 		events::event<folder_watcher, folder_watcher_event_args> m_deleted_event;

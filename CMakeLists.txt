@@ -30,6 +30,8 @@ project("libdesktop" LANGUAGES C CXX VERSION 2025.5.0 DESCRIPTION "A cross-platf
 
 option(BUILD_SHARED_LIBS "Build libdesktop as a shared library" OFF)
 option(BUILD_TESTING "Build tests" ON)
+option(ENABLE_CLANG_FORMAT "Enable clang-format analysis" ON)
+option(ENABLE_CLANG_TIDY "Enable clang-tidy analysis" ON)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -66,6 +68,7 @@ add_library(${PROJECT_NAME}
     "include/app/arguments_service.h"
     "include/app/configuration_saved_event_args.h"
     "include/app/configuration_service.h"
+    "include/app/ipc_service.h"
     "include/app/keyring_service.h"
     "include/app/log_type.h"
     "include/app/logger.h"
@@ -87,6 +90,8 @@ add_library(${PROJECT_NAME}
     "include/hosting/host.h"
     "include/hosting/host_options.h"
     "include/hosting/lifetime_service.h"
+    "include/hosting/single_instance_mutex.h"
+    "include/hosting/single_instance_running_error.h"
     "include/network/download_progress.h"
     "include/network/http_response.h"
     "include/network/http_service.h"
@@ -136,6 +141,7 @@ add_library(${PROJECT_NAME}
     "src/hosting/host.cpp"
     "src/hosting/host_options.cpp"
     "src/hosting/lifetime_service.cpp"
+    "src/hosting/single_instance_running_error.cpp"
     "src/network/download_progress.cpp"
     "src/network/http_response.cpp"
     "src/network/http_service.cpp"
@@ -155,8 +161,10 @@ add_library(${PROJECT_NAME}
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/app/ipc_service_windows.cpp"
         "src/filesystem/folder_watcher_windows.cpp"
         "src/filesystem/user_directories_windows.cpp"
+        "src/hosting/single_instance_mutex_windows.cpp"
         "src/network/network_monitor_windows.cpp"
         "src/notifications/notification_service_windows.cpp"
         "src/secrets/secret_service_windows.cpp"
@@ -165,8 +173,10 @@ if(WIN32)
         "src/system/process_windows.cpp")
 elseif(APPLE)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/app/ipc_service_unix.cpp"
         "src/filesystem/folder_watcher_macos.cpp"
         "src/filesystem/user_directories_macos.cpp"
+        "src/hosting/single_instance_mutex_unix.cpp"
         "src/network/network_monitor_macos.cpp"
         "src/notifications/notification_service_macos.cpp"
         "src/secrets/secret_service_macos.cpp"
@@ -175,8 +185,10 @@ elseif(APPLE)
         "src/system/process_unix.cpp")
 elseif(LINUX)
     target_sources(${PROJECT_NAME} PRIVATE
+        "src/app/ipc_service_unix.cpp"
         "src/filesystem/folder_watcher_linux.cpp"
         "src/filesystem/user_directories_linux.cpp"
+        "src/hosting/single_instance_mutex_unix.cpp"
         "src/network/network_monitor_linux.cpp"
         "src/notifications/notification_service_linux.cpp"
         "src/secrets/secret_service_linux.cpp"
@@ -187,18 +199,20 @@ endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
-if(CLANG_TIDY)
+if(ENABLE_CLANG_TIDY AND CLANG_TIDY)
     message(NOTICE "Found clang-tidy")
     if(MSVC)
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=/EHsc")
+    elseif(LINUX)
+        set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions --extra-arg=-std=c++20")
     else()
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions")
     endif()
-else()
+elseif(ENABLE_CLANG_TIDY)
     message(WARNING "Unable to find clang-tidy")
 endif()
 
-if(CLANG_FORMAT)
+if(ENABLE_CLANG_FORMAT AND CLANG_FORMAT)
     message(NOTICE "Found clang-format")
     file(GLOB_RECURSE FORMAT_SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/include/*.h"
@@ -209,7 +223,7 @@ if(CLANG_FORMAT)
         COMMAND ${CLANG_FORMAT} -i ${FORMAT_SOURCE_FILES}
         COMMENT "Running clang-format")
     add_dependencies(${PROJECT_NAME} format)
-else()
+elseif(ENABLE_CLANG_FORMAT)
     message(WARNING "Unable to find clang-format")
 endif()
 
@@ -285,13 +299,22 @@ if (BUILD_TESTING)
     include(GoogleTest)
 
     add_executable(${PROJECT_NAME}_tests
+        "tests/environment.cpp"
+        "tests/events.cpp"
+        "tests/folder_watcher.cpp"
         "tests/github_update_service.cpp"
+        "tests/hash.cpp"
         "tests/hosting.cpp"
         "tests/http_service.cpp"
+        "tests/ipc_service.cpp"
         "tests/logger.cpp"
         "tests/main.cpp"
         "tests/network_monitor.cpp"
-        "tests/user_directories.cpp")
+        "tests/power_service.cpp"
+        "tests/process.cpp"
+        "tests/string_manip.cpp"
+        "tests/user_directories.cpp"
+        "tests/uuid.cpp")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)
 

@@ -2,6 +2,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include "hosting/single_instance_mutex.h"
+#include "hosting/single_instance_running_error.h"
 
 using namespace desktop::app;
 
@@ -9,6 +11,7 @@ namespace desktop::hosting
 {
 	lifetime_service::lifetime_service(const std::shared_ptr<app_info>& info)
 	    : m_graphical{ info->is_graphical() },
+	      m_single{ info->get_id() },
 	      m_start_time{ std::chrono::steady_clock::now() },
 	      m_exception{ nullptr }
 	{
@@ -58,8 +61,16 @@ namespace desktop::hosting
 		}
 	}
 
-	std::exception_ptr lifetime_service::run()
+	std::exception_ptr lifetime_service::run(bool single_instance)
 	{
+		if (single_instance)
+		{
+			if (!m_single.lock())
+			{
+				m_exception = std::make_exception_ptr(single_instance_running_error());
+				return m_exception;
+			}
+		}
 #ifdef __APPLE__
 		if (m_graphical)
 		{

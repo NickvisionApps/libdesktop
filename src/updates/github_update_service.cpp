@@ -61,7 +61,7 @@ namespace desktop::updates
 				}
 				if (m_http_service->download_file(asset.get_browser_download_url(), destination, true, progress))
 				{
-					if (string_manip::replace_all(asset.get_digest(), "sha256:", "") == hash::sha256(destination))
+					if (string_manip::replace_all(asset.get_digest(), "sha256:", "") == hash::sha256_from_file(destination))
 					{
 						return true;
 					}

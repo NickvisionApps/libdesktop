@@ -11,7 +11,8 @@ namespace desktop::events
 {
 	using event_id = unsigned int;
 
-	template <typename T, std::derived_from<event_args> U>
+	template <typename T, typename U>
+	    requires std::derived_from<U, event_args>
 	class event
 	{
 	public:
