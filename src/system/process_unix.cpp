@@ -375,7 +375,7 @@ namespace desktop::system
 			{
 				continue;
 			}
-			else if (r == m_state->pid)
+			if (r == m_state->pid)
 			{
 				if (WIFEXITED(status_value) || WIFSIGNALED(status_value))
 				{

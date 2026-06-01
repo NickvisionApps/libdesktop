@@ -1,4 +1,5 @@
 #include "system/environment.h"
+#include <array>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -33,10 +34,7 @@ namespace desktop::system
 		{
 			return {};
 		}
-		std::vector<std::string> args{ string_manip::split(command, ' ', false) };
-		std::string cmd{ args[0] };
-		args.erase(args.begin());
-		process proc{ cmd, args };
+		process proc{ "/bin/sh", { "-c", command } };
 		if (proc.start())
 		{
 			proc.wait_for_exit();
@@ -100,11 +98,11 @@ namespace desktop::system
 
 	std::filesystem::path environment::get_executable_path()
 	{
-		char path[PATH_MAX + 1];
-		uint32_t size{ sizeof(path) };
-		if (_NSGetExecutablePath(path, &size) == 0)
+		std::array<char, PATH_MAX + 1> path{};
+		uint32_t size{ static_cast<uint32_t>(path.size()) };
+		if (_NSGetExecutablePath(path.data(), &size) == 0)
 		{
-			return std::filesystem::canonical(path);
+			return std::filesystem::canonical(path.data());
 		}
 		return {};
 	}
