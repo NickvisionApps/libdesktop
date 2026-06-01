@@ -12,8 +12,6 @@
 
 using namespace desktop::helpers;
 
-static constexpr std::chrono::milliseconds process_wait_timeout{ 50 };
-
 static void close_handle(HANDLE& handle) noexcept
 {
 	if (handle != nullptr)
@@ -134,12 +132,16 @@ static bool update_threads(HANDLE job, bool resume)
 static std::string append_pipe_output(std::string& buffer, HANDLE pipe)
 {
 	std::size_t old_size{ buffer.size() };
-	DWORD read{ 0 };
-	std::array<char, 4096> chunk{};
 	while (true)
 	{
-		BOOL ok{ ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) };
-		if (!ok || read == 0)
+		DWORD available{ 0 };
+		if (PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) == FALSE || available == 0)
+		{
+			break;
+		}
+		std::vector<char> chunk(available);
+		DWORD read{ 0 };
+		if (ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) == FALSE || read == 0)
 		{
 			break;
 		}
@@ -280,16 +282,18 @@ namespace desktop::system
 
 	bool process::kill()
 	{
-		std::scoped_lock lock{ m_mutex };
+		std::unique_lock lock{ m_mutex };
 		if (m_status != process_status::running && m_status != process_status::paused)
 		{
 			return false;
 		}
+		lock.unlock();
 		close_handle(m_state->stdin_write);
 		if (TerminateJobObject(m_state->job, 1) == FALSE)
 		{
 			return false;
 		}
+		lock.lock();
 		m_status = process_status::killed;
 		return true;
 	}
@@ -466,11 +470,10 @@ namespace desktop::system
 	{
 		try
 		{
-			DWORD wait_result{ WAIT_TIMEOUT };
 			DWORD process_exit_code{ STILL_ACTIVE };
 			while (true)
 			{
-				wait_result = WaitForSingleObject(m_state->process_information.hProcess, static_cast<DWORD>(process_wait_timeout.count()));
+				DWORD wait_result{ WaitForSingleObject(m_state->process_information.hProcess, 50) };
 				std::unique_lock lock{ m_mutex };
 				std::string new_output{ append_pipe_output(m_standard_output, m_state->stdout_read) };
 				std::string new_error{ append_pipe_output(m_standard_error, m_state->stderr_read) };
