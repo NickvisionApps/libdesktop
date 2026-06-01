@@ -21,9 +21,11 @@ namespace desktop::network
 		network_monitor& operator=(network_monitor&&) noexcept = delete;
 
 	private:
-		class impl;
-		friend class impl;
-		std::unique_ptr<impl> m_impl;
+		class state;
+		friend class state;
+		mutable std::mutex m_mutex;
+		std::unique_ptr<state> m_state;
+		network_state m_current_state{ network_state::disconnected };
 		events::event<network_monitor, events::param_event_args<network_state>> m_state_changed_event;
 	};
 }
