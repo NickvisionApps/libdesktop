@@ -260,12 +260,12 @@ TEST(Process, StdinOutput)
 	process p{ passthrough_exe, passthrough_args };
 	p.start();
 	ASSERT_TRUE(p.write_line("ping"));
+#ifdef _WIN32
+	p.write_line("");
+#else
 	p.kill();
+#endif
 	p.wait_for_exit();
-	for (int i = 0; i < 10; ++i)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
-	}
 	ASSERT_NE(p.get_standard_output().find("ping"), std::string::npos);
 }
 
