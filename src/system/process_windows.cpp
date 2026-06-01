@@ -1,5 +1,6 @@
 #include "system/process.h"
 #include <windows.h>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <mutex>
@@ -133,16 +134,12 @@ static bool update_threads(HANDLE job, bool resume)
 static std::string append_pipe_output(std::string& buffer, HANDLE pipe)
 {
 	std::size_t old_size{ buffer.size() };
+	DWORD read{ 0 };
+	std::array<char, 4096> chunk{};
 	while (true)
 	{
-		DWORD available{ 0 };
-		if (PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) == FALSE || available == 0)
-		{
-			break;
-		}
-		std::vector<char> chunk(available);
-		DWORD read{ 0 };
-		if (ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) == FALSE || read == 0)
+		BOOL ok{ ReadFile(pipe, chunk.data(), static_cast<DWORD>(chunk.size()), &read, nullptr) };
+		if (!ok || read == 0)
 		{
 			break;
 		}

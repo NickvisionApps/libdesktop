@@ -1,7 +1,7 @@
 #include "filesystem/folder_watcher.h"
 #include <windows.h>
-#include <algorithm>
 #include <array>
+#include <ranges>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -29,6 +29,7 @@ namespace desktop::filesystem
 	public:
 		HANDLE folder{ INVALID_HANDLE_VALUE };
 		HANDLE terminate_event{ nullptr };
+		HANDLE started_event{ nullptr };
 		std::thread thread;
 
 		static void watcher(folder_watcher* watcher);
@@ -44,29 +45,46 @@ namespace desktop::filesystem
 		}
 		std::vector<BYTE> buffer(static_cast<size_t>(1024 * 256));
 		std::array<HANDLE, 2> wait_handles{ overlapped.hEvent, watcher->m_state->terminate_event };
+		bool started{ false };
 		while (true)
 		{
 			ResetEvent(overlapped.hEvent);
-			DWORD bytes{ 0 };
 			BOOL ok{ ReadDirectoryChangesW(watcher->m_state->folder, buffer.data(), static_cast<DWORD>(buffer.size()), FALSE,
 				                           FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES |
-				                               FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS,
+				                               FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS |
+				                               FILE_NOTIFY_CHANGE_CREATION,
 				                           nullptr, &overlapped, nullptr) };
 			if (!ok)
 			{
 				break;
 			}
-			DWORD wait_result{ WaitForMultipleObjects(2, wait_handles.data(), FALSE, INFINITE) };
+			if (!started)
+			{
+				started = true;
+				SetEvent(watcher->m_state->started_event);
+			}
+			DWORD wait_result{ WaitForMultipleObjects(static_cast<DWORD>(wait_handles.size()), wait_handles.data(), FALSE, INFINITE) };
 			if (wait_result == WAIT_OBJECT_0 + 1)
 			{
 				CancelIoEx(watcher->m_state->folder, &overlapped);
+				DWORD bytes{};
+				GetOverlappedResult(watcher->m_state->folder, &overlapped, &bytes, TRUE);
 				break;
 			}
 			if (wait_result != WAIT_OBJECT_0)
 			{
 				break;
 			}
-			if (!GetOverlappedResult(watcher->m_state->folder, &overlapped, &bytes, FALSE) || bytes == 0)
+			DWORD bytes{};
+			if (!GetOverlappedResult(watcher->m_state->folder, &overlapped, &bytes, FALSE))
+			{
+				if (GetLastError() == ERROR_OPERATION_ABORTED)
+				{
+					break;
+				}
+				continue;
+			}
+			if (bytes == 0)
 			{
 				continue;
 			}
@@ -102,7 +120,27 @@ namespace desktop::filesystem
 			CloseHandle(m_state->folder);
 			throw std::runtime_error("Unable to create terminate event");
 		}
+		m_state->started_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		if (!m_state->started_event)
+		{
+			CloseHandle(m_state->terminate_event);
+			CloseHandle(m_state->folder);
+			throw std::runtime_error("Unable to create started event");
+		}
 		m_state->thread = std::thread(&state::watcher, this);
+		DWORD result{ WaitForSingleObject(m_state->started_event, INFINITE) };
+		if (result != WAIT_OBJECT_0)
+		{
+			SetEvent(m_state->terminate_event);
+			if (m_state->thread.joinable())
+			{
+				m_state->thread.join();
+			}
+			CloseHandle(m_state->started_event);
+			CloseHandle(m_state->terminate_event);
+			CloseHandle(m_state->folder);
+			throw std::runtime_error("Folder watcher failed to start");
+		}
 	}
 
 	folder_watcher::~folder_watcher()
@@ -115,9 +153,21 @@ namespace desktop::filesystem
 			SetEvent(m_state->terminate_event);
 		}
 		m_cv.notify_all();
+		if (m_state->folder != INVALID_HANDLE_VALUE)
+		{
+			CancelIoEx(m_state->folder, nullptr);
+		}
+		if (m_state->terminate_event)
+		{
+			SetEvent(m_state->terminate_event);
+		}
 		if (m_state->thread.joinable())
 		{
 			m_state->thread.join();
+		}
+		if (m_state->started_event)
+		{
+			CloseHandle(m_state->started_event);
 		}
 		if (m_state->terminate_event)
 		{
@@ -197,7 +247,7 @@ namespace desktop::filesystem
 			}
 			else
 			{
-				std::deque<folder_watcher_change_flag>::iterator it{ std::find(m_queue.begin(), m_queue.end(), flag) };
+				std::deque<folder_watcher_change_flag>::iterator it{ std::ranges::find(m_queue, flag) };
 				if (it != m_queue.end())
 				{
 					m_queue.erase(m_queue.begin(), std::next(it));

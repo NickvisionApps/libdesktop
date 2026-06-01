@@ -1,8 +1,8 @@
 #include "filesystem/folder_watcher.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
-#include <algorithm>
 #include <dispatch/dispatch.h>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 
@@ -178,7 +178,7 @@ namespace desktop::filesystem
 			}
 			else
 			{
-				std::deque<folder_watcher_change_flag>::iterator it{ std::find(m_queue.begin(), m_queue.end(), flag) };
+				std::deque<folder_watcher_change_flag>::iterator it{ std::ranges::find(m_queue, flag) };
 				if (it != m_queue.end())
 				{
 					m_queue.erase(m_queue.begin(), std::next(it));
