@@ -3,7 +3,6 @@
 #include <array>
 #include <stdexcept>
 #include <string>
-#include <thread>
 
 static constexpr DWORD s_buffer_size{ 4096 };
 
@@ -11,32 +10,19 @@ using namespace desktop::events;
 
 namespace desktop::app
 {
-	class ipc_service::impl
+	class ipc_service::state
 	{
 	public:
-		impl(ipc_service& owner);
-		~impl();
-		impl(const impl&) = delete;
-		impl(impl&&) = delete;
-		impl& operator=(const impl&) = delete;
-		impl& operator=(impl&&) = delete;
-		bool is_host() const;
-		bool send_message(const std::string& message);
-
-	private:
-		void listen_loop();
-		ipc_service& m_owner;
-		bool m_host{ false };
-		HANDLE m_pipe{ nullptr };
-		HANDLE m_terminate_event{ nullptr };
-		std::thread m_thread;
+		HANDLE pipe{ nullptr };
+		HANDLE terminate_event{ nullptr };
 	};
 
-	ipc_service::impl::impl(ipc_service& owner)
-	    : m_owner{ owner }
+	ipc_service::ipc_service(std::shared_ptr<app_info> app_info)
+	    : m_state{ std::make_unique<state>() },
+	      m_app_info{ std::move(app_info) }
 	{
-		std::string pipe_name{ "\\\\.\\pipe\\" + m_owner.m_app_info->get_id() };
-		HANDLE existing = CreateFileA(pipe_name.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+		std::string pipe_name{ "\\\\.\\pipe\\" + m_app_info->get_id() };
+		HANDLE existing{ CreateFileA(pipe_name.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr) };
 		if (existing != INVALID_HANDLE_VALUE)
 		{
 			CloseHandle(existing);
@@ -53,41 +39,46 @@ namespace desktop::app
 			throw std::runtime_error("Unable to create pipe");
 		}
 		m_host = true;
-		m_pipe = pipe;
-		m_terminate_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-		if (!m_terminate_event)
+		m_state->pipe = pipe;
+		m_state->terminate_event = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+		if (!m_state->terminate_event)
 		{
-			CloseHandle(m_pipe);
+			CloseHandle(m_state->pipe);
 			throw std::runtime_error("Unable to create terminate event");
 		}
-		m_thread = std::thread(&impl::listen_loop, this);
+		m_listener = std::thread(&ipc_service::watch, this);
 	}
 
-	ipc_service::impl::~impl()
+	ipc_service::~ipc_service()
 	{
-		if (m_host && m_terminate_event)
+		if (m_host && m_state->terminate_event)
 		{
-			SetEvent(m_terminate_event);
-			if (m_thread.joinable())
+			SetEvent(m_state->terminate_event);
+			if (m_listener.joinable())
 			{
-				m_thread.join();
+				m_listener.join();
 			}
-			CloseHandle(m_terminate_event);
+			CloseHandle(m_state->terminate_event);
 		}
-		if (m_pipe && m_pipe != INVALID_HANDLE_VALUE)
+		if (m_state->pipe && m_state->pipe != INVALID_HANDLE_VALUE)
 		{
-			CloseHandle(m_pipe);
+			CloseHandle(m_state->pipe);
 		}
 	}
 
-	bool ipc_service::impl::is_host() const
+	const event<ipc_service, param_event_args<std::string>>& ipc_service::get_message_received_event() const
+	{
+		return m_message_received_event;
+	}
+
+	bool ipc_service::is_host() const
 	{
 		return m_host;
 	}
 
-	bool ipc_service::impl::send_message(const std::string& message)
+	bool ipc_service::send_message(const std::string& message)
 	{
-		std::string pipe_name{ "\\\\.\\pipe\\" + m_owner.m_app_info->get_id() };
+		std::string pipe_name{ "\\\\.\\pipe\\" + m_app_info->get_id() };
 		if (!WaitNamedPipeA(pipe_name.c_str(), NMPWAIT_WAIT_FOREVER))
 		{
 			return false;
@@ -103,21 +94,21 @@ namespace desktop::app
 		return ok != 0;
 	}
 
-	void ipc_service::impl::listen_loop()
+	void ipc_service::watch()
 	{
 		HANDLE connect_event{ CreateEventW(nullptr, TRUE, FALSE, nullptr) };
 		if (!connect_event)
 		{
 			return;
 		}
-		std::array<HANDLE, 2> connect_wait{ connect_event, m_terminate_event };
+		std::array<HANDLE, 2> connect_wait{ connect_event, m_state->terminate_event };
 		std::string buffer(s_buffer_size, '\0');
 		while (true)
 		{
 			OVERLAPPED connect_ov{};
 			connect_ov.hEvent = connect_event;
 			ResetEvent(connect_event);
-			BOOL connected{ ConnectNamedPipe(m_pipe, &connect_ov) };
+			BOOL connected{ ConnectNamedPipe(m_state->pipe, &connect_ov) };
 			if (!connected)
 			{
 				DWORD err{ GetLastError() };
@@ -126,19 +117,19 @@ namespace desktop::app
 					DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(connect_wait.size()), connect_wait.data(), FALSE, INFINITE) };
 					if (wait != WAIT_OBJECT_0)
 					{
-						CancelIoEx(m_pipe, &connect_ov);
+						CancelIoEx(m_state->pipe, &connect_ov);
 						break;
 					}
 					DWORD dummy{};
-					if (!GetOverlappedResult(m_pipe, &connect_ov, &dummy, FALSE))
+					if (!GetOverlappedResult(m_state->pipe, &connect_ov, &dummy, FALSE))
 					{
-						DisconnectNamedPipe(m_pipe);
+						DisconnectNamedPipe(m_state->pipe);
 						continue;
 					}
 				}
 				else if (err != ERROR_PIPE_CONNECTED)
 				{
-					DisconnectNamedPipe(m_pipe);
+					DisconnectNamedPipe(m_state->pipe);
 					continue;
 				}
 			}
@@ -150,9 +141,9 @@ namespace desktop::app
 				{
 					break;
 				}
-				std::array<HANDLE, 2> read_wait{ read_ov.hEvent, m_terminate_event };
+				std::array<HANDLE, 2> read_wait{ read_ov.hEvent, m_state->terminate_event };
 				DWORD bytes{ 0 };
-				BOOL ok{ ReadFile(m_pipe, buffer.data(), static_cast<DWORD>(buffer.size()), nullptr, &read_ov) };
+				BOOL ok{ ReadFile(m_state->pipe, buffer.data(), static_cast<DWORD>(buffer.size()), nullptr, &read_ov) };
 				if (!ok)
 				{
 					DWORD err{ GetLastError() };
@@ -161,12 +152,12 @@ namespace desktop::app
 						DWORD wait{ WaitForMultipleObjects(static_cast<DWORD>(read_wait.size()), read_wait.data(), FALSE, INFINITE) };
 						if (wait != WAIT_OBJECT_0)
 						{
-							CancelIoEx(m_pipe, &read_ov);
+							CancelIoEx(m_state->pipe, &read_ov);
 							CloseHandle(read_ov.hEvent);
 							CloseHandle(connect_event);
 							return;
 						}
-						ok = GetOverlappedResult(m_pipe, &read_ov, &bytes, FALSE);
+						ok = GetOverlappedResult(m_state->pipe, &read_ov, &bytes, FALSE);
 					}
 					else
 					{
@@ -176,40 +167,17 @@ namespace desktop::app
 				}
 				else
 				{
-					GetOverlappedResult(m_pipe, &read_ov, &bytes, FALSE);
+					GetOverlappedResult(m_state->pipe, &read_ov, &bytes, FALSE);
 				}
 				CloseHandle(read_ov.hEvent);
 				if (!ok || bytes == 0)
 				{
 					break;
 				}
-				m_owner.m_message_received_event.invoke(m_owner, { std::string{ buffer.data(), bytes } });
+				m_message_received_event.invoke(*this, { std::string{ buffer.data(), bytes } });
 			}
-			DisconnectNamedPipe(m_pipe);
+			DisconnectNamedPipe(m_state->pipe);
 		}
 		CloseHandle(connect_event);
-	}
-
-	ipc_service::ipc_service(std::shared_ptr<app_info> app_info)
-	    : m_app_info{ std::move(app_info) },
-	      m_impl{ std::make_unique<impl>(*this) }
-	{
-	}
-
-	ipc_service::~ipc_service() = default;
-
-	const event<ipc_service, param_event_args<std::string>>& ipc_service::get_message_received_event() const
-	{
-		return m_message_received_event;
-	}
-
-	bool ipc_service::is_host() const
-	{
-		return m_impl->is_host();
-	}
-
-	bool ipc_service::send_message(const std::string& message)
-	{
-		return m_impl->send_message(message);
 	}
 }

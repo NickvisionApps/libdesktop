@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <thread>
 #include <tuple>
 #include "app_info.h"
 #include "events/event.h"
@@ -23,10 +24,13 @@ namespace desktop::app
 		ipc_service& operator=(ipc_service&&) = delete;
 
 	private:
-		class impl;
-		friend class impl;
+		void watch();
+		class state;
+		friend class state;
+		std::unique_ptr<state> m_state;
 		std::shared_ptr<app_info> m_app_info;
-		std::unique_ptr<impl> m_impl;
+		bool m_host{ false };
+		std::thread m_listener;
 		events::event<ipc_service, events::param_event_args<std::string>> m_message_received_event;
 	};
 }
