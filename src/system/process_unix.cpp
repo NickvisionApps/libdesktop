@@ -204,6 +204,10 @@ namespace desktop::system
 		{
 			return false;
 		}
+		if (m_status == process_status::paused)
+		{
+			send_signal(m_state->pid, SIGCONT);
+		}
 		if (!send_signal(m_state->pid, SIGTERM))
 		{
 			return false;
@@ -367,7 +371,11 @@ namespace desktop::system
 		while (!exited)
 		{
 			pid_t r{ waitpid(m_state->pid, &status_value, WNOHANG | WUNTRACED | WCONTINUED) };
-			if (r == m_state->pid)
+			if (r == 0 && WIFSTOPPED(status_value))
+			{
+				continue;
+			}
+			else if (r == m_state->pid)
 			{
 				if (WIFEXITED(status_value) || WIFSIGNALED(status_value))
 				{
