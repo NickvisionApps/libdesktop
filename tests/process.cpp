@@ -263,6 +263,7 @@ TEST(Process, StdinOutput)
 #ifdef _WIN32
 	p.write_line("");
 #else
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	p.kill();
 #endif
 	p.wait_for_exit();

@@ -88,6 +88,10 @@ namespace desktop::app
 	bool ipc_service::impl::send_message(const std::string& message)
 	{
 		std::string pipe_name{ "\\\\.\\pipe\\" + m_owner.m_app_info->get_id() };
+		if (!WaitNamedPipeA(pipe_name.c_str(), NMPWAIT_WAIT_FOREVER))
+		{
+			return false;
+		}
 		HANDLE pipe{ CreateFileA(pipe_name.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr) };
 		if (pipe == INVALID_HANDLE_VALUE)
 		{
