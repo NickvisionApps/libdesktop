@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 
 namespace desktop::hosting
@@ -19,9 +21,11 @@ namespace desktop::hosting
 		single_instance_mutex& operator=(single_instance_mutex&&) = delete;
 
 	private:
-		class impl;
-		friend class impl;
-		std::unique_ptr<impl> m_impl;
+		class state;
+		friend class state;
+		static std::mutex s_registry_mutex;
+		static std::set<std::string> s_locked_names;
+		std::unique_ptr<state> m_state;
 		std::string m_name;
 	};
 }

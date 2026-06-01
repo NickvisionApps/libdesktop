@@ -17,7 +17,6 @@ namespace desktop::filesystem
 		case FILE_ACTION_REMOVED:
 			return folder_watcher_change_flag::removed;
 		case FILE_ACTION_RENAMED_OLD_NAME:
-			return folder_watcher_change_flag::renamed;
 		case FILE_ACTION_RENAMED_NEW_NAME:
 			return folder_watcher_change_flag::renamed;
 		default:
@@ -43,7 +42,7 @@ namespace desktop::filesystem
 		{
 			return;
 		}
-		std::vector<BYTE> buffer(1024 * 256);
+		std::vector<BYTE> buffer(static_cast<size_t>(1024 * 256));
 		std::array<HANDLE, 2> wait_handles{ overlapped.hEvent, watcher->m_state->terminate_event };
 		while (true)
 		{
