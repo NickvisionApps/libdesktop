@@ -30,7 +30,7 @@ namespace desktop::network
 	};
 
 	network_monitor::network_monitor()
-		: m_state{ std::make_unique<state>(*this) }
+	    : m_state{ std::make_unique<state>(*this) }
 	{
 		m_state->check_connection_state(false);
 	}
@@ -49,13 +49,13 @@ namespace desktop::network
 	}
 
 	network_monitor::state::state(network_monitor& owner)
-		: m_owner{ owner },
-		  m_handles_com{ CoInitializeEx(nullptr, COINIT_MULTITHREADED) == S_OK }
+	    : m_owner{ owner },
+	      m_handles_com{ CoInitializeEx(nullptr, COINIT_MULTITHREADED) == S_OK }
 	{
 		CComPtr<IConnectionPointContainer> connection_point_container{ nullptr };
 		CComPtr<IUnknown> sink{ nullptr };
-		if (CoCreateInstance(CLSID_NetworkListManager, nullptr, CLSCTX_ALL, __uuidof(INetworkListManager),
-							 reinterpret_cast<LPVOID*>(&m_net_list_manager)) != S_OK)
+		if (CoCreateInstance(CLSID_NetworkListManager, nullptr, CLSCTX_ALL, __uuidof(INetworkListManager), reinterpret_cast<LPVOID*>(&m_net_list_manager)) !=
+		    S_OK)
 		{
 			throw std::runtime_error("Unable to create network list manager");
 		}

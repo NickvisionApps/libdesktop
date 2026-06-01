@@ -299,6 +299,7 @@ if (BUILD_TESTING)
     include(GoogleTest)
 
     add_executable(${PROJECT_NAME}_tests
+        "tests/argument_service.cpp"
         "tests/environment.cpp"
         "tests/events.cpp"
         "tests/folder_watcher.cpp"

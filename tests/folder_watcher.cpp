@@ -9,7 +9,7 @@
 using namespace desktop::events;
 using namespace desktop::filesystem;
 
-class FolderWatcherTests : public testing::Test
+class FolderWatcher : public testing::Test
 {
 protected:
 	void SetUp() override
@@ -28,13 +28,13 @@ protected:
 	std::filesystem::path m_test_directory;
 };
 
-TEST_F(FolderWatcherTests, GetPath)
+TEST_F(FolderWatcher, GetPath)
 {
 	folder_watcher watcher{ m_test_directory };
 	ASSERT_EQ(watcher.get_path(), m_test_directory);
 }
 
-TEST_F(FolderWatcherTests, CreateFileFiresCreatedEvent)
+TEST_F(FolderWatcher, CreateFileFiresCreatedEvent)
 {
 	folder_watcher watcher{ m_test_directory };
 	std::optional<bool> fired{ std::nullopt };
@@ -54,7 +54,7 @@ TEST_F(FolderWatcherTests, CreateFileFiresCreatedEvent)
 	ASSERT_TRUE(fired);
 }
 
-TEST_F(FolderWatcherTests, ModifyFileFiresChangedEvent)
+TEST_F(FolderWatcher, ModifyFileFiresChangedEvent)
 {
 	std::filesystem::path file_path{ m_test_directory / "changed.txt" };
 	{
@@ -81,7 +81,7 @@ TEST_F(FolderWatcherTests, ModifyFileFiresChangedEvent)
 	ASSERT_TRUE(fired);
 }
 
-TEST_F(FolderWatcherTests, DeleteFileFiresDeletedEvent)
+TEST_F(FolderWatcher, DeleteFileFiresDeletedEvent)
 {
 	std::filesystem::path file_path{ m_test_directory / "deleted.txt" };
 	{
@@ -105,7 +105,7 @@ TEST_F(FolderWatcherTests, DeleteFileFiresDeletedEvent)
 	ASSERT_TRUE(fired);
 }
 
-TEST_F(FolderWatcherTests, RenameFileFiresRenamedEvent)
+TEST_F(FolderWatcher, RenameFileFiresRenamedEvent)
 {
 	std::filesystem::path original{ m_test_directory / "before.txt" };
 	std::filesystem::path renamed{ m_test_directory / "after.txt" };
@@ -127,7 +127,7 @@ TEST_F(FolderWatcherTests, RenameFileFiresRenamedEvent)
 	ASSERT_TRUE(fired);
 }
 
-TEST_F(FolderWatcherTests, EventArgsContainCorrectPath)
+TEST_F(FolderWatcher, EventArgsContainCorrectPath)
 {
 	folder_watcher watcher{ m_test_directory };
 	std::filesystem::path received;
@@ -150,7 +150,7 @@ TEST_F(FolderWatcherTests, EventArgsContainCorrectPath)
 	ASSERT_EQ(received, expected);
 }
 
-TEST_F(FolderWatcherTests, EventArgsContainCorrectName)
+TEST_F(FolderWatcher, EventArgsContainCorrectName)
 {
 	folder_watcher watcher{ m_test_directory };
 	std::string received;
@@ -172,7 +172,7 @@ TEST_F(FolderWatcherTests, EventArgsContainCorrectName)
 	ASSERT_EQ(received, "name_test.txt");
 }
 
-TEST_F(FolderWatcherTests, EventArgsContainCorrectFlag)
+TEST_F(FolderWatcher, EventArgsContainCorrectFlag)
 {
 	folder_watcher watcher{ m_test_directory };
 	folder_watcher_change_flag received{ folder_watcher_change_flag::any };
@@ -191,7 +191,7 @@ TEST_F(FolderWatcherTests, EventArgsContainCorrectFlag)
 	ASSERT_EQ(received, folder_watcher_change_flag::added);
 }
 
-TEST_F(FolderWatcherTests, MultipleHandlersFire)
+TEST_F(FolderWatcher, MultipleHandlersFire)
 {
 	folder_watcher watcher{ m_test_directory };
 	int count{ 0 };
@@ -214,7 +214,7 @@ TEST_F(FolderWatcherTests, MultipleHandlersFire)
 	ASSERT_GE(count, 2);
 }
 
-TEST_F(FolderWatcherTests, WaitForChangeAny)
+TEST_F(FolderWatcher, WaitForChangeAny)
 {
 	folder_watcher watcher{ m_test_directory };
 	std::thread worker{ [&]()
@@ -227,7 +227,7 @@ TEST_F(FolderWatcherTests, WaitForChangeAny)
 	worker.join();
 }
 
-TEST_F(FolderWatcherTests, WaitForChangeAdded)
+TEST_F(FolderWatcher, WaitForChangeAdded)
 {
 	folder_watcher watcher{ m_test_directory };
 	std::thread worker{ [&]()
@@ -242,7 +242,7 @@ TEST_F(FolderWatcherTests, WaitForChangeAdded)
 	worker.join();
 }
 
-TEST_F(FolderWatcherTests, CreatedEventSenderMatchesWatcher)
+TEST_F(FolderWatcher, CreatedEventSenderMatchesWatcher)
 {
 	folder_watcher watcher{ m_test_directory };
 	const folder_watcher* sender{ nullptr };
@@ -261,7 +261,7 @@ TEST_F(FolderWatcherTests, CreatedEventSenderMatchesWatcher)
 	ASSERT_EQ(sender, &watcher);
 }
 
-TEST_F(FolderWatcherTests, RemovedHandlerDoesNotFire)
+TEST_F(FolderWatcher, RemovedHandlerDoesNotFire)
 {
 	folder_watcher watcher{ m_test_directory };
 	std::optional<bool> fired{ std::nullopt };

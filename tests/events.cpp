@@ -74,7 +74,7 @@ TEST(Events, ParamClassDereferenceOperator)
 TEST(Events, ParamClassArrowOperator)
 {
 	param_event_args<std::string> args{ "hello" };
-	ASSERT_EQ(args->length(), 5u);
+	ASSERT_EQ(args->length(), 5U);
 }
 
 TEST(Events, ParamClassGetValueReturnsConstRef)
