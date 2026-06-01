@@ -17,7 +17,6 @@ TEST(PowerService, PreventSuspend)
 		GTEST_SKIP() << "Unable to use power management API in CI/CD";
 	}
 #endif
-
 	power_service service;
 	ASSERT_TRUE(service.prevent_suspend());
 	ASSERT_TRUE(service.is_suspended());
@@ -40,6 +39,12 @@ TEST(PowerService, AllowSuspend)
 
 TEST(PowerService, AllowSuspendWithoutPrevent)
 {
+#ifdef __linux__
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		GTEST_SKIP() << "Unable to use power management API in CI/CD";
+	}
+#endif
 	power_service service;
 	ASSERT_TRUE(service.allow_suspend());
 	ASSERT_FALSE(service.is_suspended());
