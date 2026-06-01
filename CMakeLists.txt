@@ -300,6 +300,8 @@ if (BUILD_TESTING)
 
     add_executable(${PROJECT_NAME}_tests
         "tests/argument_service.cpp"
+        "tests/configuration_service.cpp"
+        "tests/database_service.cpp"
         "tests/environment.cpp"
         "tests/events.cpp"
         "tests/folder_watcher.cpp"
@@ -313,7 +315,9 @@ if (BUILD_TESTING)
         "tests/network_monitor.cpp"
         "tests/power_service.cpp"
         "tests/process.cpp"
+        "tests/keyring_service.cpp"
         "tests/string_manip.cpp"
+        "tests/translation_service.cpp"
         "tests/user_directories.cpp"
         "tests/uuid.cpp")
 
