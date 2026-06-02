@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir build
           brew update
-          brew install curl gettext glib googletest libarchive nlohmann-json openssl
+          brew install curl gettext googletest libarchive nlohmann-json openssl
           git clone --branch 1.6.0 https://github.com/progsource/maddy /tmp/maddy
           cmake -S /tmp/maddy -B /tmp/maddy/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ matrix.variant.prefix }}
           cmake --build /tmp/maddy/build
