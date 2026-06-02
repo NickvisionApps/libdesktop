@@ -45,10 +45,7 @@ jobs:
       - name: "Install"
         run: cmake --install build
       - name: "Test"
-        run: |
-          eval $(dbus-launch --sh-syntax)
-          export $(echo -n '' | gnome-keyring-daemon --unlock --components=secrets,ssh,pkcs11 2>/dev/null)
-          ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure
       - name: Upload
         uses: actions/upload-artifact@v7
         with:
