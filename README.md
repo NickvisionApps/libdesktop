@@ -4,6 +4,7 @@ A cross-platform C++20 base library for native desktop applications. It provides
 ## Table of Contents
 - [Dependencies](#dependencies)
 - [Build Instructions](#build-instructions)
+- [Install Instructions](#install-instructions)
 - [API Overview](#api-overview)
   - [Hosting](#hosting-desktophosting)
   - [Services](#services-desktopservices)
@@ -62,15 +63,7 @@ git clone --recursive https://github.com/NickvisionApps/libdesktop
 cd libdesktop
 ```
 
-### Configure
-```bash
-cmake -S . -B build \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr/local \
-    -DCMAKE_CXX_STANDARD=20
-```
-
-#### CMake Options
+### CMake
 | Option | Default | Description |
 |---|---|---|
 | `BUILD_SHARED_LIBS` | `OFF` | Build as a shared library instead of static |
@@ -78,14 +71,19 @@ cmake -S . -B build \
 | `ENABLE_CLANG_FORMAT` | `ON` | Auto-format sources with clang-format |
 | `ENABLE_CLANG_TIDY` | `ON` | Run clang-tidy static analysis |
 
+#### vcpkg
+If `VCPKG_ROOT` is set, the toolchain file is applied automatically. Install the required packages before configuring.
+
+#### Configure
+```bash
+cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20
+```
+
 ### Build
 ```bash
 cmake --build build --parallel
-```
-
-### Install
-```bash
-cmake --install build
 ```
 
 ### Run Tests
@@ -93,10 +91,29 @@ cmake --install build
 ctest --test-dir build --output-on-failure
 ```
 
-### vcpkg
-If `VCPKG_ROOT` is set, the toolchain file is applied automatically. Install the required packages via your `vcpkg.json` manifest or manually before configuring.
-
 ---
+
+## Install Instructions
+
+### Linux
+```bash
+sudo cmake --install build --prefix /usr
+```
+
+### macOS (Apple Silicon)
+```bash
+cmake --install build --prefix /opt/homebrew
+```
+
+### macOS (Intel)
+```bash
+cmake --install build --prefix /usr/local
+```
+
+### Windows (vcpkg)
+```bash
+vcpkg install libdesktop
+```
 
 ## API Overview
 
@@ -228,13 +245,21 @@ Full HTTP client built on libcurl.
 
 ```cpp
 auto http = services->get_required<desktop::network::http_service>();
+
+// Basic request
 auto response = http->get("https://api.example.com/data");
 if (response.is_ok()) { auto json = response.json(); }
+
+// Request with custom headers (e.g. Authorization)
+std::vector<std::pair<std::string, std::string>> headers{ { "Authorization", "Bearer <token>" } };
+auto auth_response = http->get("https://api.example.com/protected", headers);
+
+// File download with progress callback
 http->download_file("https://example.com/file.zip", "/tmp/file.zip", true,
     [](const auto& p) { std::cout << p.get_percent() << "%\n"; });
 ```
 
-Supports `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, JSON and form bodies, file upload, and file download with progress callbacks.
+Supports `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, JSON and form bodies, file upload, and file download with progress callbacks. All request methods accept an optional `std::vector<std::pair<std::string, std::string>>` of custom headers appended before any content-type headers.
 
 #### `network_monitor`
 Observes connectivity state changes.

@@ -33,7 +33,7 @@ namespace desktop::network
 		curl_global_cleanup();
 	}
 
-	http_response http_service::del(const std::string& url) const
+	http_response http_service::del(const std::string& url, const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -45,6 +45,12 @@ namespace desktop::network
 			return {};
 		}
 		http_response response;
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
 		{
@@ -54,6 +60,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
 		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
 		{
@@ -67,6 +74,7 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
@@ -76,7 +84,8 @@ namespace desktop::network
 	}
 
 	bool http_service::download_file(const std::string& url, const std::filesystem::path& destination, bool overwrite,
-	                                 const std::function<void(const download_progress&)>& progress) const
+	                                 const std::function<void(const download_progress&)>& progress,
+	                                 const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -98,6 +107,12 @@ namespace desktop::network
 			std::filesystem::remove(destination);
 			return false;
 		}
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
 		{
@@ -106,6 +121,7 @@ namespace desktop::network
 		}
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		if (progress)
 		{
 			curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
@@ -135,11 +151,13 @@ namespace desktop::network
 			if (response.is_success())
 			{
 				curl_easy_cleanup(easy);
+				curl_slist_free_all(curl_headers);
 				out.close();
 				return true;
 			}
 		}
 		curl_easy_cleanup(easy);
+		curl_slist_free_all(curl_headers);
 		out.close();
 		std::filesystem::remove(destination);
 		return false;
@@ -150,7 +168,7 @@ namespace desktop::network
 		m_ssl_verification = true;
 	}
 
-	http_response http_service::get(const std::string& url) const
+	http_response http_service::get(const std::string& url, const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -162,6 +180,12 @@ namespace desktop::network
 			return {};
 		}
 		http_response response;
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
 		{
@@ -171,6 +195,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
 		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
 		{
@@ -183,6 +208,7 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
@@ -207,7 +233,7 @@ namespace desktop::network
 		return result == CURLUE_OK;
 	}
 
-	http_response http_service::patch(const std::string& url, const nlohmann::json& json) const
+	http_response http_service::patch(const std::string& url, const nlohmann::json& json, const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -219,8 +245,13 @@ namespace desktop::network
 			return {};
 		}
 		std::string body{ json.dump() };
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/json");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/json");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -231,7 +262,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PATCH");
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, body.c_str());
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(body.size()));
@@ -247,11 +278,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::patch(const std::string& url, const std::vector<std::byte>& data) const
+	http_response http_service::patch(const std::string& url, const std::vector<std::byte>& data,
+	                                  const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -262,8 +294,13 @@ namespace desktop::network
 		{
 			return {};
 		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -274,7 +311,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PATCH");
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, reinterpret_cast<const char*>(data.data()));
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(data.size()));
@@ -290,11 +327,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::patch(const std::string& url, const std::filesystem::path& file_path) const
+	http_response http_service::patch(const std::string& url, const std::filesystem::path& file_path,
+	                                  const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty() || !std::filesystem::exists(file_path))
 		{
@@ -311,8 +349,13 @@ namespace desktop::network
 			curl_easy_cleanup(easy);
 			return {};
 		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -323,7 +366,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PATCH");
 		curl_easy_setopt(easy, CURLOPT_POST, 1L);
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(std::filesystem::file_size(file_path)));
@@ -346,11 +389,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::patch(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
+	http_response http_service::patch(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form,
+	                                  const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -368,6 +412,12 @@ namespace desktop::network
 			curl_mime_name(part, pair.first.c_str());
 			curl_mime_data(part, pair.second.c_str(), CURL_ZERO_TERMINATED);
 		}
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -378,6 +428,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PATCH");
 		curl_easy_setopt(easy, CURLOPT_MIMEPOST, mime);
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
@@ -392,11 +443,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
+		curl_slist_free_all(curl_headers);
 		curl_mime_free(mime);
 		return response;
 	}
 
-	bool http_service::ping(const std::string& url) const
+	bool http_service::ping(const std::string& url, const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -407,6 +459,12 @@ namespace desktop::network
 		{
 			return false;
 		}
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
 		{
@@ -416,13 +474,15 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_NOBODY, 1L);
 		bool success{ curl_easy_perform(easy) == CURLE_OK };
 		curl_easy_cleanup(easy);
+		curl_slist_free_all(curl_headers);
 		return success;
 	}
 
-	http_response http_service::post(const std::string& url, const nlohmann::json& json) const
+	http_response http_service::post(const std::string& url, const nlohmann::json& json, const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -434,8 +494,13 @@ namespace desktop::network
 			return {};
 		}
 		const std::string body{ json.dump() };
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/json");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/json");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -446,7 +511,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, body.c_str());
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(body.size()));
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
@@ -461,11 +526,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::post(const std::string& url, const std::vector<std::byte>& data) const
+	http_response http_service::post(const std::string& url, const std::vector<std::byte>& data,
+	                                 const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -476,8 +542,13 @@ namespace desktop::network
 		{
 			return {};
 		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -488,7 +559,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, reinterpret_cast<const char*>(data.data()));
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(data.size()));
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
@@ -503,11 +574,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::post(const std::string& url, const std::filesystem::path& file_path) const
+	http_response http_service::post(const std::string& url, const std::filesystem::path& file_path,
+	                                 const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty() || !std::filesystem::exists(file_path))
 		{
@@ -524,8 +596,13 @@ namespace desktop::network
 			curl_easy_cleanup(easy);
 			return {};
 		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -536,7 +613,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_POST, 1L);
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(std::filesystem::file_size(file_path)));
 		curl_easy_setopt(easy, CURLOPT_READDATA, &in);
@@ -558,11 +635,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::post(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
+	http_response http_service::post(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form,
+	                                 const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -580,6 +658,12 @@ namespace desktop::network
 			curl_mime_name(part, pair.first.c_str());
 			curl_mime_data(part, pair.second.c_str(), CURL_ZERO_TERMINATED);
 		}
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -590,6 +674,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_MIMEPOST, mime);
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
 		curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, +[](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t
@@ -603,11 +688,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
+		curl_slist_free_all(curl_headers);
 		curl_mime_free(mime);
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const nlohmann::json& json) const
+	http_response http_service::put(const std::string& url, const nlohmann::json& json, const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -619,8 +705,13 @@ namespace desktop::network
 			return {};
 		}
 		const std::string body{ json.dump() };
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/json");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/json");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -631,7 +722,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PUT");
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, body.c_str());
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(body.size()));
@@ -647,11 +738,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const std::vector<std::byte>& data) const
+	http_response http_service::put(const std::string& url, const std::vector<std::byte>& data,
+	                                const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -662,8 +754,13 @@ namespace desktop::network
 		{
 			return {};
 		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -674,7 +771,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PUT");
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDS, reinterpret_cast<const char*>(data.data()));
 		curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE, static_cast<curl_off_t>(data.size()));
@@ -690,11 +787,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const std::filesystem::path& file_path) const
+	http_response http_service::put(const std::string& url, const std::filesystem::path& file_path,
+	                                const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty() || !std::filesystem::exists(file_path))
 		{
@@ -711,8 +809,13 @@ namespace desktop::network
 			curl_easy_cleanup(easy);
 			return {};
 		}
-		curl_slist* headers{ nullptr };
-		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
+		curl_headers = curl_slist_append(curl_headers, "Content-Type: application/octet-stream");
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -723,7 +826,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
 		curl_easy_setopt(easy, CURLOPT_INFILESIZE_LARGE, static_cast<curl_off_t>(std::filesystem::file_size(file_path)));
 		curl_easy_setopt(easy, CURLOPT_READDATA, &in);
@@ -745,11 +848,12 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
-		curl_slist_free_all(headers);
+		curl_slist_free_all(curl_headers);
 		return response;
 	}
 
-	http_response http_service::put(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form) const
+	http_response http_service::put(const std::string& url, const std::vector<std::pair<std::string, std::string>>& form,
+	                                const std::vector<std::pair<std::string, std::string>>& headers) const
 	{
 		if (url.empty())
 		{
@@ -767,6 +871,12 @@ namespace desktop::network
 			curl_mime_name(part, pair.first.c_str());
 			curl_mime_data(part, pair.second.c_str(), CURL_ZERO_TERMINATED);
 		}
+		curl_slist* curl_headers{ nullptr };
+		for (const std::pair<std::string, std::string>& header : headers)
+		{
+			std::string h{ header.first + ": " + header.second };
+			curl_headers = curl_slist_append(curl_headers, h.c_str());
+		}
 		http_response response;
 		curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
 		if (!m_ssl_verification)
@@ -777,6 +887,7 @@ namespace desktop::network
 		curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(easy, CURLOPT_USERAGENT, get_user_agent().c_str());
 		curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+		curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_headers);
 		curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PUT");
 		curl_easy_setopt(easy, CURLOPT_MIMEPOST, mime);
 		curl_easy_setopt(easy, CURLOPT_WRITEDATA, &response);
@@ -791,6 +902,7 @@ namespace desktop::network
 			response.set_info_from_easy(easy);
 		}
 		curl_easy_cleanup(easy);
+		curl_slist_free_all(curl_headers);
 		curl_mime_free(mime);
 		return response;
 	}
