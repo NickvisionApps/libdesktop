@@ -37,6 +37,13 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive
+      - name: "Setup Keyring"
+        run: |
+          eval "$(dbus-launch --sh-syntax)"
+          eval "$(echo libdesktop-ci | gnome-keyring-daemon --unlock --components=secrets --daemonize)"
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> $GITHUB_ENV
+          echo "GNOME_KEYRING_CONTROL=$GNOME_KEYRING_CONTROL" >> $GITHUB_ENV
+          echo "GNOME_KEYRING_PID=$GNOME_KEYRING_PID" >> $GITHUB_ENV
       - name: "Build"
         run: |
           mkdir -p build

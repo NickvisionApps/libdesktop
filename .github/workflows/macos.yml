@@ -39,6 +39,13 @@ jobs:
           cmake -S /tmp/maddy -B /tmp/maddy/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ matrix.variant.prefix }}
           cmake --build /tmp/maddy/build
           sudo cmake --install /tmp/maddy/build
+      - name: "Setup Keychain"
+        run: |
+          security create-keychain -p libdesktop-ci libdesktop-ci.keychain
+          security set-keychain-settings -lut 21600 libdesktop-ci.keychain
+          security unlock-keychain -p libdesktop-ci libdesktop-ci.keychain
+          security list-keychains -d user -s libdesktop-ci.keychain
+          security default-keychain -d user -s libdesktop-ci.keychain
       - name: "Build"
         working-directory: ${{github.workspace}}/build
         run: |

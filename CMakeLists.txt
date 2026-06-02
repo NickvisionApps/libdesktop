@@ -299,7 +299,7 @@ if (BUILD_TESTING)
     include(GoogleTest)
 
     add_executable(${PROJECT_NAME}_tests
-        "tests/argument_service.cpp"
+        "tests/arguments_service.cpp"
         "tests/configuration_service.cpp"
         "tests/database_service.cpp"
         "tests/environment.cpp"
@@ -319,9 +319,11 @@ if (BUILD_TESTING)
         "tests/process.cpp"
         "tests/keyring_service.cpp"
         "tests/secret_service.cpp"
+        "tests/single_instance_hosting.cpp"
         "tests/string_manip.cpp"
         "tests/translation_service.cpp"
         "tests/user_directories.cpp"
+        "tests/version.cpp"
         "tests/uuid.cpp")
 
     target_link_libraries(${PROJECT_NAME}_tests PRIVATE ${PROJECT_NAME} GTest::gtest GTest::gmock)

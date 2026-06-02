@@ -7,6 +7,7 @@
 #include <vector>
 
 using namespace desktop::secrets;
+using namespace desktop::system;
 
 class SecretService : public testing::Test
 {
@@ -71,7 +72,11 @@ TEST_F(SecretService, CreateReturnsGeneratedValueWhenBackendAvailable)
 	std::string name = "libdesktop.test.secret." + std::to_string(ticks);
 	m_names_to_cleanup.push_back(name);
 	std::optional<secret> value = m_service->create(name);
-	if (!value.has_value())
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		ASSERT_TRUE(value.has_value());
+	}
+	else if (!value.has_value())
 	{
 		GTEST_SKIP() << "Secret backend not available";
 	}
@@ -86,7 +91,12 @@ TEST_F(SecretService, AddGetUpdateRemoveRoundTripWhenBackendAvailable)
 	std::string name = "libdesktop.test.secret." + std::to_string(ticks);
 	m_names_to_cleanup.push_back(name);
 	secret initial{ name, "value_1" };
-	if (!m_service->add(initial))
+	bool added = m_service->add(initial);
+	if (environment::test_variable("GITHUB_ACTIONS"))
+	{
+		ASSERT_TRUE(added);
+	}
+	else if (!added)
 	{
 		GTEST_SKIP() << "Secret backend not available";
 	}
