@@ -15,6 +15,7 @@ jobs:
             triplet: x64-windows
           - runner: windows-11-arm
             triplet: arm64-windows
+    runs-on: ${{ matrix.variant.runner }}
     steps:
       - name: "Checkout"  
         uses: actions/checkout@v6
