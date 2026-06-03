@@ -1,0 +1,32 @@
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+name: Vcpkg
+permissions:
+  contents: read
+jobs:
+  vcpkg-port:
+    name: "Build Vcpkg Port"
+    strategy:
+      matrix:
+        variant:
+          - runner: windows-2025-vs2026
+            triplet: x64-windows
+          - runner: windows-11-arm
+            triplet: arm64-windows
+    steps:
+      - name: "Checkout"  
+        uses: actions/checkout@v6
+        with: 
+          submodules: recursive
+      - name: "Build"
+        uses: johnwason/vcpkg-action@v8
+        id: vcpkg
+        with:
+          pkgs: libdesktop
+          triplet: ${{ matrix.variant.triplet }}
+          revision: 2979dbff1b38167a2a0d2b47b7c549c61273eabf
+          token: ${{ github.token }}
+          cache-key: ${{ matrix.variant.triplet }}
+          extra-args: --overlay-ports=${{ github.workspace }}/vcpkg/ports
