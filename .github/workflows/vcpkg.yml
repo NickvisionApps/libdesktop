@@ -26,8 +26,7 @@ jobs:
         id: vcpkg
         with:
           pkgs: libdesktop
-          triplet: ${{ matrix.variant.triplet }}
           revision: 2979dbff1b38167a2a0d2b47b7c549c61273eabf
           token: ${{ github.token }}
           cache-key: ${{ matrix.variant.triplet }}
-          extra-args: --overlay-ports=${{ github.workspace }}/vcpkg/ports
+          extra-args: --overlay-ports="${{ github.workspace }}\vcpkg\ports"
