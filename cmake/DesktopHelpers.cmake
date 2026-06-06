@@ -5,25 +5,22 @@
 #   desktop_generate_translations(
 #       TARGET          <cmake-target>
 #       SHORT_NAME      <name>
-#       [LANGUAGE       <xgettext-language>]  # default: C++
 #       [ROOT_DIRECTORY <dir>]                # default: CMAKE_SOURCE_DIR
 #       [OUTPUT_DIRECTORY <dir>]              # default: CMAKE_BINARY_DIR
 #   )
 #
 # Expected files under ROOT_DIRECTORY:
 #   resources/po/LINGUAS           – language codes to compile (one per line)
+#   resources/po/POTFILES          – list of source files to scan (created/updated by xgettext)
 #   resources/po/<SHORT_NAME>.pot  – template file (created/updated by xgettext)
 function(desktop_generate_translations)
-    cmake_parse_arguments(ARG "" "TARGET;SHORT_NAME;LANGUAGE;ROOT_DIRECTORY;OUTPUT_DIRECTORY" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "TARGET;SHORT_NAME;ROOT_DIRECTORY;OUTPUT_DIRECTORY" "" ${ARGN})
 
     if(NOT ARG_TARGET)
         message(FATAL_ERROR "desktop_generate_translations: TARGET is required")
     endif()
     if(NOT ARG_SHORT_NAME)
         message(FATAL_ERROR "desktop_generate_translations: SHORT_NAME is required")
-    endif()
-    if(NOT ARG_LANGUAGE)
-        set(ARG_LANGUAGE "C++")
     endif()
     if(NOT ARG_ROOT_DIRECTORY)
         set(ARG_ROOT_DIRECTORY "${CMAKE_SOURCE_DIR}")
@@ -42,46 +39,60 @@ function(desktop_generate_translations)
     if(NOT EXISTS "${_po_dir}/LINGUAS")
         message(FATAL_ERROR "desktop_generate_translations: ${_po_dir}/LINGUAS not found")
     endif()
+    if(NOT EXISTS "${_po_dir}/POTFILES")
+        message(FATAL_ERROR "desktop_generate_translations: ${_po_dir}/POTFILES not found")
+    endif()
 
-    get_target_property(_target_source_dir ${ARG_TARGET} SOURCE_DIR)
-    get_target_property(_sources ${ARG_TARGET} SOURCES)
-    list(FILTER _sources EXCLUDE REGEX "^\\$<")
-    set(_abs_sources "")
-    foreach(_src IN LISTS _sources)
-        get_filename_component(_abs "${_src}" ABSOLUTE BASE_DIR "${_target_source_dir}")
-        list(APPEND _abs_sources "${_abs}")
+    file(STRINGS "${_po_dir}/POTFILES" _potfile_sources)
+    set(_rel_sources "")
+    foreach(_src IN LISTS _potfile_sources)
+        if(_src MATCHES "^[[:space:]]*$" OR _src MATCHES "^[[:space:]]*#")
+            continue()
+        endif()
+        list(APPEND _rel_sources "${_src}")
     endforeach()
 
     file(STRINGS "${_po_dir}/LINGUAS" _linguas)
 
-    add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
-        COMMENT "Generating translations..."
-        WORKING_DIRECTORY "${ARG_ROOT_DIRECTORY}"
+    foreach(_lang IN LISTS _linguas)
+        file(MAKE_DIRECTORY "${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES")
+    endforeach()
+
+    set(_commands
         COMMAND ${XGETTEXT}
             --from-code=utf-8
-            --language=${ARG_LANGUAGE}
+            -C
             --force-po
             --output=${_template}
             --keyword=_
+            --keyword=w_
             --keyword=_n:1,2
+            --keyword=w_n:1,2
             --keyword=_p:1c,2
+            --keyword=w_p:1c,2
             --keyword=_pn:1c,2,3
+            --keyword=w_pn:1c,2,3
             --keyword=C_:1c,2
             --width=80
-            ${_abs_sources}
-        VERBATIM)
+            ${_rel_sources}
+    )
 
     foreach(_lang IN LISTS _linguas)
-        add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
-            WORKING_DIRECTORY "${ARG_ROOT_DIRECTORY}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES"
-            COMMAND ${MSGMERGE} --backup=off --update
-                "${_po_dir}/${_lang}.po" "${_template}"
-            COMMAND ${MSGFMT}
-                "${_po_dir}/${_lang}.po"
-                --output-file="${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES/${ARG_SHORT_NAME}.mo"
-            VERBATIM)
+        set(_lc_dir "${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES")
+        set(_mo     "${_lc_dir}/${ARG_SHORT_NAME}.mo")
+        set(_po     "${_po_dir}/${_lang}.po")
+
+        list(APPEND _commands
+            COMMAND ${MSGMERGE} --backup=off --update "${_po}" "${_template}"
+            COMMAND ${MSGFMT} "${_po}" --output-file "${_mo}"
+        )
     endforeach()
+
+    add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
+        COMMENT "Generating translations..."
+        WORKING_DIRECTORY "${ARG_ROOT_DIRECTORY}"
+        ${_commands}
+        VERBATIM)
 endfunction()
 
 # Runs glib-compile-resources as a POST_BUILD step.

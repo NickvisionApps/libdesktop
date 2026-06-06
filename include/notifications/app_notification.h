@@ -8,7 +8,7 @@ namespace desktop::notifications
 	class app_notification
 	{
 	public:
-		app_notification(std::string message, notification_severity severity);
+		app_notification(std::string message, notification_severity severity, std::string action = "", std::string action_parameter = "");
 		virtual ~app_notification() = default;
 		app_notification(const app_notification&) = default;
 		app_notification(app_notification&&) noexcept = default;

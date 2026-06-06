@@ -2,9 +2,11 @@
 
 namespace desktop::notifications
 {
-	app_notification::app_notification(std::string message, notification_severity severity)
+	app_notification::app_notification(std::string message, notification_severity severity, std::string action, std::string action_parameter)
 	    : m_message{ std::move(message) },
-	      m_severity{ severity }
+	      m_severity{ severity },
+	      m_action{ std::move(action) },
+	      m_action_parameter{ std::move(action_parameter) }
 	{
 	}
 

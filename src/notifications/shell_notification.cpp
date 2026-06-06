@@ -2,8 +2,9 @@
 
 namespace desktop::notifications
 {
-	shell_notification::shell_notification(std::string title, std::string message, notification_severity severity)
-	    : app_notification{ std::move(message), severity },
+	shell_notification::shell_notification(std::string title, std::string message, notification_severity severity, std::string action,
+	                                       std::string action_parameter)
+	    : app_notification{ std::move(message), severity, std::move(action), std::move(action_parameter) },
 	      m_title{ std::move(title) }
 	{
 	}
