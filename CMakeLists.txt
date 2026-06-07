@@ -204,7 +204,7 @@ if(ENABLE_CLANG_TIDY AND CLANG_TIDY)
     if(MSVC)
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=/EHsc")
     elseif(LINUX)
-        set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions --extra-arg=-std=c++20")
+        set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions;--extra-arg=-std=c++20")
     else()
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY};--extra-arg=-fexceptions")
     endif()
@@ -216,7 +216,9 @@ if(ENABLE_CLANG_FORMAT AND CLANG_FORMAT)
     message(NOTICE "Found clang-format")
     file(GLOB_RECURSE FORMAT_SOURCE_FILES CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/include/*.h"
+        "${CMAKE_SOURCE_DIR}/include/**/*.h"
         "${CMAKE_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/src/**/*.cpp"
         "${CMAKE_SOURCE_DIR}/tests/*.cpp"
         "${CMAKE_SOURCE_DIR}/tests/*.h")
     add_custom_target(format
