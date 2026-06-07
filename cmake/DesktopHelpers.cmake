@@ -127,7 +127,7 @@ function(desktop_compile_glib_resources)
         COMMAND ${GLIB_COMPILE_RESOURCES}
             --sourcedir "${ARG_SOURCE_DIR}"
             "${ARG_RESOURCE_XML}"
-            --target="${ARG_OUTPUT}"
+            --target "${ARG_OUTPUT}"
         VERBATIM)
 endfunction()
 
@@ -140,9 +140,9 @@ endfunction()
 #
 # Usage:
 #   desktop_compile_blueprints(
-#       TARGET          <cmake-target>
-#       BLUEPRINT_DIR   <directory-containing-.blp-files>
-#       OUTPUT_DIR      <directory-for-compiled-ui-files>
+#       TARGET           <cmake-target>
+#       [BLUEPRINT_DIR   <directory-containing-.blp-files>]   # default: CMAKE_CURRENT_SOURCE_DIR/resources
+#       OUTPUT_DIR       <directory-for-compiled-ui-files>
 #   )
 function(desktop_compile_blueprints)
     cmake_parse_arguments(ARG "" "TARGET;BLUEPRINT_DIR;OUTPUT_DIR" "" ${ARGN})
@@ -151,7 +151,7 @@ function(desktop_compile_blueprints)
         message(FATAL_ERROR "desktop_compile_blueprints: TARGET is required")
     endif()
     if(NOT ARG_BLUEPRINT_DIR)
-        message(FATAL_ERROR "desktop_compile_blueprints: BLUEPRINT_DIR is required")
+        set(ARG_BLUEPRINT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
     endif()
     if(NOT ARG_OUTPUT_DIR)
         message(FATAL_ERROR "desktop_compile_blueprints: OUTPUT_DIR is required")
@@ -196,50 +196,40 @@ endfunction()
 # Usage:
 #   desktop_linux_install(
 #       APP_ID      <app-id>
-#       OUTPUT_NAME <executable-name>
-#       [SOURCE_DIR <dir>]   # default: CMAKE_CURRENT_SOURCE_DIR
-#       [ICON_DIR   <dir>]   # default: SOURCE_DIR
-#       [BIN_DIR    <dir>]   # default: CMAKE_INSTALL_FULL_BINDIR
+#       [RESOURCE_DIR <dir>]   # default: CMAKE_CURRENT_SOURCE_DIR/resources
+#       [ICON_DIR   <dir>]   # default: RESOURCE_DIR
 #   )
 function(desktop_linux_install)
-    cmake_parse_arguments(ARG "" "APP_ID;OUTPUT_NAME;SOURCE_DIR;ICON_DIR;BIN_DIR" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "APP_ID;OUTPUT_NAME;RESOURCE_DIR;ICON_DIR;BIN_DIR" "" ${ARGN})
 
     if(NOT ARG_APP_ID)
         message(FATAL_ERROR "desktop_linux_install: APP_ID is required")
     endif()
-    if(NOT ARG_OUTPUT_NAME)
-        message(FATAL_ERROR "desktop_linux_install: OUTPUT_NAME is required")
-    endif()
-    if(NOT ARG_SOURCE_DIR)
-        set(ARG_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    if(NOT ARG_RESOURCE_DIR)
+        set(ARG_RESOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
     endif()
     if(NOT ARG_ICON_DIR)
-        set(ARG_ICON_DIR "${ARG_SOURCE_DIR}")
-    endif()
-    if(NOT ARG_BIN_DIR)
-        set(ARG_BIN_DIR "${CMAKE_INSTALL_FULL_BINDIR}")
+        set(ARG_ICON_DIR "${ARG_RESOURCE_DIR}")
     endif()
 
     set(APP_ID      "${ARG_APP_ID}")
-    set(OUTPUT_NAME "${ARG_OUTPUT_NAME}")
-    set(BIN_DIR     "${ARG_BIN_DIR}")
 
-    if(EXISTS "${ARG_SOURCE_DIR}/${ARG_APP_ID}.desktop.in")
-        configure_file("${ARG_SOURCE_DIR}/${ARG_APP_ID}.desktop.in"
+    if(EXISTS "${ARG_RESOURCE_DIR}/${ARG_APP_ID}.desktop.in")
+        configure_file("${ARG_RESOURCE_DIR}/${ARG_APP_ID}.desktop.in"
             "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.desktop" @ONLY)
         install(FILES "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.desktop"
             DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
     endif()
 
-    if(EXISTS "${ARG_SOURCE_DIR}/${ARG_APP_ID}.service.in")
-        configure_file("${ARG_SOURCE_DIR}/${ARG_APP_ID}.service.in"
+    if(EXISTS "${ARG_RESOURCE_DIR}/${ARG_APP_ID}.service.in")
+        configure_file("${ARG_RESOURCE_DIR}/${ARG_APP_ID}.service.in"
             "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.service" @ONLY)
         install(FILES "${CMAKE_BINARY_DIR}/${ARG_APP_ID}.service"
             DESTINATION "${CMAKE_INSTALL_DATADIR}/dbus-1/services")
     endif()
 
-    if(EXISTS "${ARG_SOURCE_DIR}/${ARG_APP_ID}.metainfo.xml")
-        install(FILES "${ARG_SOURCE_DIR}/${ARG_APP_ID}.metainfo.xml"
+    if(EXISTS "${ARG_RESOURCE_DIR}/${ARG_APP_ID}.metainfo.xml")
+        install(FILES "${ARG_RESOURCE_DIR}/${ARG_APP_ID}.metainfo.xml"
             DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo")
     endif()
 
@@ -255,14 +245,7 @@ function(desktop_linux_install)
         install(FILES "${ARG_ICON_DIR}/${ARG_APP_ID}-symbolic.svg"
             DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/symbolic/apps")
     endif()
-endfunction()
 
-# Runs gtk-update-icon-cache and update-desktop-database after install.
-# Each tool is skipped silently if not found on the system.
-#
-# Usage:
-#   desktop_linux_post_install()
-function(desktop_linux_post_install)
     install(CODE "
         find_program(_gtk_update_icon_cache gtk-update-icon-cache)
         if(_gtk_update_icon_cache)
