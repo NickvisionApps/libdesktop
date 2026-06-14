@@ -45,19 +45,26 @@ function(desktop_generate_translations)
 
     file(STRINGS "${_po_dir}/POTFILES" _potfile_sources)
     set(_rel_sources "")
+    set(_abs_sources "")
     foreach(_src IN LISTS _potfile_sources)
         if(_src MATCHES "^[[:space:]]*$" OR _src MATCHES "^[[:space:]]*#")
             continue()
         endif()
         list(APPEND _rel_sources "${_src}")
+        list(APPEND _abs_sources "${ARG_ROOT_DIRECTORY}/${_src}")
     endforeach()
 
     file(STRINGS "${_po_dir}/LINGUAS" _linguas)
 
+    set(_mo_files "")
+    set(_po_files "")
     foreach(_lang IN LISTS _linguas)
         file(MAKE_DIRECTORY "${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES")
+        list(APPEND _po_files "${_po_dir}/${_lang}.po")
+        list(APPEND _mo_files "${ARG_OUTPUT_DIRECTORY}/${_lang}/LC_MESSAGES/${ARG_SHORT_NAME}.mo")
     endforeach()
 
+    set(_stamp "${CMAKE_CURRENT_BINARY_DIR}/${ARG_TARGET}_translations.stamp")
     set(_commands
         COMMAND ${XGETTEXT}
             --from-code=utf-8
@@ -88,11 +95,16 @@ function(desktop_generate_translations)
         )
     endforeach()
 
-    add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
+    add_custom_command(
+        OUTPUT "${_stamp}"
         COMMENT "Generating translations..."
         WORKING_DIRECTORY "${ARG_ROOT_DIRECTORY}"
         ${_commands}
+        COMMAND ${CMAKE_COMMAND} -E touch "${_stamp}"
+        DEPENDS ${_abs_sources} "${_po_dir}/POTFILES" "${_po_dir}/LINGUAS" ${_po_files}
         VERBATIM)
+    add_custom_target(${ARG_TARGET}_translations DEPENDS "${_stamp}")
+    add_dependencies(${ARG_TARGET} ${ARG_TARGET}_translations)
 endfunction()
 
 # Runs glib-compile-resources as a POST_BUILD step.
@@ -121,14 +133,19 @@ function(desktop_compile_glib_resources)
     endif()
 
     find_program(GLIB_COMPILE_RESOURCES glib-compile-resources REQUIRED)
-
-    add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
+    set(_stamp "${CMAKE_CURRENT_BINARY_DIR}/${ARG_TARGET}_glib_resources.stamp")
+    add_custom_command(
+        OUTPUT "${_stamp}"
         COMMENT "Compiling glib resources..."
         COMMAND ${GLIB_COMPILE_RESOURCES}
             --sourcedir "${ARG_SOURCE_DIR}"
             "${ARG_RESOURCE_XML}"
             --target "${ARG_OUTPUT}"
+        COMMAND ${CMAKE_COMMAND} -E touch "${_stamp}"
+        DEPENDS "${ARG_RESOURCE_XML}"
         VERBATIM)
+    add_custom_target(${ARG_TARGET}_glib_resources DEPENDS "${_stamp}")
+    add_dependencies(${ARG_TARGET} ${ARG_TARGET}_glib_resources)
 endfunction()
 
 # Runs blueprint-compiler batch-compile as a POST_BUILD step. GNOME projects only.
@@ -170,15 +187,20 @@ function(desktop_compile_blueprints)
     endif()
 
     file(GLOB_RECURSE _blp_files CONFIGURE_DEPENDS "${ARG_BLUEPRINT_DIR}/*.blp")
-
-    add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
+    set(_stamp "${CMAKE_CURRENT_BINARY_DIR}/${ARG_TARGET}_blueprints.stamp")
+    add_custom_command(
+        OUTPUT "${_stamp}"
         COMMENT "Compiling blueprints..."
         COMMAND ${_bp_command}
             batch-compile
             "${ARG_OUTPUT_DIR}"
             "${ARG_BLUEPRINT_DIR}"
             ${_blp_files}
+        COMMAND ${CMAKE_COMMAND} -E touch "${_stamp}"
+        DEPENDS ${_blp_files}
         VERBATIM)
+    add_custom_target(${ARG_TARGET}_blueprints DEPENDS "${_stamp}")
+    add_dependencies(${ARG_TARGET} ${ARG_TARGET}_blueprints)
 endfunction()
 
 # Installs Linux desktop integration files for an application. Each file type
