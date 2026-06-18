@@ -26,7 +26,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_program(CLANG_FORMAT clang-format)
 find_program(CLANG_TIDY clang-tidy)
 
-project("libdesktop" LANGUAGES C CXX VERSION 2026.6.3 DESCRIPTION "A cross-platform desktop library.")
+project("libdesktop" LANGUAGES C CXX VERSION 2026.6.4 DESCRIPTION "A cross-platform desktop library.")
 
 option(BUILD_SHARED_LIBS "Build libdesktop as a shared library" OFF)
 option(BUILD_TESTING "Build tests" ON)

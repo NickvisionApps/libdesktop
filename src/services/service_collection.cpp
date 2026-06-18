@@ -64,6 +64,15 @@ namespace desktop::services
 				}
 			}
 		}
+		else if (scope == service_scope::latched)
+		{
+			std::scoped_lock lock{ m_mutex };
+			auto it{ m_services.find(type) };
+			if (it != m_services.end())
+			{
+				it->second.m_instance = result;
+			}
+		}
 		return result;
 	}
 }
