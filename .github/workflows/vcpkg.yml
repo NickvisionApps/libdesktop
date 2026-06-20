@@ -27,7 +27,7 @@ jobs:
         with:
           pkgs: libdesktop
           triplet: ${{ matrix.variant.triplet }}
-          revision: 2979dbff1b38167a2a0d2b47b7c549c61273eabf
+          revision: a0b1c8d3a477c1cb4813d8e127a56961707ca42b
           token: ${{ github.token }}
           cache-key: ${{ matrix.variant.triplet }}
           vcpkg-subdir: vcpkg-tool

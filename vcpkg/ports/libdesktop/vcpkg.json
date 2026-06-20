@@ -1,6 +1,6 @@
 {
   "name": "libdesktop",
-  "version": "2026.6.1",
+  "version": "2026.6.4",
   "maintainers": "Nicholas Logozzo nlogozzo225@gmail.com",
   "description": "A cross-platform base for native desktop applications.",
   "homepage": "https://github.com/NickvisionApps/libdesktop",
